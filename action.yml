@@ -3,5 +3,6 @@ description: "goexample"
 
 runs:
   using: composite
+  shell: zsh
   steps:
   - run: go run goexample.go
