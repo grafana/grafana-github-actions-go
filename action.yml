@@ -5,4 +5,3 @@ runs:
   using: composite
   steps:
   - run: go run goexample.go
-    shell: zsh
