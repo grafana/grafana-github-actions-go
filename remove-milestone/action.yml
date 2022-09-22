@@ -12,4 +12,4 @@ runs:
   - run: |
     pwd
     go run remove_milestone.go
-    shell: bash
+   shell: bash
