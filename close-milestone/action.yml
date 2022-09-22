@@ -13,10 +13,6 @@ runs:
   - uses: actions/setup-go@v3
     with:
       go-version: '>=1.17.0'
-    shell: bash
   - run: go version
-  - name: Print the current path
-    shell: bash
-    run: ls
   - run: go run actions/close-milestone/close_milestone.go
     shell: bash
