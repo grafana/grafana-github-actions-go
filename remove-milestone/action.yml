@@ -12,5 +12,5 @@ runs:
   - name: Print the current path
     shell: bash
     run: pwd
-  - run: go run remove_milestone.go
+  - run: go run remove-milestone/remove_milestone.go
     shell: bash
