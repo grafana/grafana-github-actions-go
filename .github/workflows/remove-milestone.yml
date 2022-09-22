@@ -23,7 +23,7 @@ jobs:
         with:
           repository: "grafana/grafana-github-actions-go"
           path: ./actions
-          ref: main
+          ref: remove-milestone
       - name: Remove milestone from open issues (manually invoked)
         if: ${{ github.event.inputs.version != '' }}
         uses: ./actions/remove-milestone

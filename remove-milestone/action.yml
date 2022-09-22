@@ -11,6 +11,6 @@ runs:
   steps:
   - name: Print the current path
     shell: bash
-    run: pwd
+    run: ls
   - run: go run ./remove-milestone/remove_milestone.go
     shell: bash
