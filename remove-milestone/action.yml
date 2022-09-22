@@ -11,6 +11,6 @@ runs:
   steps:
   - name: Print the current path
     shell: bash
-    run: echo "pwd"
+    run: pwd
   - run: go run remove_milestone.go
     shell: bash
