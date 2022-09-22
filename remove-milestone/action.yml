@@ -9,7 +9,6 @@ inputs:
 runs:
   using: composite
   steps:
-  - run: |
-    pwd
-    go run remove_milestone.go
+  - run: pwd
+  - run: go run remove_milestone.go
    shell: bash
