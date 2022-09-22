@@ -22,4 +22,4 @@ jobs:
       run: go build -v ./...
 
     - name: Go example
-      uses: grafana/grafana-github-actions-go@v1
+      uses: grafana/grafana-github-actions-go
