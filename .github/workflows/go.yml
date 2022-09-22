@@ -2,7 +2,7 @@ name: Go
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "km/test" ]
   pull_request:
     branches: [ "main" ]
 
