@@ -1,4 +1,4 @@
-name: Remove milestone
+name: Close milestone
 on:
   workflow_dispatch:
     inputs:
