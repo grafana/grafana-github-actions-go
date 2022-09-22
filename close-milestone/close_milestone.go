@@ -8,10 +8,6 @@ import (
 
 func main() {
 	fmt.Println("Make it workkkkk")
-
-	milestones, r, e := gh.ListMilestones(_, "yangkb09", "grafana-github-actions-go", _)
-
-	fmt.Println("milestones here!!!", milestones)
-
-	//func (s *IssuesService) ListMilestones(ctx context.Context, owner string, repo string, opts *MilestoneListOptions) ([]*Milestone, *Response, error)
+	// Just using something simple to dmeonstrate using the github package here
+	fmt.Println(gh.Bool(true))
 }
