@@ -23,7 +23,7 @@ jobs:
         with:
           repository: "grafana/grafana-github-actions-go"
           path: ./actions
-          ref: close-milestone
+          ref: km/test
       - name: Close milestone from open issues (manually invoked)
         if: ${{ github.event.inputs.version != '' }}
         uses: ./actions/close-milestone
