@@ -1,0 +1,13 @@
+name: Close milestone
+description: Closes the milestone
+inputs:
+  token:
+    description: GitHub token with issue, comment, and label read/write permissions.
+    default: ${{ github.token }}
+  version_call:
+    description: Version number invoked from workflow    
+runs:
+  using: composite
+  steps:
+  - run: go run remove_milestone.go
+    shell: bash
