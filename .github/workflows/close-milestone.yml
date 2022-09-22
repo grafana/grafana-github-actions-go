@@ -23,15 +23,15 @@ jobs:
         with:
           repository: "grafana/grafana-github-actions-go"
           path: ./actions
-          ref: remove-milestone
-      - name: Remove milestone from open issues (manually invoked)
+          ref: close-milestone
+      - name: Close milestone from open issues (manually invoked)
         if: ${{ github.event.inputs.version != '' }}
-        uses: ./actions/remove-milestone
+        uses: ./actions/close-milestone
         with:
           token: ${{ secrets.GH_BOT_ACCESS_TOKEN }}
-      - name: Remove milestone from open issues (workflow invoked)
+      - name: Close milestone from open issues (workflow invoked)
         if: ${{ inputs.version_call != '' }}
-        uses: ./actions/remove-milestone
+        uses: ./actions/close-milestone
         with:
           version_call: ${{ inputs.version_call }}
           token: ${{ secrets.token }}
