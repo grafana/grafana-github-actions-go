@@ -9,6 +9,8 @@ inputs:
 runs:
   using: composite
   steps:
-  - run: pwd
+  - name: Print the current path
+    shell: bash
+    run: echo "pwd"
   - run: go run remove_milestone.go
-   shell: bash
+    shell: bash
