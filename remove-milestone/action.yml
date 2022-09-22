@@ -9,6 +9,5 @@ inputs:
 runs:
   using: composite
   steps:
-  - run: pwd
+  - run: echo "pwd"
   - run: go run remove_milestone.go
-   shell: bash
