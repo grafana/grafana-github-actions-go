@@ -22,7 +22,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: "grafana/grafana-github-actions-go"
-          ref: km/test
+          ref: close-milestone
       - name: Close milestone from open issues (manually invoked)
         if: ${{ github.event.inputs.version != '' }}
         uses: ./close-milestone
