@@ -23,3 +23,6 @@ jobs:
 
     - name: Go example
       uses: ./helloworldexample
+
+    - name: List Milestones
+      uses: ./close-milestone
