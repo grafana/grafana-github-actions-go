@@ -25,6 +25,12 @@ jobs:
           ref: remove-milestone
       - name: Remove milestone from open issues (manually invoked)
         if: ${{ github.event.inputs.version != '' }}
-        uses: ./grafana-github-actions-go/remove-milestone
+        uses: ./remove-milestone
         with:
           token: ${{ secrets.GH_BOT_ACCESS_TOKEN }}
+      - name: Remove milestone from open issues (workflow invoked)
+        if: ${{ inputs.version_call != '' }}
+        uses: ./remove-milestone
+        with:
+          version_call: ${{ inputs.version_call }}
+          token: ${{ secrets.token }}
