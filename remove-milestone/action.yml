@@ -13,7 +13,5 @@ runs:
   - uses: actions/setup-go@v3
     with:
       go-version: '>=1.17.0'
-  - run: ls
-    shell: bash
-  - run: go run ./remove-milestone/remove_milestone.go ${{ github.token }}
+  - run: go run ./remove-milestone/remove_milestone.go ${{ inputs.token }} ${{ inputs.version_call }}
     shell: bash

@@ -22,16 +22,16 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: "grafana/grafana-github-actions-go"
-          path: ./actions
           ref: remove-milestone
       - name: Remove milestone from open issues (manually invoked)
         if: ${{ github.event.inputs.version != '' }}
-        uses: ./actions/remove-milestone
+        uses: ./remove-milestone
         with:
-          token: ${{ secrets.GH_BOT_ACCESS_TOKEN }}
+          token: ${{ secrets.GH_BOT_ACCESS_TOKEN2 }}
+          version_call: ${{ github.event.inputs.version }}
       - name: Remove milestone from open issues (workflow invoked)
-        if: ${{ inputs.version_call != '' }}
-        uses: ./actions/remove-milestone
+        if: ${{ github.event.inputs.version == '' && inputs.version_call != '' }}
+        uses: ./remove-milestone
         with:
           version_call: ${{ inputs.version_call }}
-          token: ${{ secrets.token }}
+          token: ${{ secrets.token2 }}
