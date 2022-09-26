@@ -1,4 +1,4 @@
-name: Close milestone
+name: Remove milestone
 on:
   workflow_dispatch:
     inputs:
@@ -22,15 +22,16 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: "grafana/grafana-github-actions-go"
-          ref: close-milestone
-      - name: Close milestone from open issues (manually invoked)
+          path: ./actions
+          ref: remove-milestone
+      - name: Remove milestone from open issues (manually invoked)
         if: ${{ github.event.inputs.version != '' }}
-        uses: ./close-milestone
+        uses: ./actions/remove-milestone
         with:
           token: ${{ secrets.GH_BOT_ACCESS_TOKEN }}
-      - name: Close milestone from open issues (workflow invoked)
+      - name: Remove milestone from open issues (workflow invoked)
         if: ${{ inputs.version_call != '' }}
-        uses: ./close-milestone
+        uses: ./actions/remove-milestone
         with:
           version_call: ${{ inputs.version_call }}
           token: ${{ secrets.token }}
