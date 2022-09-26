@@ -1,5 +1,5 @@
-name: Close milestone
-description: Closes the milestone
+name: Remove milestone
+description: Remove any open issues and pull requests from the current milestone
 inputs:
   token:
     description: GitHub token with issue, comment, and label read/write permissions.
@@ -13,5 +13,5 @@ runs:
   - uses: actions/setup-go@v3
     with:
       go-version: '>=1.17.0'
-  - run: go run ./close-milestone/close_milestone.go
+  - run: go run ./actions/remove-milestone/remove_milestone.go
     shell: bash
