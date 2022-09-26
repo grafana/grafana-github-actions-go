@@ -2,12 +2,14 @@ package main
 
 import (
 	"fmt"
-
-	gh "github.com/google/go-github/v47/github"
+	"os"
 )
 
 func main() {
+	// we need to get all open issue with milestone and remove the milestone from them
+	// we need to get all PR opened with milestone and remove the milestone from them
 	fmt.Println("Make it workkkkk")
 	// Just using something simple to dmeonstrate using the github package here
-	fmt.Println(gh.Bool(true))
+	argsWithoutProg := os.Args[1:]
+	fmt.Println(argsWithoutProg)
 }
