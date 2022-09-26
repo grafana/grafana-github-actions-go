@@ -17,6 +17,8 @@ func main() {
 		fmt.Println("Not enough input parameters")
 		os.Exit(1)
 	}
+
+	fmt.Println("The input parameters are right")
 	// Just using something simple to dmeonstrate using the github package here
 	argsWithoutProg := os.Args[1:]
 
@@ -29,9 +31,10 @@ func main() {
 	client := gh.NewClient(tc)
 
 	// list all repositories for the authenticated user
-	_, _, err := client.Repositories.List(ctx, "", nil)
+	repos, _, err := client.Repositories.List(ctx, "", nil)
 	if err != nil {
 		fmt.Println("the list of repostories failed")
 		os.Exit(1)
 	}
+	fmt.Println(">>>>>>>>The repositorys are:", len(repos))
 }
