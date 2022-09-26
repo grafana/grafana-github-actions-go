@@ -29,8 +29,6 @@ jobs:
         uses: ./actions/remove-milestone
         with:
           token: ${{ secrets.GH_BOT_ACCESS_TOKEN }}
-      - run: ls
-          shell: bash
       - name: Remove milestone from open issues (workflow invoked)
         if: ${{ inputs.version_call != '' }}
         uses: ./actions/remove-milestone
