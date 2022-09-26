@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	gh "github.com/google/go-github/v47/github"
 	"golang.org/x/oauth2"
-	"k8s.io/test-infra/prow/github"
 )
 
 func main() {
@@ -26,10 +26,10 @@ func main() {
 	)
 	tc := oauth2.NewClient(ctx, ts)
 
-	client := github.NewClient(tc)
+	client := gh.NewClient(tc)
 
 	// list all repositories for the authenticated user
-	repos, _, err := client.Repositories.List(ctx, "", nil)
+	_, _, err := client.Repositories.List(ctx, "", nil)
 	if err != nil {
 		fmt.Println("the list of repostories failed")
 		os.Exit(1)
