@@ -7,12 +7,10 @@ import (
 
 	gh "github.com/google/go-github/v47/github"
 	"golang.org/x/oauth2"
+	"fmt"
 )
 
 func main() {
-	fmt.Println("Make it workkkkk")
-	// Just using something simple to dmeonstrate using the github package here
-	fmt.Println(gh.Bool(true))
 
 	if len(os.Args) < 3 {
 		fmt.Println("Not enough input parameters")
