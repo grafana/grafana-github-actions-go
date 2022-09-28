@@ -27,10 +27,10 @@ jobs:
         if: ${{ github.event.inputs.version != '' }}
         uses: ./close-milestone
         with:
-          token: ${{ secrets.GH_BOT_ACCESS_TOKEN }}
+          token: ${{ secrets.GH_BOT_ACCESS_TOKEN2 }}
       - name: Close milestone from open issues (workflow invoked)
         if: ${{ inputs.version_call != '' }}
         uses: ./close-milestone
         with:
           version_call: ${{ inputs.version_call }}
-          token: ${{ secrets.token }}
+          token: ${{ secrets.token2 }}
