@@ -2,7 +2,7 @@ name: Go
 
 on:
   push:
-    branches: [ "km/test" ]
+    branches: [ "close-milestone" ]
   pull_request:
     branches: [ "main" ]
 
@@ -23,3 +23,6 @@ jobs:
 
     - name: Go example
       uses: ./helloworldexample
+
+    - name: List Milestones
+      uses: ./close-milestone
