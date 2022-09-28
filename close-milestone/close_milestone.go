@@ -7,7 +7,6 @@ import (
 
 	gh "github.com/google/go-github/v47/github"
 	"golang.org/x/oauth2"
-	"fmt"
 )
 
 func main() {
