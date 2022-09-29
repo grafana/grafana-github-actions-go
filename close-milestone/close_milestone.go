@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	// Check if have enough input parameters
+	// Check if enough input parameters
 	if len(os.Args) < 3 {
 		fmt.Println("Not enough input parameters")
 		os.Exit(1)
@@ -21,13 +21,14 @@ func main() {
 	ctx := context.Background()
 	client := gh.NewClient(oauth2.NewClient(ctx, oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})))
 
-	// List open milestone of repo, so that we can get the milestone number corresponding to the milestone name
+	// List open milestones of repo
 	milestones, _, err := client.Issues.ListMilestones(ctx, "grafana", "grafana-github-actions-go", &gh.MilestoneListOptions{State: "open"})
 
 	if err != nil {
 		os.Exit(1)
 	}
 
+	// Get the milestone with the desired name
 	var milestone *gh.Milestone
 	for _, ms := range milestones {
 		if ms.Title != nil && (*ms.Title == currentVersion) {
@@ -40,11 +41,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println("MILESTONE HERE!!!", milestone)
-
-	// iterate over milestones
-	// edit milestones: update status to "closed"
-
+	// Update milestone status to "closed"
 	milestone.State = gh.String("closed")
 
 	_, _, err = client.Issues.EditMilestone(ctx, "grafana", "grafana-github-actions-go", *milestone.Number, milestone)
@@ -52,10 +49,4 @@ func main() {
 		fmt.Println("Close Milestone ", currentVersion, " for issue number: ", milestone.Number, " failed.", err)
 		os.Exit(1)
 	}
-
-	// GENERAL NOTES
-	//currently being printed is a pointer, need to get actual value
-	//how to use close milestone function to close milestone ; figure out how to call the fucntion
-	//print error message in decent way if fails
-
 }
