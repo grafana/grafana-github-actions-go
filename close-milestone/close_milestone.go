@@ -2,30 +2,44 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log"
 	"os"
 
 	gh "github.com/google/go-github/v47/github"
 	"golang.org/x/oauth2"
 )
 
-func main() {
+func readArgs(args []string) (string, string, error) {
 	// Check if enough input parameters
-	if len(os.Args) < 3 {
-		fmt.Println("Not enough input parameters")
-		os.Exit(1)
+	if len(args) < 3 {
+		return "", "", fmt.Errorf("not enough input parameters")
 	}
 
-	token := os.Args[1]
-	currentVersion := os.Args[2]
-	ctx := context.Background()
-	client := gh.NewClient(oauth2.NewClient(ctx, oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})))
+	token := args[1]
+	currentVersion := args[2]
+	return token, currentVersion, nil
+}
 
+type milestoneLister interface {
+	ListMilestones(ctx context.Context, owner string, repo string, opts *gh.MilestoneListOptions) ([]*gh.Milestone, *gh.Response, error)
+}
+
+//cant have pointer to interface, bc the thing that satisfies interface itself is a pointer
+//interfaces cant have properties
+
+var (
+	errorGitHub            = errors.New("gitHub returned an error")
+	errorMilestoneNotFound = errors.New("did not find milestone")
+)
+
+func findMilestone(ctx context.Context, lister milestoneLister, currentVersion string) (*gh.Milestone, error) { //ctx means func could do something async
 	// List open milestones of repo
-	milestones, _, err := client.Issues.ListMilestones(ctx, "grafana", "grafana-github-actions-go", &gh.MilestoneListOptions{State: "open"})
+	milestones, _, err := lister.ListMilestones(ctx, "grafana", "grafana-github-actions-go", &gh.MilestoneListOptions{State: "open"})
 
 	if err != nil {
-		os.Exit(1)
+		return nil, fmt.Errorf("%w: %s", errorGitHub, err)
 	}
 
 	// Get the milestone with the desired name
@@ -37,8 +51,24 @@ func main() {
 	}
 
 	if milestone == nil {
-		fmt.Printf(`Milestone %s doesn't exist %s`, currentVersion, err.Error())
-		os.Exit(1)
+		return nil, fmt.Errorf(`%w: milestone %s doesn't exist`, errorMilestoneNotFound, currentVersion)
+	}
+
+	return milestone, nil
+}
+
+func main() {
+	token, currentVersion, err := readArgs(os.Args)
+	if err != nil {
+		log.Fatal(err) //logs err and quits program
+	}
+
+	ctx := context.Background()
+	client := gh.NewClient(oauth2.NewClient(ctx, oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})))
+
+	milestone, err := findMilestone(ctx, client.Issues, currentVersion)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	// Update milestone status to "closed"
