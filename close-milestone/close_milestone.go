@@ -22,19 +22,21 @@ func readArgs(args []string) (string, string, error) {
 	return token, currentVersion, nil
 }
 
-type milestoneLister interface {
+type milestoneClient interface {
 	ListMilestones(ctx context.Context, owner string, repo string, opts *gh.MilestoneListOptions) ([]*gh.Milestone, *gh.Response, error)
+	EditMilestone(ctx context.Context, owner string, repo string, number int, milestone *gh.Milestone) (*gh.Milestone, *gh.Response, error)
 }
 
 //cant have pointer to interface, bc the thing that satisfies interface itself is a pointer
 //interfaces cant have properties
 
 var (
-	errorGitHub            = errors.New("gitHub returned an error")
-	errorMilestoneNotFound = errors.New("did not find milestone")
+	errorGitHub              = errors.New("gitHub returned an error")
+	errorMilestoneNotFound   = errors.New("did not find milestone")
+	errorMilestoneNotUpdated = errors.New("did not update milestone")
 )
 
-func findMilestone(ctx context.Context, lister milestoneLister, currentVersion string) (*gh.Milestone, error) { //ctx means func could do something async
+func findMilestone(ctx context.Context, lister milestoneClient, currentVersion string) (*gh.Milestone, error) { //ctx means func could do something async
 	// List open milestones of repo
 	milestones, _, err := lister.ListMilestones(ctx, "grafana", "grafana-github-actions-go", &gh.MilestoneListOptions{State: "open"})
 
@@ -57,6 +59,17 @@ func findMilestone(ctx context.Context, lister milestoneLister, currentVersion s
 	return milestone, nil
 }
 
+func editMilestone(ctx context.Context, editor milestoneClient, currentVersion string, milestone *gh.Milestone) error {
+	// Update milestone status to "closed"
+	milestone.State = gh.String("closed")
+
+	_, _, err := editor.EditMilestone(ctx, "grafana", "grafana-github-actions-go", *milestone.Number, milestone)
+	if err != nil {
+		return errorMilestoneNotUpdated
+	}
+	return nil
+}
+
 func main() {
 	token, currentVersion, err := readArgs(os.Args)
 	if err != nil {
@@ -71,12 +84,5 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// Update milestone status to "closed"
-	milestone.State = gh.String("closed")
-
-	_, _, err = client.Issues.EditMilestone(ctx, "grafana", "grafana-github-actions-go", *milestone.Number, milestone)
-	if err != nil {
-		fmt.Println("Close Milestone ", currentVersion, " for issue number: ", milestone.Number, " failed.", err)
-		os.Exit(1)
-	}
+	editMilestone(ctx, client.Issues, currentVersion, milestone)
 }

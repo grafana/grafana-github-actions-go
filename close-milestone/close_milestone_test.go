@@ -40,7 +40,7 @@ func TestReadArg(t *testing.T) {
 // test should clearly say what the expectation is
 func TestListMilestone(t *testing.T) {
 	t.Run("If the milestone does not exist, return an error", func(t *testing.T) {
-		m := &testMilestoneLister{
+		m := &testMilestoneClient{
 			milestones: []string{"v1.0.0-alpha", "v2.0", "v3.0", "v4.0"},
 		}
 		ctx := context.Background()
@@ -55,7 +55,7 @@ func TestListMilestone(t *testing.T) {
 	})
 
 	t.Run("If GitHub returns an error, return an error", func(t *testing.T) {
-		m := &testMilestoneLister{
+		m := &testMilestoneClient{
 			milestones:  []string{"v1.0.0-alpha", "v2.0", "v3.0", "v4.0"},
 			returnError: true,
 		}
@@ -71,13 +71,51 @@ func TestListMilestone(t *testing.T) {
 	})
 }
 
-type testMilestoneLister struct {
-	milestones  []string
-	returnError bool
+func TestEditMilestone(t *testing.T) {
+	t.Run("Milestone state successfully set to closed", func(t *testing.T) {
+		num := 1
+		ms := gh.Milestone{Number: &num}
+		m := &testMilestoneClient{
+			expectedMilestoneState: "closed",
+		}
+		err := editMilestone(context.Background(), m, "v1.0.0", &ms)
+		if *ms.State != m.expectedMilestoneState {
+			t.Error("milestone state is not closed")
+		}
+		if err != nil {
+			t.Error("failed to update milestone")
+		}
+	})
+	t.Run("If GitHub returns an error, return an error", func(t *testing.T) {
+		num := 1
+		ms := gh.Milestone{Number: &num}
+		m := &testMilestoneClient{
+			expectedMilestoneState: "closed",
+			returnError:            true,
+		}
+		err := editMilestone(context.Background(), m, "v1.0.0", &ms)
+		if !errors.Is(err, errorMilestoneNotUpdated) {
+			t.Error("error is the wrong type:", err)
+		}
+	})
+}
+
+type testMilestoneClient struct {
+	milestones             []string
+	expectedMilestoneState string
+	returnError            bool
+}
+
+func (m *testMilestoneClient) EditMilestone(ctx context.Context, owner string, repo string, number int, milestone *gh.Milestone) (*gh.Milestone, *gh.Response, error) {
+	//check milestone status is definitely closed
+	if m.returnError {
+		return nil, nil, errors.New("github failed")
+	}
+	return milestone, nil, nil
 }
 
 // converting list of strings we provided into list of GH milestones, purpose is so we can write a test
-func (m *testMilestoneLister) ListMilestones(ctx context.Context, owner string, repo string, opts *gh.MilestoneListOptions) ([]*gh.Milestone, *gh.Response, error) {
+func (m *testMilestoneClient) ListMilestones(ctx context.Context, owner string, repo string, opts *gh.MilestoneListOptions) ([]*gh.Milestone, *gh.Response, error) {
 	milestones := make([]*gh.Milestone, len(m.milestones))
 	for i := range m.milestones {
 		milestones[i] = &gh.Milestone{
