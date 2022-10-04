@@ -58,7 +58,7 @@ func findMilestone(ctx context.Context, lister milestoneClient, currentVersion s
 	return milestone, nil
 }
 
-func editMilestone(ctx context.Context, editor milestoneClient, currentVersion string, milestone *gh.Milestone) error {
+func updateMilestone(ctx context.Context, editor milestoneClient, currentVersion string, milestone *gh.Milestone) error {
 	// Update milestone status to "closed"
 	milestone.State = gh.String("closed")
 
@@ -83,5 +83,5 @@ func main() {
 		log.Fatal(err)
 	}
 
-	editMilestone(ctx, client.Issues, currentVersion, milestone)
+	updateMilestone(ctx, client.Issues, currentVersion, milestone)
 }

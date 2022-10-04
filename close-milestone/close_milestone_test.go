@@ -66,14 +66,14 @@ func TestListMilestone(t *testing.T) {
 	})
 }
 
-func TestEditMilestone(t *testing.T) {
+func TestUpdateMilestone(t *testing.T) {
 	t.Run("Milestone state successfully set to closed", func(t *testing.T) {
 		num := 1
 		ms := gh.Milestone{Number: &num}
 		m := &testMilestoneClient{
 			expectedMilestoneState: "closed",
 		}
-		err := editMilestone(context.Background(), m, "v1.0.0", &ms)
+		err := updateMilestone(context.Background(), m, "v1.0.0", &ms)
 		if *ms.State != m.expectedMilestoneState {
 			t.Error("milestone state is not closed")
 		}
@@ -88,7 +88,7 @@ func TestEditMilestone(t *testing.T) {
 			expectedMilestoneState: "closed",
 			returnError:            true,
 		}
-		err := editMilestone(context.Background(), m, "v1.0.0", &ms)
+		err := updateMilestone(context.Background(), m, "v1.0.0", &ms)
 		if !errors.Is(err, errorMilestoneNotUpdated) {
 			t.Error("error is the wrong type:", err)
 		}
