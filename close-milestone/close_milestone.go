@@ -11,6 +11,8 @@ import (
 	"golang.org/x/oauth2"
 )
 
+var repoName = "grafana-github-actions-go"
+
 var (
 	errorGitHub              = errors.New("gitHub returned an error")
 	errorMilestoneNotFound   = errors.New("did not find milestone")
@@ -35,7 +37,7 @@ func readArgs(args []string) (string, string, error) {
 
 func findMilestone(ctx context.Context, lister milestoneClient, currentVersion string) (*gh.Milestone, error) {
 	// List open milestones of repo
-	milestones, _, err := lister.ListMilestones(ctx, "grafana", "grafana-github-actions-go", &gh.MilestoneListOptions{State: "open"})
+	milestones, _, err := lister.ListMilestones(ctx, "grafana", repoName, &gh.MilestoneListOptions{State: "open"})
 
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", errorGitHub, err)
@@ -60,7 +62,7 @@ func editMilestone(ctx context.Context, editor milestoneClient, currentVersion s
 	// Update milestone status to "closed"
 	milestone.State = gh.String("closed")
 
-	_, _, err := editor.EditMilestone(ctx, "grafana", "grafana-github-actions-go", *milestone.Number, milestone)
+	_, _, err := editor.EditMilestone(ctx, "grafana", repoName, *milestone.Number, milestone)
 	if err != nil {
 		return errorMilestoneNotUpdated
 	}

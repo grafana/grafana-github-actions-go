@@ -42,8 +42,7 @@ func TestListMilestone(t *testing.T) {
 		m := &testMilestoneClient{
 			milestones: []string{"v1.0.0-alpha", "v2.0", "v3.0", "v4.0"},
 		}
-		ctx := context.Background()
-		ms, err := findMilestone(ctx, m, "v1.0.0")
+		ms, err := findMilestone(context.Background(), m, "v1.0.0")
 		if ms != nil {
 			t.Error("milestone should be nil")
 		}
@@ -57,8 +56,7 @@ func TestListMilestone(t *testing.T) {
 			milestones:  []string{"v1.0.0-alpha", "v2.0", "v3.0", "v4.0"},
 			returnError: true,
 		}
-		ctx := context.Background()
-		ms, err := findMilestone(ctx, m, "v1.0.0")
+		ms, err := findMilestone(context.Background(), m, "v1.0.0")
 		if ms != nil {
 			t.Error("milestone should be nil")
 		}
