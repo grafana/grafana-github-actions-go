@@ -37,7 +37,6 @@ func TestReadArg(t *testing.T) {
 	})
 }
 
-// test should clearly say what the expectation is
 func TestListMilestone(t *testing.T) {
 	t.Run("If the milestone does not exist, return an error", func(t *testing.T) {
 		m := &testMilestoneClient{
@@ -45,7 +44,6 @@ func TestListMilestone(t *testing.T) {
 		}
 		ctx := context.Background()
 		ms, err := findMilestone(ctx, m, "v1.0.0")
-		// if we return an err, milestone should be nil
 		if ms != nil {
 			t.Error("milestone should be nil")
 		}
@@ -61,7 +59,6 @@ func TestListMilestone(t *testing.T) {
 		}
 		ctx := context.Background()
 		ms, err := findMilestone(ctx, m, "v1.0.0")
-		// if we return an err, milestone should be nil
 		if ms != nil {
 			t.Error("milestone should be nil")
 		}
@@ -106,16 +103,8 @@ type testMilestoneClient struct {
 	returnError            bool
 }
 
-func (m *testMilestoneClient) EditMilestone(ctx context.Context, owner string, repo string, number int, milestone *gh.Milestone) (*gh.Milestone, *gh.Response, error) {
-	//check milestone status is definitely closed
-	if m.returnError {
-		return nil, nil, errors.New("github failed")
-	}
-	return milestone, nil, nil
-}
-
-// converting list of strings we provided into list of GH milestones, purpose is so we can write a test
 func (m *testMilestoneClient) ListMilestones(ctx context.Context, owner string, repo string, opts *gh.MilestoneListOptions) ([]*gh.Milestone, *gh.Response, error) {
+	// Convert list of strings into list of GH milestones for testing
 	milestones := make([]*gh.Milestone, len(m.milestones))
 	for i := range m.milestones {
 		milestones[i] = &gh.Milestone{
@@ -126,4 +115,12 @@ func (m *testMilestoneClient) ListMilestones(ctx context.Context, owner string, 
 		return nil, nil, errors.New("github failed")
 	}
 	return milestones, nil, nil
+}
+
+func (m *testMilestoneClient) EditMilestone(ctx context.Context, owner string, repo string, number int, milestone *gh.Milestone) (*gh.Milestone, *gh.Response, error) {
+	// Check milestone status is definitely closed
+	if m.returnError {
+		return nil, nil, errors.New("github failed")
+	}
+	return milestone, nil, nil
 }

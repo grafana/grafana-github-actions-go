@@ -11,6 +11,17 @@ import (
 	"golang.org/x/oauth2"
 )
 
+var (
+	errorGitHub              = errors.New("gitHub returned an error")
+	errorMilestoneNotFound   = errors.New("did not find milestone")
+	errorMilestoneNotUpdated = errors.New("did not update milestone")
+)
+
+type milestoneClient interface {
+	ListMilestones(ctx context.Context, owner string, repo string, opts *gh.MilestoneListOptions) ([]*gh.Milestone, *gh.Response, error)
+	EditMilestone(ctx context.Context, owner string, repo string, number int, milestone *gh.Milestone) (*gh.Milestone, *gh.Response, error)
+}
+
 func readArgs(args []string) (string, string, error) {
 	// Check if enough input parameters
 	if len(args) < 3 {
@@ -22,21 +33,7 @@ func readArgs(args []string) (string, string, error) {
 	return token, currentVersion, nil
 }
 
-type milestoneClient interface {
-	ListMilestones(ctx context.Context, owner string, repo string, opts *gh.MilestoneListOptions) ([]*gh.Milestone, *gh.Response, error)
-	EditMilestone(ctx context.Context, owner string, repo string, number int, milestone *gh.Milestone) (*gh.Milestone, *gh.Response, error)
-}
-
-//cant have pointer to interface, bc the thing that satisfies interface itself is a pointer
-//interfaces cant have properties
-
-var (
-	errorGitHub              = errors.New("gitHub returned an error")
-	errorMilestoneNotFound   = errors.New("did not find milestone")
-	errorMilestoneNotUpdated = errors.New("did not update milestone")
-)
-
-func findMilestone(ctx context.Context, lister milestoneClient, currentVersion string) (*gh.Milestone, error) { //ctx means func could do something async
+func findMilestone(ctx context.Context, lister milestoneClient, currentVersion string) (*gh.Milestone, error) {
 	// List open milestones of repo
 	milestones, _, err := lister.ListMilestones(ctx, "grafana", "grafana-github-actions-go", &gh.MilestoneListOptions{State: "open"})
 
@@ -73,7 +70,7 @@ func editMilestone(ctx context.Context, editor milestoneClient, currentVersion s
 func main() {
 	token, currentVersion, err := readArgs(os.Args)
 	if err != nil {
-		log.Fatal(err) //logs err and quits program
+		log.Fatal(err)
 	}
 
 	ctx := context.Background()
