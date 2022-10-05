@@ -14,9 +14,8 @@ import (
 var repoName = "grafana-github-actions-go"
 
 var (
-	errorGitHub              = errors.New("gitHub returned an error")
-	errorMilestoneNotFound   = errors.New("did not find milestone")
-	errorMilestoneNotUpdated = errors.New("did not update milestone")
+	errorGitHub            = errors.New("gitHub returned an error")
+	errorMilestoneNotFound = errors.New("did not find milestone")
 )
 
 type milestoneClient interface {
