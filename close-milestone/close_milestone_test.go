@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	gh "github.com/google/go-github/v47/github"
+	"github.com/stretchr/testify/require"
 )
 
 func TestReadArg(t *testing.T) {
@@ -74,12 +75,8 @@ func TestUpdateMilestone(t *testing.T) {
 			expectedMilestoneState: "closed",
 		}
 		err := updateMilestone(context.Background(), m, "v1.0.0", &ms)
-		if *ms.State != m.expectedMilestoneState {
-			t.Error("milestone state is not closed")
-		}
-		if err != nil {
-			t.Error("failed to update milestone")
-		}
+		require.NoError(t, err)
+		require.Equal(t, *(ms.State), m.expectedMilestoneState)
 	})
 	t.Run("If GitHub returns an error, return an error", func(t *testing.T) {
 		num := 1
@@ -89,9 +86,7 @@ func TestUpdateMilestone(t *testing.T) {
 			returnError:            true,
 		}
 		err := updateMilestone(context.Background(), m, "v1.0.0", &ms)
-		if !errors.Is(err, errorMilestoneNotUpdated) {
-			t.Error("error is the wrong type:", err)
-		}
+		require.Error(t, err, errors.New("did not find milestone: v1.0.0"))
 	})
 }
 

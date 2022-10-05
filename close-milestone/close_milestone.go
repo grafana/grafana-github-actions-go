@@ -64,7 +64,7 @@ func updateMilestone(ctx context.Context, editor milestoneClient, currentVersion
 
 	_, _, err := editor.EditMilestone(ctx, "grafana", repoName, *milestone.Number, milestone)
 	if err != nil {
-		return errorMilestoneNotUpdated
+		return fmt.Errorf("did not find milestone: %s", milestone.String())
 	}
 	return nil
 }
