@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"grafana-github-actions-go/utils"
 	"log"
 	"os"
 
@@ -21,17 +22,6 @@ var (
 type milestoneClient interface {
 	ListMilestones(ctx context.Context, owner string, repo string, opts *gh.MilestoneListOptions) ([]*gh.Milestone, *gh.Response, error)
 	EditMilestone(ctx context.Context, owner string, repo string, number int, milestone *gh.Milestone) (*gh.Milestone, *gh.Response, error)
-}
-
-func readArgs(args []string) (string, string, error) {
-	// Check if enough input parameters
-	if len(args) < 3 {
-		return "", "", fmt.Errorf("not enough input parameters")
-	}
-
-	token := args[1]
-	currentVersion := args[2]
-	return token, currentVersion, nil
 }
 
 func findMilestone(ctx context.Context, lister milestoneClient, currentVersion string) (*gh.Milestone, error) {
@@ -69,7 +59,7 @@ func updateMilestone(ctx context.Context, editor milestoneClient, currentVersion
 }
 
 func main() {
-	token, currentVersion, err := readArgs(os.Args)
+	token, currentVersion, err := utils.ReadArgs(os.Args)
 	if err != nil {
 		log.Fatal(err)
 	}

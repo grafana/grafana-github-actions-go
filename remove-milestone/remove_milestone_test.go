@@ -9,23 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestReadArg(t *testing.T) {
-	// If there are less than 3 args, return an err
-	t.Run("If there are less than 3 arguments, return an error", func(t *testing.T) {
-		token, currentVersion, err := readArgs([]string{})
-		require.Empty(t, token)
-		require.Empty(t, currentVersion)
-		require.NotNil(t, err)
-	})
-	// If there are correct amount of args, return them
-	t.Run("If there are 3 or more arguments, return them", func(t *testing.T) {
-		token, currentVersion, err := readArgs([]string{"/bin/go", "1234", "version"})
-		require.Equal(t, "1234", token)
-		require.Equal(t, "version", currentVersion)
-		require.Nil(t, err)
-	})
-}
-
 func TestFindMilestone(t *testing.T) {
 	t.Run("If the milestone does not exist, return an error", func(t *testing.T) {
 		m := &testMilestoneClient{
@@ -81,7 +64,7 @@ func (m *testMilestoneClient) ListByRepo(ctx context.Context, owner string, repo
 	return issue, nil, nil
 }
 
-func (m *testMilestoneClient) RemoveMilestone(ctx context.Context, owner, repo string, issueNumber int) (issue []*gh.Issue, res *gh.Response, err error) {
+func (m *testMilestoneClient) RemoveMilestone(ctx context.Context, owner, repo string, issueNumber int) (issue *gh.Issue, res *gh.Response, err error) {
 	if m.returnError {
 		return nil, nil, errors.New("github failed")
 	}

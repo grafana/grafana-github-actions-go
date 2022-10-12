@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"grafana-github-actions-go/utils"
 	"log"
 	"os"
 	"strconv"
@@ -24,17 +25,6 @@ type milestoneClient interface {
 	ListByRepo(ctx context.Context, owner string, repo string, opts *gh.IssueListByRepoOptions) ([]*gh.Issue, *gh.Response, error)
 	RemoveMilestone(ctx context.Context, owner, repo string, issueNumber int) (*gh.Issue, *gh.Response, error)
 	CreateComment(ctx context.Context, owner string, repo string, number int, comment *gh.IssueComment) (*gh.IssueComment, *gh.Response, error)
-}
-
-func readArgs(args []string) (string, string, error) {
-	// Check if enough input parameters
-	if len(args) < 3 {
-		return "", "", fmt.Errorf("not enough input parameters")
-	}
-
-	token := args[1]
-	currentVersion := args[2]
-	return token, currentVersion, nil
 }
 
 func findMilestone(ctx context.Context, lister milestoneClient, currentVersion string) (*gh.Milestone, error) {
@@ -85,7 +75,7 @@ func deleteMilestone(ctx context.Context, deleter milestoneClient, issues []*gh.
 }
 
 func main() {
-	token, currentVersion, err := readArgs(os.Args)
+	token, currentVersion, err := utils.ReadArgs(os.Args)
 	if err != nil {
 		log.Fatal(err)
 	}
