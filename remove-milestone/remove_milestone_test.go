@@ -30,10 +30,34 @@ func TestFindMilestone(t *testing.T) {
 	})
 }
 
+//we mock things bc we dont want to make api calls to GH
+//actual GA should talk to GH, when unit testing we just test the logic (that's why we have expected and actual output)
+//if we want to test actual functionality, we write integration tests
+
+func TestRemoveMilestone(t *testing.T) {
+	t.Run("If milestone exists, remove it from the issue", func(t *testing.T) {
+		m := &testMilestoneClient{
+			milestones: []string{"v1.0.0-alpha", "v2.0", "v3.0", "v4.0"},
+		}
+		err := removeMilestone(context.Background(), m, nil, nil, "v2.0")
+		require.NoError(t, err)
+	})
+
+	t.Run("If milestone does not exist, throw error", func(t *testing.T) {
+		m := &testMilestoneClient{
+			milestones:  []string{"v1.0.0-alpha", "v2.0", "v3.0", "v4.0"},
+			returnError: true,
+		}
+		id := int(1)
+		issues := []*gh.Issue{&gh.Issue{Number: &id}}
+		err := removeMilestone(context.Background(), m, issues, nil, "v2.0")
+		require.Error(t, err, errorGitHub.Error())
+	})
+}
+
 type testMilestoneClient struct {
-	milestones             []string
-	expectedMilestoneState string
-	returnError            bool
+	milestones  []string
+	returnError bool
 }
 
 func (m *testMilestoneClient) ListMilestones(ctx context.Context, owner string, repo string, opts *gh.MilestoneListOptions) ([]*gh.Milestone, *gh.Response, error) {

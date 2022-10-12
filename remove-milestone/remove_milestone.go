@@ -58,7 +58,7 @@ func findIssues(ctx context.Context, lister milestoneClient, milestone *gh.Miles
 	return issues, nil
 }
 
-func deleteMilestone(ctx context.Context, deleter milestoneClient, issues []*gh.Issue, milestone *gh.Milestone, currentVersion string) error {
+func removeMilestone(ctx context.Context, deleter milestoneClient, issues []*gh.Issue, milestone *gh.Milestone, currentVersion string) error {
 	for _, issue := range issues {
 		_, _, err := deleter.RemoveMilestone(ctx, "grafana", repoName, *issue.Number)
 		if err != nil {
@@ -66,7 +66,7 @@ func deleteMilestone(ctx context.Context, deleter milestoneClient, issues []*gh.
 		}
 
 		commentContent := fmt.Sprintf("This pull request was removed from the %s milestone because %s is currently being released.", currentVersion, currentVersion)
-		deleter.CreateComment(ctx, "grafana", repoName, *issue.Number, &gh.IssueComment{Body: &commentContent})
+		_, _, err = deleter.CreateComment(ctx, "grafana", repoName, *issue.Number, &gh.IssueComment{Body: &commentContent})
 		if err != nil {
 			return fmt.Errorf("the add comment issue %d failed %s", *issue.Number, err.Error())
 		}
@@ -93,5 +93,5 @@ func main() {
 		log.Fatal(err)
 	}
 
-	deleteMilestone(ctx, client.Issues, issues, milestone, currentVersion)
+	removeMilestone(ctx, client.Issues, issues, milestone, currentVersion)
 }
