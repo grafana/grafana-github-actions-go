@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"grafana-github-actions-go/utils"
 	"testing"
 
 	gh "github.com/google/go-github/v47/github"
@@ -14,9 +15,9 @@ func TestFindMilestone(t *testing.T) {
 		m := &testMilestoneClient{
 			milestones: []string{"v1.0.0-alpha", "v2.0", "v3.0", "v4.0"},
 		}
-		ms, err := findMilestone(context.Background(), m, "v1.0.0")
+		ms, err := utils.FindMilestone(context.Background(), m, "v1.0.0")
 		require.Nil(t, ms)
-		require.ErrorContains(t, err, errorMilestoneNotFound.Error())
+		require.ErrorContains(t, err, utils.ErrorMilestoneNotFound.Error())
 	})
 
 	t.Run("If GitHub returns an error, return an error", func(t *testing.T) {
@@ -24,9 +25,9 @@ func TestFindMilestone(t *testing.T) {
 			milestones:  []string{"v1.0.0-alpha", "v2.0", "v3.0", "v4.0"},
 			returnError: true,
 		}
-		ms, err := findMilestone(context.Background(), m, "v1.0.0")
+		ms, err := utils.FindMilestone(context.Background(), m, "v1.0.0")
 		require.Nil(t, ms)
-		require.ErrorContains(t, err, errorGitHub.Error())
+		require.ErrorContains(t, err, utils.ErrorGitHub.Error())
 	})
 }
 
@@ -59,7 +60,7 @@ func TestRemoveMilestone(t *testing.T) {
 		id := int(1)
 		issues := []*gh.Issue{&gh.Issue{Number: &id}}
 		err := removeMilestone(context.Background(), m, issues, nil, "v2.0")
-		require.Error(t, err, errorGitHub.Error())
+		require.Error(t, err, utils.ErrorGitHub.Error())
 	})
 }
 
@@ -101,4 +102,12 @@ func (m *testMilestoneClient) RemoveMilestone(ctx context.Context, owner, repo s
 		return nil, nil, errors.New("github failed")
 	}
 	return issue, nil, nil
+}
+
+func (m *testMilestoneClient) EditMilestone(ctx context.Context, owner string, repo string, number int, milestone *gh.Milestone) (*gh.Milestone, *gh.Response, error) {
+	// Check milestone status is definitely closed
+	if m.returnError {
+		return nil, nil, errors.New("github failed")
+	}
+	return milestone, nil, nil
 }
