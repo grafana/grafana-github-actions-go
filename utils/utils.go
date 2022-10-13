@@ -15,12 +15,20 @@ var (
 	ErrorMilestoneNotFound = errors.New("did not find milestone")
 )
 
-type MilestoneClient interface {
+type CloseMilestoneClient interface {
+	EditMilestone(ctx context.Context, owner string, repo string, number int, milestone *gh.Milestone) (*gh.Milestone, *gh.Response, error)
 	ListMilestones(ctx context.Context, owner string, repo string, opts *gh.MilestoneListOptions) ([]*gh.Milestone, *gh.Response, error)
+}
+
+type RemoveMilestoneClient interface {
 	ListByRepo(ctx context.Context, owner string, repo string, opts *gh.IssueListByRepoOptions) ([]*gh.Issue, *gh.Response, error)
 	RemoveMilestone(ctx context.Context, owner, repo string, issueNumber int) (*gh.Issue, *gh.Response, error)
 	CreateComment(ctx context.Context, owner string, repo string, number int, comment *gh.IssueComment) (*gh.IssueComment, *gh.Response, error)
-	EditMilestone(ctx context.Context, owner string, repo string, number int, milestone *gh.Milestone) (*gh.Milestone, *gh.Response, error)
+}
+
+type AdjustMilestoneClient interface {
+	CloseMilestoneClient
+	RemoveMilestoneClient
 }
 
 func ReadArgs(args []string) (string, string, error) {
@@ -34,7 +42,7 @@ func ReadArgs(args []string) (string, string, error) {
 	return token, currentVersion, nil
 }
 
-func FindMilestone(ctx context.Context, lister MilestoneClient, currentVersion string) (*gh.Milestone, error) {
+func FindMilestone(ctx context.Context, lister CloseMilestoneClient, currentVersion string) (*gh.Milestone, error) {
 	// List open milestones of repo
 	milestones, _, err := lister.ListMilestones(ctx, "grafana", RepoName, &gh.MilestoneListOptions{State: "open"})
 

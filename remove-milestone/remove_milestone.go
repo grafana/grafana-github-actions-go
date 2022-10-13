@@ -12,7 +12,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-func findIssues(ctx context.Context, lister utils.MilestoneClient, milestone *gh.Milestone, currentVersion string) ([]*gh.Issue, error) {
+func findIssues(ctx context.Context, lister utils.AdjustMilestoneClient, milestone *gh.Milestone, currentVersion string) ([]*gh.Issue, error) {
 	issues, _, err := lister.ListByRepo(ctx, "grafana", utils.RepoName, &gh.IssueListByRepoOptions{Milestone: strconv.Itoa(*milestone.Number)})
 	if err != nil {
 		return nil, fmt.Errorf("get list of issue by milestone %s number %d failed %s", currentVersion, *milestone.Number, err.Error())
@@ -20,7 +20,7 @@ func findIssues(ctx context.Context, lister utils.MilestoneClient, milestone *gh
 	return issues, nil
 }
 
-func removeMilestone(ctx context.Context, deleter utils.MilestoneClient, issues []*gh.Issue, milestone *gh.Milestone, currentVersion string) error {
+func removeMilestone(ctx context.Context, deleter utils.AdjustMilestoneClient, issues []*gh.Issue, milestone *gh.Milestone, currentVersion string) error {
 	for _, issue := range issues {
 		_, _, err := deleter.RemoveMilestone(ctx, "grafana", utils.RepoName, *issue.Number)
 		if err != nil {

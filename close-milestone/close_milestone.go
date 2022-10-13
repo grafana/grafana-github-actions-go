@@ -11,7 +11,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-func updateMilestone(ctx context.Context, editor utils.MilestoneClient, currentVersion string, milestone *gh.Milestone) error {
+func updateMilestone(ctx context.Context, editor utils.CloseMilestoneClient, currentVersion string, milestone *gh.Milestone) error {
 	// Update milestone status to "closed"
 	milestone.State = gh.String("closed")
 
