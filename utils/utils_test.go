@@ -53,6 +53,27 @@ type TestMilestoneClient struct {
 	returnError            bool
 }
 
+func (m *TestMilestoneClient) ListByRepo(ctx context.Context, owner string, repo string, opts *gh.IssueListByRepoOptions) (issue []*gh.Issue, res *gh.Response, err error) {
+	if m.returnError {
+		return nil, nil, errors.New("github failed")
+	}
+	return issue, nil, nil
+}
+
+func (m *TestMilestoneClient) RemoveMilestone(ctx context.Context, owner, repo string, issueNumber int) (issue *gh.Issue, res *gh.Response, err error) {
+	if m.returnError {
+		return nil, nil, errors.New("github failed")
+	}
+	return issue, nil, nil
+}
+
+func (m *TestMilestoneClient) CreateComment(ctx context.Context, owner string, repo string, number int, comment *gh.IssueComment) (*gh.IssueComment, *gh.Response, error) {
+	if m.returnError {
+		return nil, nil, errors.New("github failed")
+	}
+	return comment, nil, nil
+}
+
 func (m *TestMilestoneClient) ListMilestones(ctx context.Context, owner string, repo string, opts *gh.MilestoneListOptions) ([]*gh.Milestone, *gh.Response, error) {
 	// Convert list of strings into list of GH milestones for testing
 	milestones := make([]*gh.Milestone, len(m.milestones))

@@ -42,7 +42,7 @@ func ReadArgs(args []string) (string, string, error) {
 	return token, currentVersion, nil
 }
 
-func FindMilestone(ctx context.Context, lister CloseMilestoneClient, currentVersion string) (*gh.Milestone, error) {
+func FindMilestone(ctx context.Context, lister AdjustMilestoneClient, currentVersion string) (*gh.Milestone, error) {
 	// List open milestones of repo
 	milestones, _, err := lister.ListMilestones(ctx, "grafana", RepoName, &gh.MilestoneListOptions{State: "open"})
 

@@ -10,27 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// func TestFindMilestone(t *testing.T) {
-// 	t.Run("If the milestone does not exist, return an error", func(t *testing.T) {
-// 		m := &testMilestoneClient{
-// 			milestones: []string{"v1.0.0-alpha", "v2.0", "v3.0", "v4.0"},
-// 		}
-// 		ms, err := utils.FindMilestone(context.Background(), m, "v1.0.0")
-// 		require.Nil(t, ms)
-// 		require.ErrorContains(t, err, utils.ErrorMilestoneNotFound.Error())
-// 	})
-
-// 	t.Run("If GitHub returns an error, return an error", func(t *testing.T) {
-// 		m := &testMilestoneClient{
-// 			milestones:  []string{"v1.0.0-alpha", "v2.0", "v3.0", "v4.0"},
-// 			returnError: true,
-// 		}
-// 		ms, err := utils.FindMilestone(context.Background(), m, "v1.0.0")
-// 		require.Nil(t, ms)
-// 		require.ErrorContains(t, err, utils.ErrorGitHub.Error())
-// 	})
-// }
-
 func TestFindIssues(t *testing.T) {
 	t.Run("If issues does not exist, return an error", func(t *testing.T) {
 		m := &testMilestoneClient{
@@ -99,25 +78,3 @@ func (m *testMilestoneClient) RemoveMilestone(ctx context.Context, owner, repo s
 	}
 	return issue, nil, nil
 }
-
-// func (m *testMilestoneClient) EditMilestone(ctx context.Context, owner string, repo string, number int, milestone *gh.Milestone) (*gh.Milestone, *gh.Response, error) {
-// 	// Check milestone status is definitely closed
-// 	if m.returnError {
-// 		return nil, nil, errors.New("github failed")
-// 	}
-// 	return milestone, nil, nil
-// }
-
-// func (m *testMilestoneClient) ListMilestones(ctx context.Context, owner string, repo string, opts *gh.MilestoneListOptions) ([]*gh.Milestone, *gh.Response, error) {
-// 	// Convert list of strings into list of GH milestones for testing
-// 	milestones := make([]*gh.Milestone, len(m.milestones))
-// 	for i := range m.milestones {
-// 		milestones[i] = &gh.Milestone{
-// 			Title: &m.milestones[i],
-// 		}
-// 	}
-// 	if m.returnError {
-// 		return nil, nil, errors.New("github failed")
-// 	}
-// 	return milestones, nil, nil
-// }
