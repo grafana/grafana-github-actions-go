@@ -1,0 +1,18 @@
+name: GitHub release
+description: Creates and updates GitHub releases
+inputs:
+  token:
+    description: GitHub token with issue, comment, and label read/write permissions
+    default: ${{ github.token }}
+  metricsWriteAPIKey:
+    description: Grafana Cloud metrics api key
+    required: false
+runs:
+  using: composite
+  steps:
+  - uses: actions/checkout@v3
+  - uses: actions/setup-go@v3
+    with:
+      go-version: '>=1.17.0'
+  - run: go run ./github-release/github_release.go ${{ inputs.token }} ${{ inputs.version_call }}
+    shell: bash
