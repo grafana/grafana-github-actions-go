@@ -21,8 +21,25 @@ func readArgs(args []string) (string, string, error) {
 	return token, currentVersion, nil
 }
 
+func isPreRelease(_ string) *bool {
+	b := true
+	return &b
+}
+
+func getReleaseTitle(v string) string {
+	return "Release notes for Grafana" + v
+}
+
+func createRelease(ctx context.Context, client *gh.Client, owner string, repo string, release *gh.RepositoryRelease) error {
+
+	_, _, err := client.Repositories.CreateRelease(ctx, owner, repo, release)
+	return err
+}
+
 var repoName = "grafana-github-actions-go"
 var owner = "grafana"
+
+// is there anything here that needs to be tested? if yes, break it up
 
 func main() {
 	// Get token and version
@@ -37,28 +54,45 @@ func main() {
 
 	existingRelease, _, err := client.Repositories.GetReleaseByTag(ctx, owner, repoName, currentVersion)
 
-	if err == nil {
-		_, _, err := client.Repositories.EditRelease(ctx, owner, repoName, *existingRelease.ID, existingRelease)
-	} else {
-		client.Repositories.CreateRelease(ctx, owner, repoName, existingRelease)
-		var newRelease gh.RepositoryRelease
+	releaseTitle := getReleaseTitle(currentVersion)
+	releaseBody := ""
+	tagName := "v" + currentVersion //look for different way to combine string
 
-		newRelease := gh.RepositoryRelease{
-			Name: "Release notes for Grafana" + currentVersion
-			Body: ""
-			TagName: "v" + currentVersion
-			Prerelease: ,
+	if err != nil { //create release if not found
+		newRelease := &gh.RepositoryRelease{
+			Name:       &releaseTitle,
+			Body:       &releaseBody,
+			TagName:    &tagName,
+			Prerelease: isPreRelease(currentVersion),
 		}
-		// todo
-		// this.title = `Release notes for Grafana ${this.version}`
-		// calculate the title afterwards
 
-
-		// name: title,
-		// body: content,
-		// tag_name: tag,
-		// prerelease: isPreRelease(tag),
+		if err := createRelease(ctx, client, owner, repoName, newRelease); err != nil {
+			log.Fatal(err)
+		}
+		return
 	}
 
+	existingRelease.Name = &releaseTitle
+	existingRelease.Body = &releaseBody
+	existingRelease.TagName = &tagName
 
+	// should i test if i get release by tag and it fails, and one gets created  - behavior i want to preserve
+	//good chunk to test
+	//combine below
+	if _, _, err := client.Repositories.EditRelease(ctx, owner, repoName, *existingRelease.ID, existingRelease); err != nil {
+		// log.Fatal(err)
+	}
+
+	if err != nil { //create release if not found
+		newRelease := &gh.RepositoryRelease{
+			Name:       &releaseTitle,
+			Body:       &releaseBody,
+			TagName:    &tagName,
+			Prerelease: isPreRelease(currentVersion),
+		}
+
+		if err := createRelease(ctx, client, owner, repoName, newRelease); err != nil {
+			log.Fatal(err)
+		}
+	}
 }
