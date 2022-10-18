@@ -21,12 +21,6 @@ func readArgs(args []string) (string, string, error) {
 	return token, currentVersion, nil
 }
 
-func updateRelease(ctx context.Context, client *gh.Client, owner string, repo string, id int64, release *gh.RepositoryRelease) error {
-	client.Repositories.EditRelease()
-
-	return nil
-}
-
 var repoName = "grafana-github-actions-go"
 var owner = "grafana"
 
@@ -43,5 +37,28 @@ func main() {
 
 	existingRelease, _, err := client.Repositories.GetReleaseByTag(ctx, owner, repoName, currentVersion)
 
-	updateRelease(ctx, client, owner, repoName, *existingRelease.ID, existingRelease)
+	if err == nil {
+		_, _, err := client.Repositories.EditRelease(ctx, owner, repoName, *existingRelease.ID, existingRelease)
+	} else {
+		client.Repositories.CreateRelease(ctx, owner, repoName, existingRelease)
+		var newRelease gh.RepositoryRelease
+
+		newRelease := gh.RepositoryRelease{
+			Name: "Release notes for Grafana" + currentVersion
+			Body: ""
+			TagName: "v" + currentVersion
+			Prerelease: ,
+		}
+		// todo
+		// this.title = `Release notes for Grafana ${this.version}`
+		// calculate the title afterwards
+
+
+		// name: title,
+		// body: content,
+		// tag_name: tag,
+		// prerelease: isPreRelease(tag),
+	}
+
+
 }
