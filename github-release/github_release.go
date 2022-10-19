@@ -10,6 +10,18 @@ import (
 	"golang.org/x/oauth2"
 )
 
+type releaseCreator interface {
+	CreateRelease(ctx context.Context, owner string, repo string, release *gh.RepositoryRelease) (*gh.RepositoryRelease, *gh.Response, error)
+}
+
+type releaseGetter interface {
+	GetReleaseByTag(ctx context.Context, owner string, repo string, tag string) (*gh.RepositoryRelease, *gh.Response, error)
+}
+
+type releaseEditor interface {
+	EditRelease(ctx context.Context, owner string, repo string, id int64, release *gh.RepositoryRelease) (*gh.RepositoryRelease, *gh.Response, error)
+}
+
 func readArgs(args []string) (string, string, error) {
 	// Check if enough input parameters
 	if len(args) < 3 {
@@ -30,10 +42,43 @@ func getReleaseTitle(v string) string {
 	return "Release notes for Grafana" + v
 }
 
-func createRelease(ctx context.Context, client *gh.Client, owner string, repo string, release *gh.RepositoryRelease) error {
+func createRelease(ctx context.Context, client releaseCreator, owner string, repo string, release *gh.RepositoryRelease) (*gh.RepositoryRelease, error) {
+	r, _, err := client.CreateRelease(ctx, owner, repo, release)
+	return r, err
+}
 
-	_, _, err := client.Repositories.CreateRelease(ctx, owner, repo, release)
-	return err
+type releaseClient interface {
+	releaseCreator
+	releaseGetter
+	releaseEditor
+}
+
+// getOrCreateRelease will create a GitHub release if one was not found. The release argument is ignored if a release was found.
+// If a release was not found, then one is created using the release argument.
+// Returns true if a release was created, otherwise returns false.
+func getOrCreateRelease(ctx context.Context, client releaseClient, owner string, repo string, version string, release *gh.RepositoryRelease) (*gh.RepositoryRelease, bool, error) {
+	r, _, err := client.GetReleaseByTag(ctx, owner, repoName, version)
+	if err != nil {
+		r, err := createRelease(ctx, client, owner, repoName, release)
+		if err != nil {
+			return nil, false, err
+		}
+		return r, true, nil
+	}
+	return r, false, nil
+}
+
+// upsertRelease will update a GitHub release or create a release if the update failed.
+func upsertRelease(ctx context.Context, client releaseClient, owner string, repo string, version string, release *gh.RepositoryRelease) (*gh.RepositoryRelease, error) {
+	r, _, err := client.EditRelease(ctx, owner, repoName, *release.ID, release)
+	if err != nil {
+		r, err = createRelease(ctx, client, owner, repoName, release)
+		if err != nil {
+			return nil, err
+		}
+		return r, nil
+	}
+	return r, nil
 }
 
 var repoName = "grafana-github-actions-go"
@@ -52,47 +97,27 @@ func main() {
 	ctx := context.Background()
 	client := gh.NewClient(oauth2.NewClient(ctx, oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})))
 
-	existingRelease, _, err := client.Repositories.GetReleaseByTag(ctx, owner, repoName, currentVersion)
+	newRelease := &gh.RepositoryRelease{
+		Name:       gh.String(getReleaseTitle(currentVersion)),
+		Body:       gh.String(""),
+		TagName:    gh.String("v" + currentVersion),
+		Prerelease: isPreRelease(currentVersion),
+	}
 
-	releaseTitle := getReleaseTitle(currentVersion)
-	releaseBody := ""
-	tagName := "v" + currentVersion //look for different way to combine string
+	existingRelease, created, err := getOrCreateRelease(ctx, client.Repositories, owner, repoName, currentVersion, newRelease)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	if err != nil { //create release if not found
-		newRelease := &gh.RepositoryRelease{
-			Name:       &releaseTitle,
-			Body:       &releaseBody,
-			TagName:    &tagName,
-			Prerelease: isPreRelease(currentVersion),
-		}
-
-		if err := createRelease(ctx, client, owner, repoName, newRelease); err != nil {
-			log.Fatal(err)
-		}
+	if created {
 		return
 	}
 
-	existingRelease.Name = &releaseTitle
-	existingRelease.Body = &releaseBody
-	existingRelease.TagName = &tagName
+	existingRelease.Name = newRelease.Name
+	existingRelease.Body = newRelease.Body
+	existingRelease.TagName = newRelease.TagName
 
-	// should i test if i get release by tag and it fails, and one gets created  - behavior i want to preserve
-	//good chunk to test
-	//combine below
-	if _, _, err := client.Repositories.EditRelease(ctx, owner, repoName, *existingRelease.ID, existingRelease); err != nil {
-		// log.Fatal(err)
-	}
-
-	if err != nil { //create release if not found
-		newRelease := &gh.RepositoryRelease{
-			Name:       &releaseTitle,
-			Body:       &releaseBody,
-			TagName:    &tagName,
-			Prerelease: isPreRelease(currentVersion),
-		}
-
-		if err := createRelease(ctx, client, owner, repoName, newRelease); err != nil {
-			log.Fatal(err)
-		}
+	if _, err := upsertRelease(ctx, client.Repositories, owner, repoName, currentVersion, existingRelease); err != nil {
+		log.Fatal(err)
 	}
 }
