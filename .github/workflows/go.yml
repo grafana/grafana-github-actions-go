@@ -20,9 +20,3 @@ jobs:
 
     - name: Build
       run: go build -v ./...
-
-    - name: Go example
-      uses: ./helloworldexample
-
-    - name: List Milestones
-      uses: ./close-milestone
