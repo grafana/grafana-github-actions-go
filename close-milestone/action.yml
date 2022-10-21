@@ -12,5 +12,7 @@ runs:
   - uses: actions/setup-go@v3
     with:
       go-version: '>=1.17.0'
-  - run: ls -al && pwd && go run ./actions/close-milestone/close_milestone.go ${{ inputs.token }} ${{ inputs.version_call }}
+  - run: go get ./actions/close-milestone/...
     shell: bash
+  - run: go run ./actions/close-milestone/close_milestone.go ${{ inputs.token }} ${{ inputs.version_call }}
+    shell: bash 
