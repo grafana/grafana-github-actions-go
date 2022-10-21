@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -70,13 +71,18 @@ func getOrCreateRelease(ctx context.Context, client releaseClient, owner string,
 
 // upsertRelease will update a GitHub release or create a release if the update failed.
 func upsertRelease(ctx context.Context, client releaseClient, owner string, repo string, version string, release *gh.RepositoryRelease) (*gh.RepositoryRelease, error) {
+	if release == nil {
+		return nil, errors.New("release cannot be nil")
+	}
+	if release.ID == nil {
+		return nil, errors.New("release ID cannot be nil")
+	}
 	r, _, err := client.EditRelease(ctx, owner, repoName, *release.ID, release)
 	if err != nil {
 		r, err = createRelease(ctx, client, owner, repoName, release)
 		if err != nil {
 			return nil, err
 		}
-		return r, nil
 	}
 	return r, nil
 }

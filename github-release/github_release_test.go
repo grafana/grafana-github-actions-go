@@ -45,7 +45,9 @@ func TestUpsertRelease(t *testing.T) {
 		client := &testReleaseClient{
 			shouldEditRelease: true,
 		}
-		r, err := upsertRelease(context.Background(), client, "grafana", "repo name", "v1.0.0", &gh.RepositoryRelease{})
+		r, err := upsertRelease(context.Background(), client, "grafana", "repo name", "v1.0.0", &gh.RepositoryRelease{
+			ID: gh.Int64(0),
+		})
 
 		require.NotNil(t, r)
 		require.NoError(t, err)
@@ -54,12 +56,30 @@ func TestUpsertRelease(t *testing.T) {
 		client := &testReleaseClient{
 			shouldCreateRelease: true,
 		}
-		r, err := upsertRelease(context.Background(), client, "grafana", "repo name", "v1.0.0", &gh.RepositoryRelease{})
+		r, err := upsertRelease(context.Background(), client, "grafana", "repo name", "v1.0.0", &gh.RepositoryRelease{
+			ID: gh.Int64(0),
+		})
 
 		require.NotNil(t, r)
 		require.NoError(t, err)
 	})
 	t.Run("If a release is not updated, and one could not be created, return an error", func(t *testing.T) {
+		client := &testReleaseClient{}
+		r, err := upsertRelease(context.Background(), client, "grafana", "repo name", "v1.0.0", &gh.RepositoryRelease{
+			ID: gh.Int64(0),
+		})
+
+		require.Nil(t, r)
+		require.Error(t, err)
+	})
+	t.Run("If the release argument is nil, return an error", func(t *testing.T) {
+		client := &testReleaseClient{}
+		r, err := upsertRelease(context.Background(), client, "grafana", "repo name", "v1.0.0", nil)
+
+		require.Nil(t, r)
+		require.Error(t, err)
+	})
+	t.Run("If the release ID is nil, return an error", func(t *testing.T) {
 		client := &testReleaseClient{}
 		r, err := upsertRelease(context.Background(), client, "grafana", "repo name", "v1.0.0", &gh.RepositoryRelease{})
 
