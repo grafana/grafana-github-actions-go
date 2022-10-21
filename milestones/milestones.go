@@ -1,4 +1,4 @@
-package utils
+package milestones
 
 import (
 	"context"
@@ -29,17 +29,6 @@ type RemoveMilestoneClient interface {
 type AdjustMilestoneClient interface {
 	CloseMilestoneClient
 	RemoveMilestoneClient
-}
-
-func ReadArgs(args []string) (string, string, error) {
-	// Check if enough input parameters
-	if len(args) < 3 {
-		return "", "", fmt.Errorf("not enough input parameters")
-	}
-
-	token := args[1]
-	currentVersion := args[2]
-	return token, currentVersion, nil
 }
 
 func FindMilestone(ctx context.Context, lister AdjustMilestoneClient, currentVersion string) (*gh.Milestone, error) {

@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"errors"
-	"grafana-github-actions-go/utils"
+	"grafana-github-actions-go/milestones"
 	"testing"
 
 	gh "github.com/google/go-github/v47/github"
@@ -28,7 +28,7 @@ func TestFindIssues(t *testing.T) {
 
 		issues, err := findIssues(context.Background(), m, &gh.Milestone{Number: new(int)}, "v1.0.0")
 		require.Nil(t, issues)
-		require.Error(t, err, utils.ErrorGitHub.Error())
+		require.Error(t, err, milestones.ErrorGitHub.Error())
 	})
 }
 
@@ -49,7 +49,7 @@ func TestRemoveMilestone(t *testing.T) {
 		id := int(1)
 		issues := []*gh.Issue{&gh.Issue{Number: &id}}
 		err := removeMilestone(context.Background(), m, issues, nil, "v2.0")
-		require.Error(t, err, utils.ErrorGitHub.Error())
+		require.Error(t, err, milestones.ErrorGitHub.Error())
 	})
 }
 
