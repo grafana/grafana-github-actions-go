@@ -12,8 +12,8 @@ runs:
   - uses: actions/setup-go@v3
     with:
       go-version: '>=1.17.0'
- - run: cd ./actions/close-milestone
-    shell: bash
+  - run: cd ./actions/close-milestone
+      shell: bash
   - run: go mod install
     shell: bash
   - run: go run ./close_milestone.go ${{ inputs.token }} ${{ inputs.version_call }}
