@@ -13,8 +13,8 @@ runs:
     with:
       go-version: '>=1.17.0'
   - run: cd ./actions/close-milestone
-      shell: bash
+    shell: bash
   - run: go mod install
     shell: bash
   - run: go run ./close_milestone.go ${{ inputs.token }} ${{ inputs.version_call }}
-    shell: bash 
+    shell: bash
