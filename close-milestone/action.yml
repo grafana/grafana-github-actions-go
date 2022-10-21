@@ -16,6 +16,5 @@ runs:
   - shell: bash
     run: |
       cd ./actions
-      ls -al
       go get ./...
       go run ./close-milestone/close_milestone.go ${{ inputs.token }} ${{ inputs.version_call }}
