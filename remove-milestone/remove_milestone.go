@@ -3,6 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"grafana-github-actions-go/args"
+	"grafana-github-actions-go/milestones"
+	"log"
 	"os"
 	"strconv"
 
@@ -10,53 +13,48 @@ import (
 	"golang.org/x/oauth2"
 )
 
-func main() {
-	// we need to get all open issue with milestone and remove the milestone from them
-	// we need to get all PR opened with milestone and remove the milestone from them
-	if len(os.Args) < 3 {
-		fmt.Println("Not enough input parameters")
-		os.Exit(1)
-	}
-
-	// Just using something simple to dmeonstrate using the github package here
-	token := os.Args[1]
-	currentVersion := os.Args[2]
-	ctx := context.Background()
-	client := gh.NewClient(oauth2.NewClient(ctx, oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})))
-
-	// List milestone of repo, so that we can get the milestone number corresponding to the milestone name
-	milestones, _, err := client.Issues.ListMilestones(ctx, "grafana", "grafana-github-actions-go", &gh.MilestoneListOptions{State: "open"})
-
-	var milestoneNum *int
-	for _, ms := range milestones {
-		if ms.Title != nil && (*ms.Title == currentVersion) {
-			milestoneNum = ms.Number
-		}
-	}
-
-	if milestoneNum == nil {
-		fmt.Printf(`Milestone %s doesn't exist %s`, currentVersion, err.Error())
-		os.Exit(1)
-	}
-
-	issues, _, err := client.Issues.ListByRepo(ctx, "grafana", "grafana-github-actions-go", &gh.IssueListByRepoOptions{Milestone: strconv.Itoa(*milestoneNum)})
+func findIssues(ctx context.Context, lister milestones.RemoveMilestoneClient, milestone *gh.Milestone, currentVersion string) ([]*gh.Issue, error) {
+	issues, _, err := lister.ListByRepo(ctx, "grafana", milestones.RepoName, &gh.IssueListByRepoOptions{Milestone: strconv.Itoa(*milestone.Number)})
 	if err != nil {
-		fmt.Printf("Get list of issue by milestone %s number %d failed %s", currentVersion, *milestoneNum, err.Error())
-		os.Exit(1)
+		return nil, fmt.Errorf("get list of issue by milestone %s number %d failed %s", currentVersion, *milestone.Number, err.Error())
 	}
+	return issues, nil
+}
 
-	for _, ele := range issues {
-		_, _, err := client.Issues.RemoveMilestone(ctx, "grafana", "grafana-github-actions-go", *ele.Number)
+func removeMilestone(ctx context.Context, deleter milestones.RemoveMilestoneClient, issues []*gh.Issue, milestone *gh.Milestone, currentVersion string) error {
+	for _, issue := range issues {
+		_, _, err := deleter.RemoveMilestone(ctx, "grafana", milestones.RepoName, *issue.Number)
 		if err != nil {
-			fmt.Println("Remove Milestone ", currentVersion, " for issue number: ", ele.Number, " failed.", err)
-			os.Exit(1)
+			return fmt.Errorf("remove Milestone %s for issue number: %d failed", currentVersion, issue.Number)
 		}
 
 		commentContent := fmt.Sprintf("This pull request was removed from the %s milestone because %s is currently being released.", currentVersion, currentVersion)
-		client.Issues.CreateComment(ctx, "grafana", "grafana-github-actions-go", *ele.Number, &gh.IssueComment{Body: &commentContent})
+		_, _, err = deleter.CreateComment(ctx, "grafana", milestones.RepoName, *issue.Number, &gh.IssueComment{Body: &commentContent})
 		if err != nil {
-			fmt.Printf("The add comment issue %d failed %s", *ele.Number, err.Error())
-			os.Exit(1)
+			return fmt.Errorf("the add comment issue %d failed %s", *issue.Number, err.Error())
 		}
 	}
+	return nil
+}
+
+func main() {
+	token, currentVersion, err := args.ReadArgs(os.Args)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ctx := context.Background()
+	client := gh.NewClient(oauth2.NewClient(ctx, oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})))
+
+	milestone, err := milestones.FindMilestone(ctx, client.Issues, currentVersion)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	issues, err := findIssues(ctx, client.Issues, milestone, currentVersion)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	removeMilestone(ctx, client.Issues, issues, milestone, currentVersion)
 }
