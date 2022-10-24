@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 
@@ -19,7 +18,7 @@ func updateMilestone(ctx context.Context, editor milestones.CloseMilestoneClient
 
 	_, _, err := editor.EditMilestone(ctx, "grafana", milestones.RepoName, *milestone.Number, milestone)
 	if err != nil {
-		return fmt.Errorf("did not find milestone: %s", milestone.String())
+		return err
 	}
 	return nil
 }
