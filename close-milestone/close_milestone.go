@@ -13,10 +13,12 @@ import (
 )
 
 func updateMilestone(ctx context.Context, editor milestones.CloseMilestoneClient, currentVersion string, milestone *gh.Milestone) error {
-	// Update milestone status to "closed"
-	milestone.State = gh.String("closed")
-
-	_, _, err := editor.EditMilestone(ctx, "grafana", milestones.RepoName, *milestone.Number, milestone)
+	_, _, err := editor.EditMilestone(ctx, "grafana", milestones.RepoName, *milestone.Number, &gh.Milestone{
+		Title:       milestone.Title,
+		Description: milestone.Description,
+		DueOn:       milestone.DueOn,
+		State:       gh.String("closed"),
+	})
 	if err != nil {
 		return err
 	}
