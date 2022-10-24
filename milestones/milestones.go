@@ -8,7 +8,7 @@ import (
 	gh "github.com/google/go-github/v47/github"
 )
 
-var RepoName = "grafana-github-actions-go"
+var RepoName = "grafana-ci-sandbox"
 
 var (
 	ErrorGitHub            = errors.New("gitHub returned an error")
