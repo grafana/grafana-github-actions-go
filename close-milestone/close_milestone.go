@@ -31,22 +31,15 @@ func main() {
 		log.Fatal(err)
 	}
 
-	log.Printf("closing milestone %s...", milestone)
-
 	ctx := context.Background()
 	client := gh.NewClient(oauth2.NewClient(ctx, oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})))
 
-	log.Printf("finding milestone %s...", milestone)
 	m, err := milestones.FindMilestone(ctx, client.Issues, milestone)
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("found milestone %s", milestone)
 
-	log.Printf("updating milestone %s...", milestone)
 	if err := updateMilestone(ctx, client.Issues, milestone, m); err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("done updating milestone %s", milestone)
-	log.Printf("done closing milestone %s", milestone)
 }
