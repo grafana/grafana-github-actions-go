@@ -26,7 +26,7 @@ func updateMilestone(ctx context.Context, editor milestones.CloseMilestoneClient
 }
 
 func main() {
-	token, milestone, err := args.ReadArgs(os.Args)
+	token, milestone, err := args.Read(os.Args)
 	if err != nil {
 		log.Fatal(err)
 	}
