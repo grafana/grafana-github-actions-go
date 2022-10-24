@@ -8,7 +8,7 @@ import (
 	gh "github.com/google/go-github/v47/github"
 )
 
-var RepoName = "grafana-ci-sandbox"
+var RepoName = "grafana-github-actions-go"
 
 var (
 	ErrorGitHub            = errors.New("gitHub returned an error")
@@ -33,7 +33,11 @@ type AdjustMilestoneClient interface {
 
 func FindMilestone(ctx context.Context, lister AdjustMilestoneClient, currentVersion string) (*gh.Milestone, error) {
 	// List open milestones of repo
+<<<<<<< HEAD
 	milestones, _, err := lister.ListMilestones(ctx, "grafana", RepoName, &gh.MilestoneListOptions{})
+=======
+	milestones, _, err := lister.ListMilestones(ctx, "grafana", RepoName, &gh.MilestoneListOptions{State: "open"})
+>>>>>>> ce3280cd74166f54b250d378419137726361c13e
 
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", ErrorGitHub, err)
