@@ -21,7 +21,7 @@ func findIssues(ctx context.Context, lister milestones.RemoveMilestoneClient, mi
 	return issues, nil
 }
 
-func removeMilestone(ctx context.Context, deleter milestones.RemoveMilestoneClient, issues []*gh.Issue, milestone *gh.Milestone, currentVersion string) error {
+func removeMilestone(ctx context.Context, deleter milestones.MilestoneRemover, issues []*gh.Issue, milestone *gh.Milestone, currentVersion string) error {
 	for _, issue := range issues {
 		_, _, err := deleter.RemoveMilestone(ctx, "grafana", milestones.RepoName, *issue.Number)
 		if err != nil {

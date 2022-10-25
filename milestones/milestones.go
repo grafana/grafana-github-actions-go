@@ -23,7 +23,15 @@ type CloseMilestoneClient interface {
 type RemoveMilestoneClient interface {
 	ListByRepo(ctx context.Context, owner string, repo string, opts *gh.IssueListByRepoOptions) ([]*gh.Issue, *gh.Response, error)
 	RemoveMilestone(ctx context.Context, owner, repo string, issueNumber int) (*gh.Issue, *gh.Response, error)
+}
+
+type Commenter interface {
 	CreateComment(ctx context.Context, owner string, repo string, number int, comment *gh.IssueComment) (*gh.IssueComment, *gh.Response, error)
+}
+
+type MilestoneRemover interface {
+	RemoveMilestoneClient
+	Commenter
 }
 
 type AdjustMilestoneClient interface {
