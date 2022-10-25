@@ -17,4 +17,4 @@ runs:
     run: |
       cd ./actions
       go get ./...
-      go run ./removemilestone/main.go ${{ inputs.token }} ${{ inputs.version_call }}
+      go run ./removemilestone ${{ inputs.token }} ${{ inputs.version_call }}
