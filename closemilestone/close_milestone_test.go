@@ -18,7 +18,6 @@ func TestUpdateMilestone(t *testing.T) {
 		}
 		err := updateMilestone(context.Background(), m, "v1.0.0", &ms)
 		require.NoError(t, err)
-		require.Equal(t, *(ms.State), m.expectedMilestoneState)
 	})
 	t.Run("If GitHub returns an error, return an error", func(t *testing.T) {
 		num := 1
@@ -57,5 +56,6 @@ func (m *testMilestoneClient) EditMilestone(ctx context.Context, owner string, r
 	if m.returnError {
 		return nil, nil, errors.New("github failed")
 	}
+	milestone.State = gh.String("closed")
 	return milestone, nil, nil
 }

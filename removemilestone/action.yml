@@ -1,5 +1,5 @@
-name: Close milestone
-description: Closes the milestone
+name: Remove milestone
+description: Remove any open issues and pull requests from the current milestone
 inputs:
   token:
     description: GitHub token with issue, comment, and label read/write permissions.
@@ -17,4 +17,4 @@ runs:
     run: |
       cd ./actions
       go get ./...
-      go run ./close-milestone/close_milestone.go ${{ inputs.token }} ${{ inputs.version_call }}
+      go run ./removemilestone ${{ inputs.token }} ${{ inputs.version_call }}
