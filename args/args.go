@@ -2,7 +2,7 @@ package args
 
 import "fmt"
 
-func ReadArgs(args []string) (string, string, error) {
+func Read(args []string) (string, string, error) {
 	// Check if enough input parameters
 	if len(args) < 3 {
 		return "", "", fmt.Errorf("not enough input parameters")
