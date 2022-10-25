@@ -38,7 +38,7 @@ func removeMilestone(ctx context.Context, deleter milestones.RemoveMilestoneClie
 }
 
 func main() {
-	token, currentVersion, err := args.ReadArgs(os.Args)
+	token, currentVersion, err := args.Read(os.Args)
 	if err != nil {
 		log.Fatal(err)
 	}
