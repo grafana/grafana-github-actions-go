@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"grafana-github-actions-go/internal/toolkit"
+	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
@@ -20,6 +21,11 @@ const LabelBug = "type/bug"
 func Build(ctx context.Context, version string, tk *toolkit.Toolkit) (*ChangelogBody, error) {
 	body := newChangelogBody()
 
+	milestone, err := getMilestone(ctx, tk, "grafana/grafana", version)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve OSS milestone: %w", err)
+	}
+
 	ossIssues, err := getIssues(ctx, tk, "grafana/grafana", version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve OSS issues: %w", err)
@@ -35,6 +41,9 @@ func Build(ctx context.Context, version string, tk *toolkit.Toolkit) (*Changelog
 	issues = append(issues, enterpriseIssues...)
 
 	body.Version = version
+	if !milestone.GetClosedAt().IsZero() {
+		body.ReleaseDate = milestone.GetClosedAt().Format("2006-01-02")
+	}
 	for _, i := range issues {
 		addToBody(body, i)
 	}
@@ -139,10 +148,10 @@ func getIssueLink(issue *github.Issue) string {
 func getUserLink(user *github.User) string {
 	out := strings.Builder{}
 	out.WriteString("[@")
-	out.WriteString(user.GetName())
+	out.WriteString(user.GetLogin())
 	out.WriteString("]")
 	out.WriteString("(https://github.com/")
-	out.WriteString(user.GetName())
+	out.WriteString(user.GetLogin())
 	out.WriteString(")")
 	return out.String()
 }
@@ -247,8 +256,36 @@ func getIssues(ctx context.Context, tk *toolkit.Toolkit, repo string, version st
 		if err != nil {
 			return nil, err
 		}
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("unexpected status code from GitHub API: %s", resp.Status)
+		}
 		result = append(result, issues.Issues...)
 		nextPage = resp.NextPage
 	}
 	return result, nil
+}
+
+func getMilestone(ctx context.Context, tk *toolkit.Toolkit, repo string, version string) (*github.Milestone, error) {
+	page := 1
+	repoElems := strings.SplitN(repo, "/", 2)
+	if len(repoElems) != 2 {
+		return nil, fmt.Errorf("invalid repo provided: %s", repo)
+	}
+	owner := repoElems[0]
+	repo = repoElems[1]
+	for page > 0 {
+		opts := github.MilestoneListOptions{}
+		opts.Page = page
+		milestones, resp, err := tk.GitHubClient().Issues.ListMilestones(ctx, owner, repo, &opts)
+		if err != nil {
+			return nil, err
+		}
+		for _, ms := range milestones {
+			if ms.GetTitle() == version {
+				return ms, nil
+			}
+		}
+		page = resp.NextPage
+	}
+	return nil, nil
 }

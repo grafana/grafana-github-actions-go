@@ -39,6 +39,8 @@ func (tk *Toolkit) GetInput(name string, opts *GetInputOptions) string {
 	if opts == nil {
 		opts = &GetInputOptions{}
 	}
+	name = strings.ToUpper(name)
+	name = strings.ReplaceAll(name, " ", "_")
 	val := os.Getenv("INPUT_" + name)
 	if opts.TrimWhitespace {
 		val = strings.TrimSpace(val)

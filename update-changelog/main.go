@@ -16,7 +16,7 @@ func main() {
 	pflag.StringVar(&version, "version", "", "Version to target")
 	pflag.Parse()
 
-	logger := zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr})
+	logger := zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr}).With().Timestamp().Logger()
 	ctx := logger.WithContext(context.Background())
 	tk, err := toolkit.Init(ctx)
 	if err != nil {
@@ -24,7 +24,7 @@ func main() {
 	}
 
 	if version == "" {
-		version = tk.GetInput("VERSION_CALL", nil)
+		version = tk.GetInput("version", nil)
 	}
 	if version == "" {
 		logger.Fatal().Msg("No version specified")

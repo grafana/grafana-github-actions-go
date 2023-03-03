@@ -84,7 +84,7 @@ func TestIssueLine(t *testing.T) {
 				i.Title = pointerOf("hello")
 				i.Number = pointerOf(123)
 				i.User = &github.User{
-					Name: pointerOf("author"),
+					Login: pointerOf("author"),
 				}
 				i.PullRequestLinks = &github.PullRequestLinks{}
 			},
