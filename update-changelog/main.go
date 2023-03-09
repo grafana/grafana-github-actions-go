@@ -13,7 +13,9 @@ import (
 
 func main() {
 	var version string
+	var changelogFile string
 	pflag.StringVar(&version, "version", "", "Version to target")
+	pflag.StringVar(&changelogFile, "changelog-file", "", "Path to changelog file to inject the new entry into")
 	pflag.Parse()
 
 	logger := zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr}).With().Timestamp().Logger()
@@ -34,5 +36,18 @@ func main() {
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Failed to build changelog")
 	}
-	fmt.Println(body.ToMarkdown())
+
+	if changelogFile != "" {
+		input, err := os.Open(changelogFile)
+		if err != nil {
+			logger.Fatal().Err(err).Msg("Failed to open changelog file")
+		}
+		defer input.Close()
+
+		if err := changelog.UpdateFile(ctx, os.Stdout, input, body); err != nil {
+			logger.Fatal().Err(err).Msg("Failed to update changelog file")
+		}
+	} else {
+		fmt.Println(body.ToMarkdown())
+	}
 }

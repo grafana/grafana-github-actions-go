@@ -3,6 +3,7 @@ module grafana-github-actions-go
 go 1.20
 
 require (
+	github.com/coreos/go-semver v0.3.1
 	github.com/google/go-github/v47 v47.1.0
 	github.com/google/go-github/v50 v50.1.0
 	github.com/rs/zerolog v1.29.0
