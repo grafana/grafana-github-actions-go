@@ -31,6 +31,11 @@ func TestFileUpdater(t *testing.T) {
 			input:          "<!-- 9.4.1 START -->\n\n# 9.4.1\n\n<!-- 9.4.1 END -->\n<!-- 9.4.0 START -->\n\n# 9.4.0\n\n<!-- 9.4.0 END -->\n",
 			expectedOutput: "<!-- 9.4.4 START -->\n\n# 9.4.4\n\n<!-- 9.4.4 END -->\n<!-- 9.4.1 START -->\n\n# 9.4.1\n\n<!-- 9.4.1 END -->\n<!-- 9.4.0 START -->\n\n# 9.4.0\n\n<!-- 9.4.0 END -->\n",
 		},
+		{
+			name:           "replacing",
+			input:          "<!-- 9.4.4 START -->\n\n# something\n\n<!-- 9.4.4 END -->\n<!-- 9.4.1 START -->\n\n# 9.4.1\n\n<!-- 9.4.1 END -->\n<!-- 9.4.0 START -->\n\n# 9.4.0\n\n<!-- 9.4.0 END -->\n",
+			expectedOutput: "<!-- 9.4.4 START -->\n\n# 9.4.4\n\n<!-- 9.4.4 END -->\n<!-- 9.4.1 START -->\n\n# 9.4.1\n\n<!-- 9.4.1 END -->\n<!-- 9.4.0 START -->\n\n# 9.4.0\n\n<!-- 9.4.0 END -->\n",
+		},
 	}
 
 	for _, test := range tests {
