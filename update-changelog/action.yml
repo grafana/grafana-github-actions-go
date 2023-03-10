@@ -4,6 +4,9 @@ inputs:
   version:
     description: Version number invoked from workflow
     required: true
+  token:
+    description: GitHub token with access to all necessary repositories
+    required: true
 runs:
   using: composite
   steps:
@@ -16,4 +19,4 @@ runs:
       /tmp/update-changelog --version ${{inputs.version}} --preview
     shell: bash
     env:
-      GITHUB_TOKEN: "${{github.token}}"
+      GITHUB_TOKEN: "${{inputs.token}}"
