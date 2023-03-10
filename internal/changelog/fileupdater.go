@@ -2,8 +2,11 @@ package changelog
 
 import (
 	"bufio"
+	"bytes"
 	"context"
+	"fmt"
 	"io"
+	"os"
 	"regexp"
 
 	"github.com/coreos/go-semver/semver"
@@ -11,6 +14,19 @@ import (
 
 var versionEndLinePattern = regexp.MustCompile("<!-- (.*) END -->")
 var versionStartLinePattern = regexp.MustCompile("<!-- (.*) START -->")
+
+func UpdateFileAtPath(ctx context.Context, file string, body *ChangelogBody) error {
+	input, err := os.Open(file)
+	if err != nil {
+		return fmt.Errorf("failed to open input file: %w", err)
+	}
+	defer input.Close()
+	output := bytes.Buffer{}
+	if err := UpdateFile(ctx, &output, input, body); err != nil {
+		return err
+	}
+	return os.WriteFile(file, output.Bytes(), 0o644)
+}
 
 // UpdateFile receives the original changelog data via the `in` parameter and
 // writes it back to the `out` parameter with the `body` behing inserted.
