@@ -119,7 +119,7 @@ func issueAsMarkdown(issue *github.Issue) string {
 
 	out.WriteString("- ")
 	out.WriteString(title)
-	if issueHasLabel(issue, LabelEnterprise) {
+	if issueHasLabel(issue, LabelEnterprise) || strings.HasSuffix(issue.GetRepositoryURL(), "grafana-enterprise") {
 		out.WriteString(". (Enterprise)")
 	} else {
 		out.WriteString(". ")
