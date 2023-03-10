@@ -11,9 +11,9 @@ runs:
       set -e
       # Download the action from the store
       curl -L -o /tmp/update-changelog https://github.com/grafana/grafana-github-actions-go/releases/download/test/update-changelog
-      chmod +x /tmp/upload-changelog
+      chmod +x /tmp/update-changelog
       # Execute action
-      /tmp/upload-changelog --version ${{inputs.version}} --preview
+      /tmp/update-changelog --version ${{inputs.version}} --preview
     shell: bash
     env:
       GITHUB_TOKEN: "${{github.token}}"
