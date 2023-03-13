@@ -75,9 +75,9 @@ func main() {
 			defer os.RemoveAll(tmpDir)
 
 			ghc := github.NewTokenClient(ctx, os.Getenv("GITHUB_TOKEN"))
-			release, _, err := ghc.Repositories.GetReleaseByTag(ctx, "grafana", "grafana-github-actions-go", "test")
+			release, _, err := ghc.Repositories.GetReleaseByTag(ctx, "grafana", "grafana-github-actions-go", "dev")
 			if err != nil {
-				logger.Fatal().Msg("No release with the tag `test` found")
+				logger.Fatal().Msg("No release with the tag `dev` found")
 			}
 
 			for _, action := range actions {
@@ -86,7 +86,7 @@ func main() {
 					if _, err := goContainer.File(fmt.Sprintf("/src/%s/%s", action, action)).Export(ctx, filepath.Join(tmpDir, action)); err != nil {
 						logger.Fatal().Err(err).Msgf("Failed to export `%s` binary", action)
 					}
-					logger.Info().Msg("Upload to test release")
+					logger.Info().Msg("Upload to dev release")
 					fp, err := os.Open(filepath.Join(tmpDir, action))
 					if err != nil {
 						logger.Fatal().Msg("Failed to open binary")
