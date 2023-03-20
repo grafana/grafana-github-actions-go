@@ -16,7 +16,7 @@ runs:
       curl --fail -L -o /tmp/update-changelog https://github.com/grafana/grafana-github-actions-go/releases/download/dev/update-changelog
       chmod +x /tmp/update-changelog
       # Execute action
-      /tmp/update-changelog --version ${{inputs.version}} --preview
+      /tmp/update-changelog --version ${{inputs.version}}
     shell: bash
     env:
       GITHUB_TOKEN: "${{inputs.token}}"
