@@ -67,6 +67,8 @@ func main() {
 		}
 
 		if doUpload {
+			targetOwner := "grafana"
+			targetRepo := "grafana-github-actions-go"
 			logger.Info().Msg("Extracting binaries")
 			tmpDir, err := os.MkdirTemp("", "go-actions-binaries")
 			if err != nil {
@@ -75,7 +77,7 @@ func main() {
 			defer os.RemoveAll(tmpDir)
 
 			ghc := github.NewTokenClient(ctx, os.Getenv("GITHUB_TOKEN"))
-			release, _, err := ghc.Repositories.GetReleaseByTag(ctx, "grafana", "grafana-github-actions-go", "dev")
+			release, _, err := ghc.Repositories.GetReleaseByTag(ctx, targetOwner, targetRepo, "dev")
 			if err != nil {
 				logger.Fatal().Msg("No release with the tag `dev` found")
 			}
@@ -91,7 +93,20 @@ func main() {
 					if err != nil {
 						logger.Fatal().Msg("Failed to open binary")
 					}
-					if _, _, err := ghc.Repositories.UploadReleaseAsset(ctx, "grafana", "grafana-github-actions-go", release.GetID(), &github.UploadOptions{
+					// Delete assets if they already exist
+					assets, _, err := ghc.Repositories.ListReleaseAssets(ctx, targetOwner, targetRepo, release.GetID(), &github.ListOptions{})
+					if err != nil {
+						logger.Fatal().Err(err).Msg("Failed to get release assets")
+					}
+					for _, asset := range assets {
+						if asset.GetName() == action {
+							logger.Info().Msgf("Deleting old asset from release: %s", asset.GetName())
+							if _, err := ghc.Repositories.DeleteReleaseAsset(ctx, targetOwner, targetRepo, asset.GetID()); err != nil {
+								logger.Fatal().Err(err).Msg("Failed to delete release asset")
+							}
+						}
+					}
+					if _, _, err := ghc.Repositories.UploadReleaseAsset(ctx, targetOwner, targetRepo, release.GetID(), &github.UploadOptions{
 						Name: action,
 					}, fp); err != nil {
 						logger.Fatal().Err(err).Msg("Failed to upload binary")

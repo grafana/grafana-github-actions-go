@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/coreos/go-semver/semver"
 	"github.com/google/go-github/v50/github"
 	"github.com/rs/zerolog"
 	"github.com/spf13/pflag"
@@ -44,6 +45,11 @@ func main() {
 	}
 	if version == "" {
 		logger.Fatal().Msg("No version specified")
+	}
+
+	sv, err := semver.NewVersion(version)
+	if err != nil {
+		logger.Fatal().Err(err).Msg("Invalid version number")
 	}
 
 	body, err := changelog.Build(ctx, version, tk)
@@ -116,10 +122,10 @@ func main() {
 		if err := gitRepo.Exec(ctx, "commit", "-m", title); err != nil {
 			logger.Fatal().Err(err).Msg("Failed to make commit")
 		}
+		ghc := tk.GitHubClient()
 
 		if branchExists {
 			logger.Info().Msg("Checking for existing pull requests")
-			ghc := tk.GitHubClient()
 			listOpts := github.PullRequestListOptions{}
 			listOpts.Head = fmt.Sprintf("grafana:%s", targetBranch)
 			listOpts.State = "open"
@@ -161,10 +167,21 @@ func main() {
 		pr.Base = &ref
 		pr.Head = &targetBranch
 
-		createPR, _, err := tk.GitHubClient().PullRequests.Create(ctx, repoOwner, repoRepo, &pr)
+		createPR, _, err := ghc.PullRequests.Create(ctx, repoOwner, repoRepo, &pr)
 		if err != nil {
 			logger.Fatal().Err(err).Msg("Failed to create PR")
 		}
 		logger.Info().Msgf("New PR created at <%s>.", createPR.GetHTMLURL())
+
+		// Set some labels:
+		logger.Info().Msg("Setting default labels")
+		labels := []string{
+			"type/docs",
+			"no-changelog",
+			fmt.Sprintf("backport v%d.%d.x", sv.Major, sv.Minor),
+		}
+		if _, _, err := ghc.Issues.AddLabelsToIssue(ctx, repoOwner, repoRepo, createPR.GetNumber(), labels); err != nil {
+			logger.Fatal().Err(err).Msg("Failed to update PR with default labels")
+		}
 	}
 }
