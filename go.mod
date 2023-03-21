@@ -1,4 +1,4 @@
-module grafana-github-actions-go
+module github.com/grafana/grafana-github-actions-go
 
 go 1.20
 

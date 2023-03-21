@@ -3,11 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
-	"grafana-github-actions-go/args"
-	"grafana-github-actions-go/milestones"
 	"log"
 	"os"
 	"strconv"
+
+	"github.com/grafana/grafana-github-actions-go/args"
+	"github.com/grafana/grafana-github-actions-go/milestones"
 
 	gh "github.com/google/go-github/v47/github"
 	"golang.org/x/oauth2"

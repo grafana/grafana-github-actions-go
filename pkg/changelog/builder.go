@@ -3,11 +3,12 @@ package changelog
 import (
 	"context"
 	"fmt"
-	"grafana-github-actions-go/internal/toolkit"
 	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/grafana/grafana-github-actions-go/pkg/toolkit"
 
 	"github.com/google/go-github/v50/github"
 )

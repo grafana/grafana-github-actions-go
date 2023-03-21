@@ -3,12 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
-	"grafana-github-actions-go/internal/changelog"
-	"grafana-github-actions-go/internal/git"
-	"grafana-github-actions-go/internal/toolkit"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/grafana/grafana-github-actions-go/pkg/changelog"
+	"github.com/grafana/grafana-github-actions-go/pkg/git"
+	"github.com/grafana/grafana-github-actions-go/pkg/toolkit"
 
 	"github.com/coreos/go-semver/semver"
 	"github.com/google/go-github/v50/github"
