@@ -3,8 +3,9 @@ package main
 import (
 	"context"
 	"errors"
-	"grafana-github-actions-go/milestones"
 	"testing"
+
+	"github.com/grafana/grafana-github-actions-go/milestones"
 
 	gh "github.com/google/go-github/v47/github"
 	"github.com/stretchr/testify/require"
