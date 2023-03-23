@@ -5,6 +5,8 @@ on:
 jobs:
   pr:
     runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: "${{github.token}}"
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v3
