@@ -40,6 +40,11 @@ func main() {
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Failed to initialize toolkit")
 	}
+	defer func() {
+		if err := tk.SubmitUsageMetrics(ctx); err != nil {
+			logger.Warn().Err(err).Msg("Failed to submit usage metrics")
+		}
+	}()
 
 	if version == "" {
 		version = tk.GetInput("version", nil)
@@ -130,6 +135,7 @@ func main() {
 			listOpts := github.PullRequestListOptions{}
 			listOpts.Head = fmt.Sprintf("grafana:%s", targetBranch)
 			listOpts.State = "open"
+			tk.IncrRequestCount()
 			pulls, _, err := ghc.PullRequests.List(ctx, repoOwner, repoRepo, &listOpts)
 			if err != nil {
 				logger.Fatal().Err(err).Msg("Failed to retrieve open pull-requests")
@@ -142,11 +148,13 @@ func main() {
 					comment := github.IssueComment{}
 					comment.Body = &commentBody
 
+					tk.IncrRequestCount()
 					if _, _, err := ghc.Issues.CreateComment(ctx, repoOwner, repoRepo, pull.GetNumber(), &comment); err != nil {
 						logger.Fatal().Err(err).Msg("Failed to comment on pull-request")
 					}
 					closed := "closed"
 					pull.State = &closed
+					tk.IncrRequestCount()
 					if _, _, err := ghc.PullRequests.Edit(ctx, repoOwner, repoRepo, pull.GetNumber(), pull); err != nil {
 						logger.Fatal().Err(err).Msg("Failed to close pull-request")
 					}
@@ -168,6 +176,7 @@ func main() {
 		pr.Base = &ref
 		pr.Head = &targetBranch
 
+		tk.IncrRequestCount()
 		createPR, _, err := ghc.PullRequests.Create(ctx, repoOwner, repoRepo, &pr)
 		if err != nil {
 			logger.Fatal().Err(err).Msg("Failed to create PR")
@@ -181,6 +190,7 @@ func main() {
 			"no-changelog",
 			fmt.Sprintf("backport v%d.%d.x", sv.Major, sv.Minor),
 		}
+		tk.IncrRequestCount()
 		if _, _, err := ghc.Issues.AddLabelsToIssue(ctx, repoOwner, repoRepo, createPR.GetNumber(), labels); err != nil {
 			logger.Fatal().Err(err).Msg("Failed to update PR with default labels")
 		}

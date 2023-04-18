@@ -6,13 +6,27 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync/atomic"
 
 	"github.com/google/go-github/v50/github"
 )
 
+const defaultMetricsAPIEndpoint = "https://graphite-us-central1.grafana.net/metrics"
+const defaultMetricsAPIUsername = "6371"
+
 type Toolkit struct {
-	ghClient *github.Client
-	token    string
+	ghClient           *github.Client
+	token              string
+	metricsAPIKey      string
+	metricsAPIUsername string
+	metricsAPIEndpoint string
+	requestCount       atomic.Int64
+}
+
+// IncrRequestCount increments an interval counter that is exposed as metric
+// when calling the SubmitUsageMetrics method.
+func (tk *Toolkit) IncrRequestCount() {
+	tk.requestCount.Add(1)
 }
 
 func Init(ctx context.Context) (*Toolkit, error) {
@@ -27,6 +41,15 @@ func Init(ctx context.Context) (*Toolkit, error) {
 	client := github.NewTokenClient(ctx, token)
 	tk.ghClient = client
 	tk.token = token
+	tk.metricsAPIKey = tk.GetInput("METRICS_API_KEY", nil)
+	tk.metricsAPIEndpoint = tk.GetInput("METRICS_API_ENDPOINT", nil)
+	if tk.metricsAPIEndpoint == "" {
+		tk.metricsAPIEndpoint = defaultMetricsAPIEndpoint
+	}
+	tk.metricsAPIUsername = tk.GetInput("METRICS_API_USERNAME", nil)
+	if tk.metricsAPIUsername == "" {
+		tk.metricsAPIUsername = defaultMetricsAPIUsername
+	}
 	return tk, nil
 }
 
@@ -73,6 +96,7 @@ func (tk *Toolkit) CloneRepository(ctx context.Context, targetFolder string, own
 }
 
 func (tk *Toolkit) BranchExists(ctx context.Context, owner, repo, branch string) (bool, error) {
+	tk.IncrRequestCount()
 	_, _, err := tk.GitHubClient().Repositories.GetBranch(ctx, owner, repo, branch, true)
 	if err != nil {
 		if strings.Contains(err.Error(), "404") {

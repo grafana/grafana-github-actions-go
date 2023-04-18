@@ -253,6 +253,7 @@ func getIssues(ctx context.Context, tk *toolkit.Toolkit, repo string, version st
 	for nextPage > 0 {
 		opts := &github.SearchOptions{}
 		opts.Page = nextPage
+		tk.IncrRequestCount()
 		issues, resp, err := tk.GitHubClient().Search.Issues(ctx, fmt.Sprintf(`repo:%s label:"add to changelog" is:pr is:closed milestone:%s`, repo, version), opts)
 		if err != nil {
 			return nil, err
@@ -277,6 +278,7 @@ func getMilestone(ctx context.Context, tk *toolkit.Toolkit, repo string, version
 	for page > 0 {
 		opts := github.MilestoneListOptions{}
 		opts.Page = page
+		tk.IncrRequestCount()
 		milestones, resp, err := tk.GitHubClient().Issues.ListMilestones(ctx, owner, repo, &opts)
 		if err != nil {
 			return nil, err
