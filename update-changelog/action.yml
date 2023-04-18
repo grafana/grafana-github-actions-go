@@ -7,6 +7,15 @@ inputs:
   token:
     description: GitHub token with access to all necessary repositories
     required: true
+  metrics_api_key:
+    description: API key/password for a Graphite HTTP endpoint
+    required: false
+  metrics_api_username:
+    description: Username for a Graphite HTTP endpoint
+    required: false
+  metrics_api_endpoint:
+    description: Full URL of a Graphite HTTP endpoint
+    required: false
 runs:
   using: composite
   steps:
