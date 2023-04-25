@@ -16,6 +16,16 @@ inputs:
   metrics_api_endpoint:
     description: Full URL of a Graphite HTTP endpoint
     required: false
+  community_api_username:
+    required: true
+  community_api_key:
+    required: true
+  community_base_url:
+    required: false
+    default: "https://community.grafana.com"
+  community_category_id:
+    required: false
+    default: "9"
 runs:
   using: composite
   steps:
@@ -25,7 +35,7 @@ runs:
       curl --fail -L -o /tmp/update-changelog https://github.com/grafana/grafana-github-actions-go/releases/download/dev/update-changelog
       chmod +x /tmp/update-changelog
       # Execute action
-      /tmp/update-changelog --version ${{inputs.version}}
+      /tmp/update-changelog
     shell: bash
     env:
       GITHUB_TOKEN: "${{inputs.token}}"

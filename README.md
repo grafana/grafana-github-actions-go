@@ -12,6 +12,10 @@ The following inputs need to be provided:
 - `metrics_api_endpoint` (default: `https://graphite-us-central1.grafana.net/metrics`): Graphite HTTP endpoint to submit usage metrics to.
 - `metrics_api_key`: API key for that Graphite endpoint (will be used as HTTP Basic Auth password).
 - `metrics_api_username`: Username for that Graphite endpoint.
+- `community_api_key`: API key to be used for API calls to the community.
+- `community_api_username`: Username to be used for API calls to the community.
+- `community_base_url`: Base URL of the community forums.
+- `community_category_id`: Category where to post the changelog to in the community.
 
 Example workflow:
 
