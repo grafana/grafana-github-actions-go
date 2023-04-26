@@ -18,10 +18,12 @@ func main() {
 	var doTest bool
 	var doBuild bool
 	var doUpload bool
+	var targetTag string
 
 	pflag.BoolVar(&doTest, "do-test", false, "Execute tests")
 	pflag.BoolVar(&doBuild, "do-build", false, "Execute builds")
 	pflag.BoolVar(&doUpload, "do-upload", false, "Execute upload")
+	pflag.StringVar(&targetTag, "target-tag", "dev", "Tag to upload an asset to")
 	pflag.Parse()
 
 	ctx := context.Background()
@@ -77,9 +79,9 @@ func main() {
 			defer os.RemoveAll(tmpDir)
 
 			ghc := github.NewTokenClient(ctx, os.Getenv("GITHUB_TOKEN"))
-			release, _, err := ghc.Repositories.GetReleaseByTag(ctx, targetOwner, targetRepo, "dev")
+			release, _, err := ghc.Repositories.GetReleaseByTag(ctx, targetOwner, targetRepo, targetTag)
 			if err != nil {
-				logger.Fatal().Msg("No release with the tag `dev` found")
+				logger.Fatal().Msgf("No release with the tag `%s` found", targetTag)
 			}
 
 			for _, action := range actions {
@@ -88,7 +90,7 @@ func main() {
 					if _, err := goContainer.File(fmt.Sprintf("/src/%s/%s", action, action)).Export(ctx, filepath.Join(tmpDir, action)); err != nil {
 						logger.Fatal().Err(err).Msgf("Failed to export `%s` binary", action)
 					}
-					logger.Info().Msg("Upload to dev release")
+					logger.Info().Msgf("Upload to %s release", targetTag)
 					fp, err := os.Open(filepath.Join(tmpDir, action))
 					if err != nil {
 						logger.Fatal().Msg("Failed to open binary")
