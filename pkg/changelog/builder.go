@@ -115,6 +115,7 @@ func issueAsMarkdown(issue *github.Issue) string {
 	out := strings.Builder{}
 
 	title := issue.GetTitle()
+	title = stripReleaseStreamPrefix(title)
 	title = titleHeadlinePattern.ReplaceAllString(title, "**$1**")
 	title = strings.TrimSuffix(title, ".")
 
@@ -132,6 +133,16 @@ func issueAsMarkdown(issue *github.Issue) string {
 	}
 	out.WriteString("\n")
 	return out.String()
+}
+
+var releaseStreamPrefixPattern = regexp.MustCompile(`^(\[[^]]+\]) (.*)$`)
+
+func stripReleaseStreamPrefix(input string) string {
+	if releaseStreamPrefixPattern.MatchString(input) {
+		result := releaseStreamPrefixPattern.FindStringSubmatch(input)
+		return result[2]
+	}
+	return input
 }
 
 func getIssueLink(issue *github.Issue) string {
