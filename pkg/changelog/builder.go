@@ -42,7 +42,9 @@ func Build(ctx context.Context, version string, tk *toolkit.Toolkit) (*Changelog
 	issues = append(issues, enterpriseIssues...)
 
 	body.Version = version
-	if !milestone.GetClosedAt().IsZero() {
+	if !milestone.GetDueOn().IsZero() {
+		body.ReleaseDate = milestone.GetDueOn().Format("2006-01-02")
+	} else if !milestone.GetClosedAt().IsZero() {
 		body.ReleaseDate = milestone.GetClosedAt().Format("2006-01-02")
 	}
 	for _, i := range issues {
@@ -287,7 +289,8 @@ func getMilestone(ctx context.Context, tk *toolkit.Toolkit, repo string, version
 	owner := repoElems[0]
 	repo = repoElems[1]
 	for page > 0 {
-		opts := github.MilestoneListOptions{}
+		opts := github.MilestoneListOptions{State: "all"}
+		opts.PerPage = 100
 		opts.Page = page
 		tk.IncrRequestCount()
 		milestones, resp, err := tk.GitHubClient().Issues.ListMilestones(ctx, owner, repo, &opts)
