@@ -208,7 +208,18 @@ func getNotice(issue *github.Issue, sectionStart string) string {
 			}
 			result.WriteString(l)
 			if idx == lastLine {
-				result.WriteString(" Issue ")
+				// Trim tailing whitespaces before finalizing the output:
+				output := strings.Builder{}
+				output.WriteString(strings.TrimSpace(result.String()))
+				result = strings.Builder{}
+				result.WriteString(output.String())
+
+				if strings.HasSuffix(output.String(), "```") {
+					result.WriteString("\n")
+				} else {
+					result.WriteString(" ")
+				}
+				result.WriteString("Issue ")
 				result.WriteString(getIssueLink(issue))
 			}
 		}

@@ -37,6 +37,33 @@ func TestDeprecationNotice(t *testing.T) {
 			},
 			expectedOutput: "hello\nworld. Issue [#123](https://github.com/grafana/grafana/issues/123)",
 		},
+		{
+			name: "strip-extra-empty-tail",
+			issue: func(i *github.Issue) {
+				i.Number = pointerOf(123)
+				i.Body = pointerOf("something else\n## Deprecation notice:\nhello\nworld.\n\n\n\n\n")
+			},
+			expectedOutput: "hello\nworld. Issue [#123](https://github.com/grafana/grafana/issues/123)",
+		},
+		// If the notice ends with a codeblock, then we have to introduce an extra newline:
+		{
+			name: "codeblock-end",
+			issue: func(i *github.Issue) {
+				i.Number = pointerOf(123)
+				i.Body = pointerOf("something else\n## Deprecation notice:\n```\nhello\n```")
+			},
+			expectedOutput: "```\nhello\n```\nIssue [#123](https://github.com/grafana/grafana/issues/123)",
+		},
+		// If the notice ends with a codeblock and also with a newline (or
+		// more) then only a single newline should remain:
+		{
+			name: "codeblock-end-plus-newline",
+			issue: func(i *github.Issue) {
+				i.Number = pointerOf(123)
+				i.Body = pointerOf("something else\n## Deprecation notice:\n```\nhello\n```\n\n\n")
+			},
+			expectedOutput: "```\nhello\n```\nIssue [#123](https://github.com/grafana/grafana/issues/123)",
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
