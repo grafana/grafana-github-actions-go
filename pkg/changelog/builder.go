@@ -137,7 +137,7 @@ func issueAsMarkdown(issue *github.Issue) string {
 	return out.String()
 }
 
-var releaseStreamPrefixPattern = regexp.MustCompile(`^(\[[^]]+\]) (.*)$`)
+var releaseStreamPrefixPattern = regexp.MustCompile(`^(\[[^]]+\]:?) (.*)$`)
 
 func stripReleaseStreamPrefix(input string) string {
 	if releaseStreamPrefixPattern.MatchString(input) {

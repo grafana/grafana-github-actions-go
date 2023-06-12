@@ -71,6 +71,22 @@ func TestIssueLine(t *testing.T) {
 			expectedOutput: "- **Chore:** hello. [#123](https://github.com/grafana/grafana/issues/123)\n",
 		},
 		{
+			name: "version-prefix-doubledigit",
+			issue: func(i *github.Issue) {
+				i.Title = pointerOf("[v10.0.x] Chore: hello")
+				i.Number = pointerOf(123)
+			},
+			expectedOutput: "- **Chore:** hello. [#123](https://github.com/grafana/grafana/issues/123)\n",
+		},
+		{
+			name: "version-prefix-plus-colon",
+			issue: func(i *github.Issue) {
+				i.Title = pointerOf("[v10.0.x]: Chore: hello")
+				i.Number = pointerOf(123)
+			},
+			expectedOutput: "- **Chore:** hello. [#123](https://github.com/grafana/grafana/issues/123)\n",
+		},
+		{
 			name: "enterprise-with-category",
 			issue: func(i *github.Issue) {
 				i.Title = pointerOf("hello: world")
