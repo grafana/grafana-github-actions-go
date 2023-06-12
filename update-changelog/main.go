@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -92,133 +93,140 @@ func main() {
 		return
 	}
 
+	if skipPR {
+		if changelogFile == "" {
+			logger.Fatal().Msg("No changelog file specified")
+		}
+		if err := changelog.UpdateFileAtPath(ctx, changelogFile, body); err != nil {
+			logger.Fatal().Err(err).Msg("Failed to update changelog file")
+		}
+		if err := prettierMarkdown(ctx, changelogFile); err != nil {
+			logger.Fatal().Err(err).Msg("Failed to execute prettier")
+		}
+	}
+
 	if !skipPR {
-		if changelogFile != "" {
-			input, err := os.Open(changelogFile)
+		if repository == "" {
+			logger.Fatal().Err(err).Msg("No repository specified")
+		}
+		// If a changelog repository is provided, clone that repo at the
+		// provided revision and use the changelog from there.
+		elems := strings.Split(repository, "/")
+		repoOwner := elems[0]
+		repoRepo := elems[1]
+		logger = logger.With().Str("repo", repoRepo).Str("owner", repoOwner).Str("targetBranch", targetBranch).Logger()
+		branchExists, err := tk.BranchExists(ctx, repoOwner, repoRepo, targetBranch)
+		title := fmt.Sprintf("Changelog: Updated changelog for %s", version)
+		if err != nil {
+			logger.Fatal().Err(err).Msg("Failed to check if branch exists")
+		}
+		if branchExists {
+			logger.Info().Msg("Target branch already exists. Pending PRs will be closed and the branch rebuilt.")
+		}
+
+		// Operate inside a temporary folder
+		if repositoryPath == "" {
+			tmpDir, err := os.MkdirTemp("", "update-changelog")
+			defer os.RemoveAll(tmpDir)
 			if err != nil {
-				logger.Fatal().Err(err).Msg("Failed to open changelog file")
+				logger.Fatal().Err(err).Msg("Failed to create a temporary directory for creating a checkout in")
 			}
-			defer input.Close()
+			if err := tk.CloneRepository(ctx, tmpDir, repository); err != nil {
+				logger.Fatal().Err(err).Msg("Failed to clone repository")
+			}
+			repositoryPath = tmpDir
+		}
 
-			if err := changelog.UpdateFile(ctx, os.Stdout, input, body); err != nil {
-				logger.Fatal().Err(err).Msg("Failed to update changelog file")
-			}
-		} else if repository != "" {
-			// If a changelog repository is provided, clone that repo at the
-			// provided revision and use the changelog from there.
-			elems := strings.Split(repository, "/")
-			repoOwner := elems[0]
-			repoRepo := elems[1]
-			logger = logger.With().Str("repo", repoRepo).Str("owner", repoOwner).Str("targetBranch", targetBranch).Logger()
-			branchExists, err := tk.BranchExists(ctx, repoOwner, repoRepo, targetBranch)
-			title := fmt.Sprintf("Changelog: Updated changelog for %s", version)
+		gitRepo := git.NewRepository(repositoryPath)
+
+		if err := gitRepo.Exec(ctx, "switch", "--discard-changes", ref); err != nil {
+			logger.Fatal().Err(err).Msg("Failed to switch to ref branch")
+		}
+
+		if err := gitRepo.Exec(ctx, "switch", "-C", targetBranch); err != nil {
+			logger.Fatal().Err(err).Msg("Failed to switch to target branch")
+		}
+
+		if err := changelog.UpdateFileAtPath(ctx, filepath.Join(repositoryPath, "CHANGELOG.md"), body); err != nil {
+			logger.Fatal().Err(err).Msg("Failed to update changelog")
+		}
+
+		if err := prettierMarkdown(ctx, changelogFile); err != nil {
+			logger.Fatal().Err(err).Msg("Failed to execute prettier")
+		}
+
+		if err := gitRepo.Exec(ctx, "add", "CHANGELOG.md"); err != nil {
+			logger.Fatal().Err(err).Msg("Failed to add CHANGELOG.md")
+		}
+
+		if err := gitRepo.Exec(ctx, "commit", "-m", title); err != nil {
+			logger.Fatal().Err(err).Msg("Failed to make commit")
+		}
+		ghc := tk.GitHubClient()
+
+		if branchExists {
+			logger.Info().Msg("Checking for existing pull requests")
+			listOpts := github.PullRequestListOptions{}
+			listOpts.Head = fmt.Sprintf("grafana:%s", targetBranch)
+			listOpts.State = "open"
+			tk.IncrRequestCount()
+			pulls, _, err := ghc.PullRequests.List(ctx, repoOwner, repoRepo, &listOpts)
 			if err != nil {
-				logger.Fatal().Err(err).Msg("Failed to check if branch exists")
+				logger.Fatal().Err(err).Msg("Failed to retrieve open pull-requests")
 			}
-			if branchExists {
-				logger.Info().Msg("Target branch already exists. Pending PRs will be closed and the branch rebuilt.")
-			}
+			for _, pull := range pulls {
+				{
+					logger := logger.With().Str("pr", pull.GetTitle()).Logger()
+					logger.Info().Msg("Closing PR")
+					commentBody := "This pull request has been closed because an updated changelog and release notes have been generated."
+					comment := github.IssueComment{}
+					comment.Body = &commentBody
 
-			// Operate inside a temporary folder
-			if repositoryPath == "" {
-				tmpDir, err := os.MkdirTemp("", "update-changelog")
-				defer os.RemoveAll(tmpDir)
-				if err != nil {
-					logger.Fatal().Err(err).Msg("Failed to create a temporary directory for creating a checkout in")
-				}
-				if err := tk.CloneRepository(ctx, tmpDir, repository); err != nil {
-					logger.Fatal().Err(err).Msg("Failed to clone repository")
-				}
-				repositoryPath = tmpDir
-			}
-
-			gitRepo := git.NewRepository(repositoryPath)
-
-			if err := gitRepo.Exec(ctx, "switch", "--discard-changes", ref); err != nil {
-				logger.Fatal().Err(err).Msg("Failed to switch to ref branch")
-			}
-
-			if err := gitRepo.Exec(ctx, "switch", "-C", targetBranch); err != nil {
-				logger.Fatal().Err(err).Msg("Failed to switch to target branch")
-			}
-
-			if err := changelog.UpdateFileAtPath(ctx, filepath.Join(repositoryPath, "CHANGELOG.md"), body); err != nil {
-				logger.Fatal().Err(err).Msg("Failed to update changelog")
-			}
-
-			if err := gitRepo.Exec(ctx, "add", "CHANGELOG.md"); err != nil {
-				logger.Fatal().Err(err).Msg("Failed to add CHANGELOG.md")
-			}
-
-			if err := gitRepo.Exec(ctx, "commit", "-m", title); err != nil {
-				logger.Fatal().Err(err).Msg("Failed to make commit")
-			}
-			ghc := tk.GitHubClient()
-
-			if branchExists {
-				logger.Info().Msg("Checking for existing pull requests")
-				listOpts := github.PullRequestListOptions{}
-				listOpts.Head = fmt.Sprintf("grafana:%s", targetBranch)
-				listOpts.State = "open"
-				tk.IncrRequestCount()
-				pulls, _, err := ghc.PullRequests.List(ctx, repoOwner, repoRepo, &listOpts)
-				if err != nil {
-					logger.Fatal().Err(err).Msg("Failed to retrieve open pull-requests")
-				}
-				for _, pull := range pulls {
-					{
-						logger := logger.With().Str("pr", pull.GetTitle()).Logger()
-						logger.Info().Msg("Closing PR")
-						commentBody := "This pull request has been closed because an updated changelog and release notes have been generated."
-						comment := github.IssueComment{}
-						comment.Body = &commentBody
-
-						tk.IncrRequestCount()
-						if _, _, err := ghc.Issues.CreateComment(ctx, repoOwner, repoRepo, pull.GetNumber(), &comment); err != nil {
-							logger.Fatal().Err(err).Msg("Failed to comment on pull-request")
-						}
-						closed := "closed"
-						pull.State = &closed
-						tk.IncrRequestCount()
-						if _, _, err := ghc.PullRequests.Edit(ctx, repoOwner, repoRepo, pull.GetNumber(), pull); err != nil {
-							logger.Fatal().Err(err).Msg("Failed to close pull-request")
-						}
+					tk.IncrRequestCount()
+					if _, _, err := ghc.Issues.CreateComment(ctx, repoOwner, repoRepo, pull.GetNumber(), &comment); err != nil {
+						logger.Fatal().Err(err).Msg("Failed to comment on pull-request")
+					}
+					closed := "closed"
+					pull.State = &closed
+					tk.IncrRequestCount()
+					if _, _, err := ghc.PullRequests.Edit(ctx, repoOwner, repoRepo, pull.GetNumber(), pull); err != nil {
+						logger.Fatal().Err(err).Msg("Failed to close pull-request")
 					}
 				}
-				if err := gitRepo.Exec(ctx, "push", "origin", "--delete", targetBranch); err != nil {
-					logger.Fatal().Err(err).Msg("Failed to delete remote branch")
-				}
 			}
+			if err := gitRepo.Exec(ctx, "push", "origin", "--delete", targetBranch); err != nil {
+				logger.Fatal().Err(err).Msg("Failed to delete remote branch")
+			}
+		}
 
-			if err := gitRepo.Exec(ctx, "push", "origin", targetBranch); err != nil {
-				logger.Fatal().Err(err).Msg("Failed to push target branch")
-			}
+		if err := gitRepo.Exec(ctx, "push", "origin", targetBranch); err != nil {
+			logger.Fatal().Err(err).Msg("Failed to push target branch")
+		}
 
-			isDraft := true
-			pr := github.NewPullRequest{}
-			pr.Title = &title
-			pr.Draft = &isDraft
-			pr.Base = &ref
-			pr.Head = &targetBranch
+		isDraft := true
+		pr := github.NewPullRequest{}
+		pr.Title = &title
+		pr.Draft = &isDraft
+		pr.Base = &ref
+		pr.Head = &targetBranch
 
-			tk.IncrRequestCount()
-			createPR, _, err := ghc.PullRequests.Create(ctx, repoOwner, repoRepo, &pr)
-			if err != nil {
-				logger.Fatal().Err(err).Msg("Failed to create PR")
-			}
-			logger.Info().Msgf("New PR created at <%s>.", createPR.GetHTMLURL())
+		tk.IncrRequestCount()
+		createPR, _, err := ghc.PullRequests.Create(ctx, repoOwner, repoRepo, &pr)
+		if err != nil {
+			logger.Fatal().Err(err).Msg("Failed to create PR")
+		}
+		logger.Info().Msgf("New PR created at <%s>.", createPR.GetHTMLURL())
 
-			// Set some labels:
-			logger.Info().Msg("Setting default labels")
-			labels := []string{
-				"type/docs",
-				"no-changelog",
-				fmt.Sprintf("backport v%d.%d.x", sv.Major, sv.Minor),
-			}
-			tk.IncrRequestCount()
-			if _, _, err := ghc.Issues.AddLabelsToIssue(ctx, repoOwner, repoRepo, createPR.GetNumber(), labels); err != nil {
-				logger.Fatal().Err(err).Msg("Failed to update PR with default labels")
-			}
+		// Set some labels:
+		logger.Info().Msg("Setting default labels")
+		labels := []string{
+			"type/docs",
+			"no-changelog",
+			fmt.Sprintf("backport v%d.%d.x", sv.Major, sv.Minor),
+		}
+		tk.IncrRequestCount()
+		if _, _, err := ghc.Issues.AddLabelsToIssue(ctx, repoOwner, repoRepo, createPR.GetNumber(), labels); err != nil {
+			logger.Fatal().Err(err).Msg("Failed to update PR with default labels")
 		}
 	}
 
@@ -257,4 +265,37 @@ func main() {
 			logger.Fatal().Err(err).Msg("Failed to post to the forums")
 		}
 	}
+}
+
+// prettierMarkdown will run prettier on the provided markdown file if it is
+// available. If it is not available then a warning will be printed.
+func prettierMarkdown(ctx context.Context, mdFile string) error {
+	logger := zerolog.Ctx(ctx)
+	mdFilename := filepath.Base(mdFile)
+	parent := filepath.Dir(mdFile)
+	prettierCfg := filepath.Join(parent, ".prettierrc.js")
+	if _, err := os.Stat(prettierCfg); err != nil {
+		logger.Warn().Msg("Prettier not available")
+		return nil
+	}
+	fullYarn, err := exec.LookPath("yarn")
+	if err != nil {
+		logger.Warn().Err(err).Msg("Failed to look for yarn. Skipping prettier.")
+		return nil
+	}
+	if fullYarn == "" {
+		logger.Warn().Err(err).Msg("Yarn not installed. Skipping prettier.")
+		return nil
+	}
+	logger.Info().Msg("Executing prettier")
+	cmd := exec.CommandContext(ctx, "yarn")
+	cmd.Dir = parent
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	cmd = exec.CommandContext(ctx, "yarn", "run", "prettier", "--write", mdFilename)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Dir = parent
+	return cmd.Run()
 }
