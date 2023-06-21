@@ -10,7 +10,6 @@ import (
 
 	"github.com/grafana/grafana-github-actions-go/pkg/changelog"
 	"github.com/grafana/grafana-github-actions-go/pkg/community"
-	"github.com/grafana/grafana-github-actions-go/pkg/ghgql"
 	"github.com/grafana/grafana-github-actions-go/pkg/git"
 	"github.com/grafana/grafana-github-actions-go/pkg/toolkit"
 
@@ -61,11 +60,6 @@ func main() {
 		logger.Fatal().Err(err).Msg("Failed to initialize toolkit")
 	}
 
-	ghc := ghgql.NewClient(tk.Token)
-	if _, err := ghc.GetMilestonedPRsForChangelog(ctx, "grafana", "grafana", 447); err != nil {
-		logger.Fatal().Err(err).Msg("Failed to fetch PRs")
-	}
-
 	if listInputs {
 		tk.ShowInputList()
 		return
@@ -95,22 +89,30 @@ func main() {
 	}
 
 	if preview {
-		fmt.Println(body.ToMarkdown(tk))
-		return
-	}
-
-	if !skipPR {
 		if changelogFile != "" {
 			input, err := os.Open(changelogFile)
 			if err != nil {
 				logger.Fatal().Err(err).Msg("Failed to open changelog file")
 			}
 			defer input.Close()
-
 			if err := changelog.UpdateFile(ctx, os.Stdout, input, body, tk); err != nil {
 				logger.Fatal().Err(err).Msg("Failed to update changelog file")
 			}
-		} else if repository != "" {
+		} else {
+			fmt.Println(body.ToMarkdown(tk))
+		}
+		return
+	}
+	if changelogFile != "" {
+		logger.Info().Msgf("Updating %s", changelogFile)
+
+		if err := changelog.UpdateFileAtPath(ctx, changelogFile, body, tk); err != nil {
+			logger.Fatal().Err(err).Msg("Failed to update changelog file")
+		}
+	}
+
+	if !skipPR {
+		if repository != "" {
 			// If a changelog repository is provided, clone that repo at the
 			// provided revision and use the changelog from there.
 			elems := strings.Split(repository, "/")

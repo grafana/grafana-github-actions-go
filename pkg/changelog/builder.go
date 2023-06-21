@@ -3,7 +3,6 @@ package changelog
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/grafana/grafana-github-actions-go/pkg/ghgql"
 	"github.com/grafana/grafana-github-actions-go/pkg/toolkit"
+	"github.com/rs/zerolog"
 
 	"github.com/google/go-github/v50/github"
 )
@@ -35,13 +35,17 @@ func Build(ctx context.Context, version string, tk *toolkit.Toolkit) (*Changelog
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve OSS milestone: %w", err)
 	}
+	enterpriseMilestone, err := getMilestone(ctx, tk, "grafana/grafana-enterprise", version)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve OSS milestone: %w", err)
+	}
 
 	ossIssues, err := tk.GitHubGQLClient().GetMilestonedPRsForChangelog(ctx, "grafana", "grafana", milestone.GetNumber())
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve OSS issues: %w", err)
 	}
 
-	enterpriseIssues, err := tk.GitHubGQLClient().GetMilestonedPRsForChangelog(ctx, "grafana", "grafana-enterprise", milestone.GetNumber())
+	enterpriseIssues, err := tk.GitHubGQLClient().GetMilestonedPRsForChangelog(ctx, "grafana", "grafana-enterprise", enterpriseMilestone.GetNumber())
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve Enterprise issues: %w", err)
 	}
@@ -49,8 +53,6 @@ func Build(ctx context.Context, version string, tk *toolkit.Toolkit) (*Changelog
 	issues := make([]ghgql.PullRequest, 0, len(ossIssues)+len(enterpriseIssues))
 	issues = append(issues, ossIssues...)
 	issues = append(issues, enterpriseIssues...)
-
-	log.Printf("%d issues found", len(issues))
 
 	body.Version = version
 	if !milestone.GetDueOn().IsZero() {
@@ -184,16 +186,6 @@ func isBotUser(login string) bool {
 	}
 }
 
-func getOwnerAndRepo(issue *github.Issue) (string, string) {
-	url := issue.GetRepositoryURL()
-	pat := regexp.MustCompile("^https://api.github.com/repos/(.*?)/(.*?)$")
-	matches := pat.FindAllStringSubmatch(url, -1)
-	if len(matches) < 1 {
-		return "", ""
-	}
-	return matches[0][1], matches[0][2]
-}
-
 func getPRNumberFromBackportBranch(ref string) (int, error) {
 	pat := regexp.MustCompile("^backport-(\\d+)-to-v\\d+\\.\\d+\\.x$")
 	match := pat.FindStringSubmatch(ref)
@@ -206,9 +198,10 @@ func getPRNumberFromBackportBranch(ref string) (int, error) {
 }
 
 func getUserLink(ctx context.Context, issue ghgql.PullRequest, tk *toolkit.Toolkit) (string, error) {
+	logger := zerolog.Ctx(ctx)
 	user := issue.GetAuthorLogin()
 	if isBotUser(user) {
-		log.Printf("PR#%d created by bot. Fetching original author from %s", issue.GetNumber(), issue.GetHeadRefName())
+		logger.Info().Msgf("PR#%d created by bot. Fetching original author from %s", issue.GetNumber(), issue.GetHeadRefName())
 		// If this looks like a bot user, take the author of the original PR if
 		// available:
 		origPrNumber, err := getPRNumberFromBackportBranch(issue.GetHeadRefName())

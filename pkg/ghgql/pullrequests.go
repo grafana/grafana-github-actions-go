@@ -2,6 +2,7 @@ package ghgql
 
 import (
 	"context"
+	"sort"
 )
 
 type PullRequest struct {
@@ -95,5 +96,10 @@ func (c *Client) GetMilestonedPRsForChangelog(ctx context.Context, repoOwner str
 		}
 		cursor = pageInfo.EndCursor
 	}
+	sort.Slice(result, func(i, j int) bool {
+		a := result[i]
+		b := result[j]
+		return b.GetNumber() < a.GetNumber()
+	})
 	return result, nil
 }
