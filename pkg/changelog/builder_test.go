@@ -147,7 +147,7 @@ func TestIssueLine(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			issue := &github.Issue{}
 			test.issue(issue)
-			output := issueAsMarkdown(issue)
+			output := issueAsMarkdown(issue, nil)
 			require.Equal(t, test.expectedOutput, output)
 		})
 	}
@@ -164,4 +164,16 @@ func addLabel(t *testing.T, issue *github.Issue, labelName string) {
 
 func pointerOf[T any](value T) *T {
 	return &value
+}
+
+func TestGetOwnerAndRepo(t *testing.T) {
+	t.Run("valid", func(t *testing.T) {
+		testURL := "https://api.github.com/repos/grafana/grafana"
+		issue := &github.Issue{
+			RepositoryURL: &testURL,
+		}
+		owner, repo := getOwnerAndRepo(issue)
+		require.Equal(t, "grafana", owner)
+		require.Equal(t, "grafana", repo)
+	})
 }

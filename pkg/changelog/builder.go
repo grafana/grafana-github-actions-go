@@ -63,7 +63,7 @@ type ChangelogBody struct {
 	Features           []*github.Issue
 }
 
-func (body *ChangelogBody) ToMarkdown() string {
+func (body *ChangelogBody) ToMarkdown(tk *toolkit.Toolkit) string {
 	out := strings.Builder{}
 	out.WriteString("# ")
 	out.WriteString(body.Version)
@@ -75,12 +75,12 @@ func (body *ChangelogBody) ToMarkdown() string {
 	out.WriteString("\n\n")
 	if len(body.Features) > 0 {
 		out.WriteString("### Features and enhancements\n\n")
-		writeIssueLines(&out, body.Features)
+		writeIssueLines(&out, tk, body.Features)
 		out.WriteString("\n")
 	}
 	if len(body.Bugfixes) > 0 {
 		out.WriteString("### Bug fixes\n\n")
-		writeIssueLines(&out, body.Bugfixes)
+		writeIssueLines(&out, tk, body.Bugfixes)
 		out.WriteString("\n")
 	}
 	if len(body.BreakingChanges) > 0 {
@@ -99,21 +99,22 @@ func (body *ChangelogBody) ToMarkdown() string {
 	}
 	if len(body.PluginDevChanges) > 0 {
 		out.WriteString("### Plugin development fixes & changes\n\n")
-		writeIssueLines(&out, body.PluginDevChanges)
+		writeIssueLines(&out, tk, body.PluginDevChanges)
 		out.WriteString("\n")
 	}
 	return out.String()
 }
 
-func writeIssueLines(out *strings.Builder, issues []*github.Issue) {
+func writeIssueLines(out *strings.Builder, tk *toolkit.Toolkit, issues []*github.Issue) {
 	for _, issue := range issues {
-		out.WriteString(issueAsMarkdown(issue))
+		out.WriteString(issueAsMarkdown(issue, tk))
 	}
 }
 
 var titleHeadlinePattern = regexp.MustCompile(`^([^:]*:)`)
 
-func issueAsMarkdown(issue *github.Issue) string {
+func issueAsMarkdown(issue *github.Issue, tk *toolkit.Toolkit) string {
+	ctx := context.Background()
 	out := strings.Builder{}
 
 	title := issue.GetTitle()
@@ -129,8 +130,12 @@ func issueAsMarkdown(issue *github.Issue) string {
 		out.WriteString(". ")
 		out.WriteString(getIssueLink(issue))
 		if issue.IsPullRequest() && issue.User != nil {
-			out.WriteString(", ")
-			out.WriteString(getUserLink(issue.User))
+			userLink, err := getUserLink(ctx, issue, tk)
+			if err != nil {
+			} else {
+				out.WriteString(", ")
+				out.WriteString(userLink)
+			}
 		}
 	}
 	out.WriteString("\n")
@@ -159,7 +164,61 @@ func getIssueLink(issue *github.Issue) string {
 	return out.String()
 }
 
-func getUserLink(user *github.User) string {
+func isBotUser(user *github.User) bool {
+	if user == nil {
+		return false
+	}
+	switch user.GetLogin() {
+	case "grafanabot":
+		return true
+	default:
+		return false
+	}
+}
+
+func getOwnerAndRepo(issue *github.Issue) (string, string) {
+	url := issue.GetRepositoryURL()
+	pat := regexp.MustCompile("^https://api.github.com/repos/(.*?)/(.*?)$")
+	matches := pat.FindAllStringSubmatch(url, -1)
+	if len(matches) < 1 {
+		return "", ""
+	}
+	return matches[0][1], matches[0][2]
+}
+
+func getPRNumberFromBackportBranch(ref string) (int, error) {
+	pat := regexp.MustCompile("^backport-(\\d+)-to-v\\d+\\.\\d+\\.x$")
+	match := pat.FindStringSubmatch(ref)
+	if len(match) < 1 {
+		return -1, fmt.Errorf("no number found in ref")
+	}
+	result, err := strconv.ParseInt(match[1], 10, 64)
+	return int(result), err
+
+}
+
+func getUserLink(ctx context.Context, issue *github.Issue, tk *toolkit.Toolkit) (string, error) {
+	user := issue.User
+	if isBotUser(user) {
+		// If this looks like a bot user, take the author of the original PR if
+		// available:
+		owner, repo := getOwnerAndRepo(issue)
+		pr, _, err := tk.GitHubClient().PullRequests.Get(context.Background(), owner, repo, issue.GetNumber())
+		if err != nil {
+			return "", err
+		}
+		headBranch := pr.GetHead()
+		prRef := headBranch.GetRef()
+		origPrNumber, err := getPRNumberFromBackportBranch(prRef)
+		if err != nil {
+			return "", err
+		}
+		origPR, _, err := tk.GitHubClient().PullRequests.Get(context.Background(), owner, repo, origPrNumber)
+		if err != nil {
+			return "", err
+		}
+		user = origPR.User
+	}
 	out := strings.Builder{}
 	out.WriteString("[@")
 	out.WriteString(user.GetLogin())
@@ -167,7 +226,7 @@ func getUserLink(user *github.User) string {
 	out.WriteString("(https://github.com/")
 	out.WriteString(user.GetLogin())
 	out.WriteString(")")
-	return out.String()
+	return out.String(), nil
 }
 
 func issueHasLabel(issue *github.Issue, label string) bool {

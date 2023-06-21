@@ -88,7 +88,7 @@ func main() {
 	}
 
 	if preview {
-		fmt.Println(body.ToMarkdown())
+		fmt.Println(body.ToMarkdown(tk))
 		return
 	}
 
@@ -100,7 +100,7 @@ func main() {
 			}
 			defer input.Close()
 
-			if err := changelog.UpdateFile(ctx, os.Stdout, input, body); err != nil {
+			if err := changelog.UpdateFile(ctx, os.Stdout, input, body, tk); err != nil {
 				logger.Fatal().Err(err).Msg("Failed to update changelog file")
 			}
 		} else if repository != "" {
@@ -142,7 +142,7 @@ func main() {
 				logger.Fatal().Err(err).Msg("Failed to switch to target branch")
 			}
 
-			if err := changelog.UpdateFileAtPath(ctx, filepath.Join(repositoryPath, "CHANGELOG.md"), body); err != nil {
+			if err := changelog.UpdateFileAtPath(ctx, filepath.Join(repositoryPath, "CHANGELOG.md"), body, tk); err != nil {
 				logger.Fatal().Err(err).Msg("Failed to update changelog")
 			}
 
@@ -251,7 +251,7 @@ func main() {
 		)
 		if _, err := comm.CreateOrUpdatePost(ctx, community.PostInput{
 			Title:    fmt.Sprintf("Changelog: Updates in Grafana %s", body.Version),
-			Body:     body.ToMarkdown(),
+			Body:     body.ToMarkdown(tk),
 			Category: communityCategoryID,
 		}); err != nil {
 			logger.Fatal().Err(err).Msg("Failed to post to the forums")

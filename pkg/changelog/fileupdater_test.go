@@ -42,7 +42,7 @@ func TestFileUpdater(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			in := bytes.NewBufferString(test.input)
 			out := bytes.Buffer{}
-			require.NoError(t, UpdateFile(context.Background(), &out, in, &body))
+			require.NoError(t, UpdateFile(context.Background(), &out, in, &body, nil))
 			require.Equal(t, test.expectedOutput, out.String())
 		})
 	}
