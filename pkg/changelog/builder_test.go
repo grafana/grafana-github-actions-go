@@ -3,7 +3,6 @@ package changelog
 import (
 	"testing"
 
-	"github.com/google/go-github/v50/github"
 	"github.com/grafana/grafana-github-actions-go/pkg/ghgql"
 	"github.com/stretchr/testify/require"
 )
@@ -160,16 +159,4 @@ func addLabel(t *testing.T, issue *ghgql.PullRequest, labelName string) {
 
 func pointerOf[T any](value T) *T {
 	return &value
-}
-
-func TestGetOwnerAndRepo(t *testing.T) {
-	t.Run("valid", func(t *testing.T) {
-		testURL := "https://api.github.com/repos/grafana/grafana"
-		issue := &github.Issue{
-			RepositoryURL: &testURL,
-		}
-		owner, repo := getOwnerAndRepo(issue)
-		require.Equal(t, "grafana", owner)
-		require.Equal(t, "grafana", repo)
-	})
 }
