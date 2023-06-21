@@ -10,6 +10,7 @@ import (
 
 	"github.com/grafana/grafana-github-actions-go/pkg/changelog"
 	"github.com/grafana/grafana-github-actions-go/pkg/community"
+	"github.com/grafana/grafana-github-actions-go/pkg/ghgql"
 	"github.com/grafana/grafana-github-actions-go/pkg/git"
 	"github.com/grafana/grafana-github-actions-go/pkg/toolkit"
 
@@ -59,6 +60,12 @@ func main() {
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Failed to initialize toolkit")
 	}
+
+	ghc := ghgql.NewClient(tk.Token)
+	if _, err := ghc.GetMilestonedPRsForChangelog(ctx, "grafana", "grafana", 447); err != nil {
+		logger.Fatal().Err(err).Msg("Failed to fetch PRs")
+	}
+
 	if listInputs {
 		tk.ShowInputList()
 		return

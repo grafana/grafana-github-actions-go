@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 
 	"github.com/google/go-github/v50/github"
+	"github.com/grafana/grafana-github-actions-go/pkg/ghgql"
 	"github.com/rs/zerolog"
 )
 
@@ -17,7 +18,8 @@ const defaultMetricsAPIUsername = "6371"
 
 type Toolkit struct {
 	ghClient           *github.Client
-	token              string
+	ghgqlClient        *ghgql.Client
+	Token              string
 	metricsAPIKey      string
 	metricsAPIUsername string
 	metricsAPIEndpoint string
@@ -68,7 +70,8 @@ func Init(ctx context.Context, options ...ToolkitOption) (*Toolkit, error) {
 	}
 	client := github.NewTokenClient(ctx, token)
 	tk.ghClient = client
-	tk.token = token
+	tk.Token = token
+	tk.ghgqlClient = ghgql.NewClient(token)
 	tk.metricsAPIKey = tk.MustGetInput(ctx, "METRICS_API_KEY")
 	tk.metricsAPIEndpoint = tk.MustGetInput(ctx, "METRICS_API_ENDPOINT")
 	if tk.metricsAPIEndpoint == "" {
@@ -83,6 +86,10 @@ func Init(ctx context.Context, options ...ToolkitOption) (*Toolkit, error) {
 
 func (tk *Toolkit) GitHubClient() *github.Client {
 	return tk.ghClient
+}
+
+func (tk *Toolkit) GitHubGQLClient() *ghgql.Client {
+	return tk.ghgqlClient
 }
 
 type InputConfig struct {
@@ -140,7 +147,7 @@ func (tk *Toolkit) ShowInputList() {
 }
 
 func (tk *Toolkit) CloneRepository(ctx context.Context, targetFolder string, ownerAndRepo string) error {
-	cloneURL := fmt.Sprintf("https://x-access-token:%s@github.com/%s.git", tk.token, ownerAndRepo)
+	cloneURL := fmt.Sprintf("https://x-access-token:%s@github.com/%s.git", tk.Token, ownerAndRepo)
 	cmd := exec.CommandContext(ctx, "git", "clone", cloneURL, targetFolder)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

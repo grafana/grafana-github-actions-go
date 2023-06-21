@@ -3,11 +3,13 @@ package changelog
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
 
+	"github.com/grafana/grafana-github-actions-go/pkg/ghgql"
 	"github.com/grafana/grafana-github-actions-go/pkg/toolkit"
 
 	"github.com/google/go-github/v50/github"
@@ -19,6 +21,13 @@ const LabelToolkit = "area/grafana/toolkit"
 const LabelRuntime = "area/grafana/runtime"
 const LabelBug = "type/bug"
 
+type Entry struct {
+	Title                     string
+	PullRequestNumber         int
+	OriginalPullRequestNumber int
+	Labels                    []string
+}
+
 func Build(ctx context.Context, version string, tk *toolkit.Toolkit) (*ChangelogBody, error) {
 	body := newChangelogBody()
 
@@ -27,19 +36,21 @@ func Build(ctx context.Context, version string, tk *toolkit.Toolkit) (*Changelog
 		return nil, fmt.Errorf("failed to retrieve OSS milestone: %w", err)
 	}
 
-	ossIssues, err := getIssues(ctx, tk, "grafana/grafana", version)
+	ossIssues, err := tk.GitHubGQLClient().GetMilestonedPRsForChangelog(ctx, "grafana", "grafana", milestone.GetNumber())
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve OSS issues: %w", err)
 	}
 
-	enterpriseIssues, err := getIssues(ctx, tk, "grafana/grafana-enterprise", version)
+	enterpriseIssues, err := tk.GitHubGQLClient().GetMilestonedPRsForChangelog(ctx, "grafana", "grafana-enterprise", milestone.GetNumber())
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve Enterprise issues: %w", err)
 	}
 
-	issues := make([]*github.Issue, 0, len(ossIssues)+len(enterpriseIssues))
+	issues := make([]ghgql.PullRequest, 0, len(ossIssues)+len(enterpriseIssues))
 	issues = append(issues, ossIssues...)
 	issues = append(issues, enterpriseIssues...)
+
+	log.Printf("%d issues found", len(issues))
 
 	body.Version = version
 	if !milestone.GetDueOn().IsZero() {
@@ -58,9 +69,9 @@ type ChangelogBody struct {
 	ReleaseDate        string
 	DeprecationChanges []string
 	BreakingChanges    []string
-	PluginDevChanges   []*github.Issue
-	Bugfixes           []*github.Issue
-	Features           []*github.Issue
+	PluginDevChanges   []ghgql.PullRequest
+	Bugfixes           []ghgql.PullRequest
+	Features           []ghgql.PullRequest
 }
 
 func (body *ChangelogBody) ToMarkdown(tk *toolkit.Toolkit) string {
@@ -105,7 +116,7 @@ func (body *ChangelogBody) ToMarkdown(tk *toolkit.Toolkit) string {
 	return out.String()
 }
 
-func writeIssueLines(out *strings.Builder, tk *toolkit.Toolkit, issues []*github.Issue) {
+func writeIssueLines(out *strings.Builder, tk *toolkit.Toolkit, issues []ghgql.PullRequest) {
 	for _, issue := range issues {
 		out.WriteString(issueAsMarkdown(issue, tk))
 	}
@@ -113,7 +124,7 @@ func writeIssueLines(out *strings.Builder, tk *toolkit.Toolkit, issues []*github
 
 var titleHeadlinePattern = regexp.MustCompile(`^([^:]*:)`)
 
-func issueAsMarkdown(issue *github.Issue, tk *toolkit.Toolkit) string {
+func issueAsMarkdown(issue ghgql.PullRequest, tk *toolkit.Toolkit) string {
 	ctx := context.Background()
 	out := strings.Builder{}
 
@@ -124,12 +135,12 @@ func issueAsMarkdown(issue *github.Issue, tk *toolkit.Toolkit) string {
 
 	out.WriteString("- ")
 	out.WriteString(title)
-	if issueHasLabel(issue, LabelEnterprise) || strings.HasSuffix(issue.GetRepositoryURL(), "grafana-enterprise") {
+	if issueHasLabel(issue, LabelEnterprise) || issue.GetRepoName() == "grafana-enterprise" {
 		out.WriteString(". (Enterprise)")
 	} else {
 		out.WriteString(". ")
 		out.WriteString(getIssueLink(issue))
-		if issue.IsPullRequest() && issue.User != nil {
+		if issue.GetAuthorLogin() != "" {
 			userLink, err := getUserLink(ctx, issue, tk)
 			if err != nil {
 			} else {
@@ -152,7 +163,7 @@ func stripReleaseStreamPrefix(input string) string {
 	return input
 }
 
-func getIssueLink(issue *github.Issue) string {
+func getIssueLink(issue ghgql.PullRequest) string {
 	num := strconv.Itoa(issue.GetNumber())
 	out := strings.Builder{}
 	out.WriteString("[#")
@@ -164,11 +175,8 @@ func getIssueLink(issue *github.Issue) string {
 	return out.String()
 }
 
-func isBotUser(user *github.User) bool {
-	if user == nil {
-		return false
-	}
-	switch user.GetLogin() {
+func isBotUser(login string) bool {
+	switch login {
 	case "grafanabot":
 		return true
 	default:
@@ -197,59 +205,50 @@ func getPRNumberFromBackportBranch(ref string) (int, error) {
 
 }
 
-func getUserLink(ctx context.Context, issue *github.Issue, tk *toolkit.Toolkit) (string, error) {
-	user := issue.User
+func getUserLink(ctx context.Context, issue ghgql.PullRequest, tk *toolkit.Toolkit) (string, error) {
+	user := issue.GetAuthorLogin()
 	if isBotUser(user) {
+		log.Printf("PR#%d created by bot. Fetching original author from %s", issue.GetNumber(), issue.GetHeadRefName())
 		// If this looks like a bot user, take the author of the original PR if
 		// available:
-		owner, repo := getOwnerAndRepo(issue)
-		pr, _, err := tk.GitHubClient().PullRequests.Get(context.Background(), owner, repo, issue.GetNumber())
+		origPrNumber, err := getPRNumberFromBackportBranch(issue.GetHeadRefName())
 		if err != nil {
 			return "", err
 		}
-		headBranch := pr.GetHead()
-		prRef := headBranch.GetRef()
-		origPrNumber, err := getPRNumberFromBackportBranch(prRef)
+		origPR, _, err := tk.GitHubClient().PullRequests.Get(context.Background(), issue.GetRepoOwner(), issue.GetRepoName(), origPrNumber)
 		if err != nil {
 			return "", err
 		}
-		origPR, _, err := tk.GitHubClient().PullRequests.Get(context.Background(), owner, repo, origPrNumber)
-		if err != nil {
-			return "", err
-		}
-		user = origPR.User
+		user = origPR.User.GetLogin()
 	}
 	out := strings.Builder{}
 	out.WriteString("[@")
-	out.WriteString(user.GetLogin())
+	out.WriteString(user)
 	out.WriteString("]")
 	out.WriteString("(https://github.com/")
-	out.WriteString(user.GetLogin())
+	out.WriteString(user)
 	out.WriteString(")")
 	return out.String(), nil
 }
 
-func issueHasLabel(issue *github.Issue, label string) bool {
-	if issue == nil || issue.Labels == nil {
-		return false
-	}
+func issueHasLabel(issue ghgql.PullRequest, label string) bool {
 	for _, l := range issue.Labels {
-		if l.GetName() == label {
+		if l == label {
 			return true
 		}
 	}
 	return false
 }
 
-func getBreakingChangeNotice(issue *github.Issue) string {
+func getBreakingChangeNotice(issue ghgql.PullRequest) string {
 	return getNotice(issue, "Release notice breaking change")
 }
 
-func getDeprecationNotice(issue *github.Issue) string {
+func getDeprecationNotice(issue ghgql.PullRequest) string {
 	return getNotice(issue, "Deprecation notice")
 }
 
-func getNotice(issue *github.Issue, sectionStart string) string {
+func getNotice(issue ghgql.PullRequest, sectionStart string) string {
 	lines := strings.Split(issue.GetBody(), "\n")
 	startFound := false
 	result := strings.Builder{}
@@ -293,13 +292,13 @@ func newChangelogBody() *ChangelogBody {
 	return &ChangelogBody{
 		DeprecationChanges: make([]string, 0, 10),
 		BreakingChanges:    make([]string, 0, 10),
-		PluginDevChanges:   make([]*github.Issue, 0, 10),
-		Bugfixes:           make([]*github.Issue, 0, 10),
-		Features:           make([]*github.Issue, 0, 10),
+		PluginDevChanges:   make([]ghgql.PullRequest, 0, 10),
+		Bugfixes:           make([]ghgql.PullRequest, 0, 10),
+		Features:           make([]ghgql.PullRequest, 0, 10),
 	}
 }
 
-func addToBody(body *ChangelogBody, issue *github.Issue) {
+func addToBody(body *ChangelogBody, issue ghgql.PullRequest) {
 	if notice := getBreakingChangeNotice(issue); notice != "" {
 		body.BreakingChanges = append(body.BreakingChanges, notice)
 	}
@@ -319,7 +318,7 @@ func addToBody(body *ChangelogBody, issue *github.Issue) {
 	}
 }
 
-func isBug(issue *github.Issue) bool {
+func isBug(issue ghgql.PullRequest) bool {
 	title := issue.GetTitle()
 	if strings.Contains(strings.ToLower(title), "fix") {
 		return true

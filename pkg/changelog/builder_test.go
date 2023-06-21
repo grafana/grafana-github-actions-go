@@ -4,18 +4,19 @@ import (
 	"testing"
 
 	"github.com/google/go-github/v50/github"
+	"github.com/grafana/grafana-github-actions-go/pkg/ghgql"
 	"github.com/stretchr/testify/require"
 )
 
 func TestDeprecationNotice(t *testing.T) {
 	tests := []struct {
 		name           string
-		issue          func(*github.Issue)
+		issue          func(*ghgql.PullRequest)
 		expectedOutput string
 	}{
 		{
 			name: "single-line",
-			issue: func(i *github.Issue) {
+			issue: func(i *ghgql.PullRequest) {
 				i.Number = pointerOf(123)
 				i.Body = pointerOf("something else\n## Deprecation notice:\nhello.")
 			},
@@ -23,7 +24,7 @@ func TestDeprecationNotice(t *testing.T) {
 		},
 		{
 			name: "blank-line-after-start",
-			issue: func(i *github.Issue) {
+			issue: func(i *ghgql.PullRequest) {
 				i.Number = pointerOf(123)
 				i.Body = pointerOf("something else\n## Deprecation notice:\n\n\nhello.")
 			},
@@ -31,7 +32,7 @@ func TestDeprecationNotice(t *testing.T) {
 		},
 		{
 			name: "multi-line",
-			issue: func(i *github.Issue) {
+			issue: func(i *ghgql.PullRequest) {
 				i.Number = pointerOf(123)
 				i.Body = pointerOf("something else\n## Deprecation notice:\nhello\nworld.")
 			},
@@ -39,7 +40,7 @@ func TestDeprecationNotice(t *testing.T) {
 		},
 		{
 			name: "strip-extra-empty-tail",
-			issue: func(i *github.Issue) {
+			issue: func(i *ghgql.PullRequest) {
 				i.Number = pointerOf(123)
 				i.Body = pointerOf("something else\n## Deprecation notice:\nhello\nworld.\n\n\n\n\n")
 			},
@@ -48,7 +49,7 @@ func TestDeprecationNotice(t *testing.T) {
 		// If the notice ends with a codeblock, then we have to introduce an extra newline:
 		{
 			name: "codeblock-end",
-			issue: func(i *github.Issue) {
+			issue: func(i *ghgql.PullRequest) {
 				i.Number = pointerOf(123)
 				i.Body = pointerOf("something else\n## Deprecation notice:\n```\nhello\n```")
 			},
@@ -58,7 +59,7 @@ func TestDeprecationNotice(t *testing.T) {
 		// more) then only a single newline should remain:
 		{
 			name: "codeblock-end-plus-newline",
-			issue: func(i *github.Issue) {
+			issue: func(i *ghgql.PullRequest) {
 				i.Number = pointerOf(123)
 				i.Body = pointerOf("something else\n## Deprecation notice:\n```\nhello\n```\n\n\n")
 			},
@@ -67,9 +68,9 @@ func TestDeprecationNotice(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			issue := &github.Issue{}
+			issue := &ghgql.PullRequest{}
 			test.issue(issue)
-			output := getDeprecationNotice(issue)
+			output := getDeprecationNotice(*issue)
 			require.Equal(t, test.expectedOutput, output)
 		})
 	}
@@ -78,12 +79,12 @@ func TestDeprecationNotice(t *testing.T) {
 func TestIssueLine(t *testing.T) {
 	tests := []struct {
 		name           string
-		issue          func(*github.Issue)
+		issue          func(*ghgql.PullRequest)
 		expectedOutput string
 	}{
 		{
 			name: "enterprise",
-			issue: func(i *github.Issue) {
+			issue: func(i *ghgql.PullRequest) {
 				i.Title = pointerOf("hello")
 				addLabel(t, i, "enterprise")
 			},
@@ -91,7 +92,7 @@ func TestIssueLine(t *testing.T) {
 		},
 		{
 			name: "version-prefix",
-			issue: func(i *github.Issue) {
+			issue: func(i *ghgql.PullRequest) {
 				i.Title = pointerOf("[v9.5.x] Chore: hello")
 				i.Number = pointerOf(123)
 			},
@@ -99,7 +100,7 @@ func TestIssueLine(t *testing.T) {
 		},
 		{
 			name: "version-prefix-doubledigit",
-			issue: func(i *github.Issue) {
+			issue: func(i *ghgql.PullRequest) {
 				i.Title = pointerOf("[v10.0.x] Chore: hello")
 				i.Number = pointerOf(123)
 			},
@@ -107,7 +108,7 @@ func TestIssueLine(t *testing.T) {
 		},
 		{
 			name: "version-prefix-plus-colon",
-			issue: func(i *github.Issue) {
+			issue: func(i *ghgql.PullRequest) {
 				i.Title = pointerOf("[v10.0.x]: Chore: hello")
 				i.Number = pointerOf(123)
 			},
@@ -115,7 +116,7 @@ func TestIssueLine(t *testing.T) {
 		},
 		{
 			name: "enterprise-with-category",
-			issue: func(i *github.Issue) {
+			issue: func(i *ghgql.PullRequest) {
 				i.Title = pointerOf("hello: world")
 				addLabel(t, i, "enterprise")
 			},
@@ -123,7 +124,7 @@ func TestIssueLine(t *testing.T) {
 		},
 		{
 			name: "oss-issue",
-			issue: func(i *github.Issue) {
+			issue: func(i *ghgql.PullRequest) {
 				i.Title = pointerOf("hello")
 				i.Number = pointerOf(123)
 			},
@@ -131,13 +132,10 @@ func TestIssueLine(t *testing.T) {
 		},
 		{
 			name: "oss-pull-request",
-			issue: func(i *github.Issue) {
+			issue: func(i *ghgql.PullRequest) {
 				i.Title = pointerOf("hello")
 				i.Number = pointerOf(123)
-				i.User = &github.User{
-					Login: pointerOf("author"),
-				}
-				i.PullRequestLinks = &github.PullRequestLinks{}
+				i.AuthorLogin = pointerOf("author")
 			},
 			expectedOutput: "- hello. [#123](https://github.com/grafana/grafana/issues/123), [@author](https://github.com/author)\n",
 		},
@@ -145,21 +143,19 @@ func TestIssueLine(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			issue := &github.Issue{}
+			issue := &ghgql.PullRequest{}
 			test.issue(issue)
-			output := issueAsMarkdown(issue, nil)
+			output := issueAsMarkdown(*issue, nil)
 			require.Equal(t, test.expectedOutput, output)
 		})
 	}
 }
 
-func addLabel(t *testing.T, issue *github.Issue, labelName string) {
+func addLabel(t *testing.T, issue *ghgql.PullRequest, labelName string) {
 	if issue.Labels == nil {
-		issue.Labels = make([]*github.Label, 0, 5)
+		issue.Labels = make([]string, 0, 5)
 	}
-	label := &github.Label{}
-	label.Name = pointerOf(labelName)
-	issue.Labels = append(issue.Labels, label)
+	issue.Labels = append(issue.Labels, labelName)
 }
 
 func pointerOf[T any](value T) *T {
