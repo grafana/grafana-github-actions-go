@@ -80,15 +80,17 @@ func UpdateFile(ctx context.Context, out io.Writer, in io.Reader, rendered strin
 	}
 
 	for idx, line := range lines {
+		// If we are in the range that we want to replace, skip those lines:
+		if replaceAfterIdx != -1 && replaceBeforeIdx != -1 && idx <= replaceBeforeIdx && idx >= replaceAfterIdx {
+			continue
+		}
 		if replaceAfterIdx != -1 && replaceAfterIdx == idx {
 			insertEntry()
 		}
 		if insertAfterIdx < idx {
 			insertEntry()
 		}
-		if replaceBeforeIdx != -1 && idx <= replaceBeforeIdx {
-			continue
-		}
+
 		out.Write([]byte(line))
 		out.Write([]byte("\n"))
 		if insertAfterIdx == idx {
