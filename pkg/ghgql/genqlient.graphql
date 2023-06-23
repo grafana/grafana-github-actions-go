@@ -1,0 +1,27 @@
+query getMilestonedPullRequests($owner: String!, $repo: String!, $milestoneNumber: Int!, $cursor: String!) {
+  repository(owner: $owner, name: $repo) {
+    milestone(number: $milestoneNumber) {
+      pullRequests(first: 20, states: [MERGED], labels: ["add to changelog"], after: $cursor)  {
+        pageInfo {
+          endCursor
+          hasNextPage
+        }
+        nodes {
+          number
+          title
+          body
+          labels(first: 20) {
+            nodes {
+              name
+            }
+          }
+          author {
+            resourcePath
+            login
+          }
+          headRefName
+        }
+      }
+    }
+  }
+}

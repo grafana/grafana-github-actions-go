@@ -59,6 +59,7 @@ func main() {
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Failed to initialize toolkit")
 	}
+
 	if listInputs {
 		tk.ShowInputList()
 		return
@@ -87,23 +88,37 @@ func main() {
 		logger.Fatal().Err(err).Msg("Failed to build changelog")
 	}
 
-	if preview {
-		fmt.Println(body.ToMarkdown())
-		return
+	renderer := changelog.NewRenderer(tk)
+	renderedMarkdown, err := renderer.Render(ctx, body)
+	if err != nil {
+		logger.Fatal().Err(err).Msg("Failed to render changelog to markdown")
 	}
 
-	if !skipPR {
+	if preview {
 		if changelogFile != "" {
 			input, err := os.Open(changelogFile)
 			if err != nil {
 				logger.Fatal().Err(err).Msg("Failed to open changelog file")
 			}
 			defer input.Close()
-
-			if err := changelog.UpdateFile(ctx, os.Stdout, input, body); err != nil {
+			if err := changelog.UpdateFile(ctx, os.Stdout, input, renderedMarkdown, body); err != nil {
 				logger.Fatal().Err(err).Msg("Failed to update changelog file")
 			}
-		} else if repository != "" {
+		} else {
+			fmt.Println(renderedMarkdown)
+		}
+		return
+	}
+	if changelogFile != "" {
+		logger.Info().Msgf("Updating %s", changelogFile)
+
+		if err := changelog.UpdateFileAtPath(ctx, changelogFile, renderedMarkdown, body); err != nil {
+			logger.Fatal().Err(err).Msg("Failed to update changelog file")
+		}
+	}
+
+	if !skipPR {
+		if repository != "" {
 			// If a changelog repository is provided, clone that repo at the
 			// provided revision and use the changelog from there.
 			elems := strings.Split(repository, "/")
@@ -142,7 +157,7 @@ func main() {
 				logger.Fatal().Err(err).Msg("Failed to switch to target branch")
 			}
 
-			if err := changelog.UpdateFileAtPath(ctx, filepath.Join(repositoryPath, "CHANGELOG.md"), body); err != nil {
+			if err := changelog.UpdateFileAtPath(ctx, filepath.Join(repositoryPath, "CHANGELOG.md"), renderedMarkdown, body); err != nil {
 				logger.Fatal().Err(err).Msg("Failed to update changelog")
 			}
 
@@ -251,7 +266,7 @@ func main() {
 		)
 		if _, err := comm.CreateOrUpdatePost(ctx, community.PostInput{
 			Title:    fmt.Sprintf("Changelog: Updates in Grafana %s", body.Version),
-			Body:     body.ToMarkdown(),
+			Body:     renderedMarkdown,
 			Category: communityCategoryID,
 		}); err != nil {
 			logger.Fatal().Err(err).Msg("Failed to post to the forums")

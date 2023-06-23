@@ -11,6 +11,9 @@ import (
 func TestFileUpdater(t *testing.T) {
 	body := ChangelogBody{}
 	body.Version = "9.4.4"
+	r := NewRenderer(nil)
+	renderedMarkdown, err := r.Render(context.Background(), &body)
+	require.NoError(t, err)
 	tests := []struct {
 		name           string
 		input          string
@@ -42,7 +45,7 @@ func TestFileUpdater(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			in := bytes.NewBufferString(test.input)
 			out := bytes.Buffer{}
-			require.NoError(t, UpdateFile(context.Background(), &out, in, &body))
+			require.NoError(t, UpdateFile(context.Background(), &out, in, renderedMarkdown, &body))
 			require.Equal(t, test.expectedOutput, out.String())
 		})
 	}
