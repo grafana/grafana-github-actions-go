@@ -6,14 +6,15 @@ import (
 )
 
 type PullRequest struct {
-	Number      *int
-	Title       *string
-	Body        *string
-	Labels      []string
-	AuthorLogin *string
-	RepoOwner   *string
-	RepoName    *string
-	HeadRefName *string
+	Number             *int
+	Title              *string
+	Body               *string
+	Labels             []string
+	AuthorResourcePath *string
+	AuthorLogin        *string
+	RepoOwner          *string
+	RepoName           *string
+	HeadRefName        *string
 }
 
 func (pr *PullRequest) GetNumber() int {
@@ -38,6 +39,13 @@ func (pr *PullRequest) GetAuthorLogin() string {
 		return ""
 	}
 	return *pr.AuthorLogin
+}
+
+func (pr *PullRequest) GetAuthorResourcePath() string {
+	if pr.AuthorResourcePath == nil {
+		return ""
+	}
+	return *pr.AuthorResourcePath
 }
 
 func (pr *PullRequest) GetRepoOwner() string {
@@ -75,19 +83,21 @@ func (c *Client) GetMilestonedPRsForChangelog(ctx context.Context, repoOwner str
 				labels = append(labels, l.Name)
 			}
 			author := pr.Author.GetLogin()
+			authorResourcePath := pr.Author.GetResourcePath()
 			number := pr.Number
 			title := pr.Title
 			body := pr.Body
 			headRefName := pr.HeadRefName
 			r := PullRequest{
-				Number:      &number,
-				Title:       &title,
-				Body:        &body,
-				Labels:      labels,
-				RepoName:    &repoName,
-				RepoOwner:   &repoOwner,
-				AuthorLogin: &author,
-				HeadRefName: &headRefName,
+				Number:             &number,
+				Title:              &title,
+				Body:               &body,
+				Labels:             labels,
+				RepoName:           &repoName,
+				RepoOwner:          &repoOwner,
+				AuthorLogin:        &author,
+				AuthorResourcePath: &authorResourcePath,
+				HeadRefName:        &headRefName,
 			}
 			result = append(result, r)
 		}

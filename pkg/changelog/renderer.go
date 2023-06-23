@@ -135,8 +135,11 @@ func getIssueLink(issue ghgql.PullRequest) string {
 	return out.String()
 }
 
-func isBotUser(login string) bool {
-	switch login {
+func isBotUser(issue ghgql.PullRequest) bool {
+	if strings.HasPrefix(issue.GetAuthorResourcePath(), "/apps/") {
+		return true
+	}
+	switch issue.GetAuthorLogin() {
 	case "grafanabot":
 		return true
 	default:
@@ -158,7 +161,7 @@ func getPRNumberFromBackportBranch(ref string) (int, error) {
 func (r *defaultRenderer) getUserLink(ctx context.Context, issue ghgql.PullRequest) (string, error) {
 	logger := zerolog.Ctx(ctx)
 	user := issue.GetAuthorLogin()
-	if isBotUser(user) {
+	if isBotUser(issue) {
 		logger.Info().Msgf("PR#%d created by bot. Fetching original author from %s", issue.GetNumber(), issue.GetHeadRefName())
 		// If this looks like a bot user, take the author of the original PR if
 		// available:

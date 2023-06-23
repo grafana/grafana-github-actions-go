@@ -4,3 +4,6 @@ schema: github.schema.graphql
 operations:
 - genqlient.graphql
 generated: generated.go
+bindings:
+  URI:
+    type: string

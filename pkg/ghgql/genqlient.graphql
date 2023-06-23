@@ -16,6 +16,7 @@ query getMilestonedPullRequests($owner: String!, $repo: String!, $milestoneNumbe
             }
           }
           author {
+            resourcePath
             login
           }
           headRefName

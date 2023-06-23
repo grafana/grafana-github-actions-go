@@ -221,6 +221,11 @@ type getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConnecti
 	implementsGraphQLInterfacegetMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConnectionNodesPullRequestAuthorActor()
 	// GetTypename returns the receiver's concrete GraphQL type-name (see interface doc for possible values).
 	GetTypename() string
+	// GetResourcePath returns the interface-field "resourcePath" from its implementation.
+	// The GraphQL interface field's documentation follows.
+	//
+	// The HTTP path for this actor.
+	GetResourcePath() string
 	// GetLogin returns the interface-field "login" from its implementation.
 	// The GraphQL interface field's documentation follows.
 	//
@@ -335,6 +340,8 @@ func __marshalgetMilestonedPullRequestsRepositoryMilestonePullRequestsPullReques
 // A special type of user which takes actions on behalf of GitHub Apps.
 type getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConnectionNodesPullRequestAuthorBot struct {
 	Typename string `json:"__typename"`
+	// The HTTP path for this actor.
+	ResourcePath string `json:"resourcePath"`
 	// The username of the actor.
 	Login string `json:"login"`
 }
@@ -342,6 +349,11 @@ type getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConnecti
 // GetTypename returns getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConnectionNodesPullRequestAuthorBot.Typename, and is useful for accessing the field via an interface.
 func (v *getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConnectionNodesPullRequestAuthorBot) GetTypename() string {
 	return v.Typename
+}
+
+// GetResourcePath returns getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConnectionNodesPullRequestAuthorBot.ResourcePath, and is useful for accessing the field via an interface.
+func (v *getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConnectionNodesPullRequestAuthorBot) GetResourcePath() string {
+	return v.ResourcePath
 }
 
 // GetLogin returns getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConnectionNodesPullRequestAuthorBot.Login, and is useful for accessing the field via an interface.
@@ -355,6 +367,8 @@ func (v *getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConn
 // An account for a user who is an admin of an enterprise or a member of an enterprise through one or more organizations.
 type getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConnectionNodesPullRequestAuthorEnterpriseUserAccount struct {
 	Typename string `json:"__typename"`
+	// The HTTP path for this actor.
+	ResourcePath string `json:"resourcePath"`
 	// The username of the actor.
 	Login string `json:"login"`
 }
@@ -362,6 +376,11 @@ type getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConnecti
 // GetTypename returns getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConnectionNodesPullRequestAuthorEnterpriseUserAccount.Typename, and is useful for accessing the field via an interface.
 func (v *getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConnectionNodesPullRequestAuthorEnterpriseUserAccount) GetTypename() string {
 	return v.Typename
+}
+
+// GetResourcePath returns getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConnectionNodesPullRequestAuthorEnterpriseUserAccount.ResourcePath, and is useful for accessing the field via an interface.
+func (v *getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConnectionNodesPullRequestAuthorEnterpriseUserAccount) GetResourcePath() string {
+	return v.ResourcePath
 }
 
 // GetLogin returns getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConnectionNodesPullRequestAuthorEnterpriseUserAccount.Login, and is useful for accessing the field via an interface.
@@ -375,6 +394,8 @@ func (v *getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConn
 // A placeholder user for attribution of imported data on GitHub.
 type getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConnectionNodesPullRequestAuthorMannequin struct {
 	Typename string `json:"__typename"`
+	// The HTTP path for this actor.
+	ResourcePath string `json:"resourcePath"`
 	// The username of the actor.
 	Login string `json:"login"`
 }
@@ -382,6 +403,11 @@ type getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConnecti
 // GetTypename returns getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConnectionNodesPullRequestAuthorMannequin.Typename, and is useful for accessing the field via an interface.
 func (v *getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConnectionNodesPullRequestAuthorMannequin) GetTypename() string {
 	return v.Typename
+}
+
+// GetResourcePath returns getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConnectionNodesPullRequestAuthorMannequin.ResourcePath, and is useful for accessing the field via an interface.
+func (v *getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConnectionNodesPullRequestAuthorMannequin) GetResourcePath() string {
+	return v.ResourcePath
 }
 
 // GetLogin returns getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConnectionNodesPullRequestAuthorMannequin.Login, and is useful for accessing the field via an interface.
@@ -395,6 +421,8 @@ func (v *getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConn
 // An account on GitHub, with one or more owners, that has repositories, members and teams.
 type getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConnectionNodesPullRequestAuthorOrganization struct {
 	Typename string `json:"__typename"`
+	// The HTTP path for this actor.
+	ResourcePath string `json:"resourcePath"`
 	// The username of the actor.
 	Login string `json:"login"`
 }
@@ -402,6 +430,11 @@ type getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConnecti
 // GetTypename returns getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConnectionNodesPullRequestAuthorOrganization.Typename, and is useful for accessing the field via an interface.
 func (v *getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConnectionNodesPullRequestAuthorOrganization) GetTypename() string {
 	return v.Typename
+}
+
+// GetResourcePath returns getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConnectionNodesPullRequestAuthorOrganization.ResourcePath, and is useful for accessing the field via an interface.
+func (v *getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConnectionNodesPullRequestAuthorOrganization) GetResourcePath() string {
+	return v.ResourcePath
 }
 
 // GetLogin returns getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConnectionNodesPullRequestAuthorOrganization.Login, and is useful for accessing the field via an interface.
@@ -415,6 +448,8 @@ func (v *getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConn
 // A user is an individual's account on GitHub that owns repositories and can make new content.
 type getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConnectionNodesPullRequestAuthorUser struct {
 	Typename string `json:"__typename"`
+	// The HTTP path for this actor.
+	ResourcePath string `json:"resourcePath"`
 	// The username of the actor.
 	Login string `json:"login"`
 }
@@ -422,6 +457,11 @@ type getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConnecti
 // GetTypename returns getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConnectionNodesPullRequestAuthorUser.Typename, and is useful for accessing the field via an interface.
 func (v *getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConnectionNodesPullRequestAuthorUser) GetTypename() string {
 	return v.Typename
+}
+
+// GetResourcePath returns getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConnectionNodesPullRequestAuthorUser.ResourcePath, and is useful for accessing the field via an interface.
+func (v *getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConnectionNodesPullRequestAuthorUser) GetResourcePath() string {
+	return v.ResourcePath
 }
 
 // GetLogin returns getMilestonedPullRequestsRepositoryMilestonePullRequestsPullRequestConnectionNodesPullRequestAuthorUser.Login, and is useful for accessing the field via an interface.
@@ -510,6 +550,7 @@ query getMilestonedPullRequests ($owner: String!, $repo: String!, $milestoneNumb
 					}
 					author {
 						__typename
+						resourcePath
 						login
 					}
 					headRefName
