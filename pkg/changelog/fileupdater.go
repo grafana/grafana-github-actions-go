@@ -10,20 +10,19 @@ import (
 	"regexp"
 
 	"github.com/coreos/go-semver/semver"
-	"github.com/grafana/grafana-github-actions-go/pkg/toolkit"
 )
 
 var versionEndLinePattern = regexp.MustCompile("<!-- (.*) END -->")
 var versionStartLinePattern = regexp.MustCompile("<!-- (.*) START -->")
 
-func UpdateFileAtPath(ctx context.Context, file string, body *ChangelogBody, tk *toolkit.Toolkit) error {
+func UpdateFileAtPath(ctx context.Context, file string, rendered string, body *ChangelogBody) error {
 	input, err := os.Open(file)
 	if err != nil {
 		return fmt.Errorf("failed to open input file: %w", err)
 	}
 	defer input.Close()
 	output := bytes.Buffer{}
-	if err := UpdateFile(ctx, &output, input, body, tk); err != nil {
+	if err := UpdateFile(ctx, &output, input, rendered, body); err != nil {
 		return err
 	}
 	return os.WriteFile(file, output.Bytes(), 0o644)
@@ -31,7 +30,7 @@ func UpdateFileAtPath(ctx context.Context, file string, body *ChangelogBody, tk 
 
 // UpdateFile receives the original changelog data via the `in` parameter and
 // writes it back to the `out` parameter with the `body` behing inserted.
-func UpdateFile(ctx context.Context, out io.Writer, in io.Reader, body *ChangelogBody, tk *toolkit.Toolkit) error {
+func UpdateFile(ctx context.Context, out io.Writer, in io.Reader, rendered string, body *ChangelogBody) error {
 	newVersion := semver.New(body.Version)
 	scanner := bufio.NewScanner(in)
 	scanner.Split(bufio.ScanLines)
@@ -45,7 +44,7 @@ func UpdateFile(ctx context.Context, out io.Writer, in io.Reader, body *Changelo
 		out.Write([]byte(body.Version))
 		out.Write([]byte(" START -->\n\n"))
 
-		out.Write([]byte(body.ToMarkdown(tk)))
+		out.Write([]byte(rendered))
 
 		out.Write([]byte("<!-- "))
 		out.Write([]byte(body.Version))

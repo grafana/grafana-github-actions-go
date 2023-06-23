@@ -141,10 +141,11 @@ func TestIssueLine(t *testing.T) {
 	}
 
 	for _, test := range tests {
+		r := defaultRenderer{}
 		t.Run(test.name, func(t *testing.T) {
 			issue := &ghgql.PullRequest{}
 			test.issue(issue)
-			output := issueAsMarkdown(*issue, nil)
+			output := r.issueAsMarkdown(*issue)
 			require.Equal(t, test.expectedOutput, output)
 		})
 	}
