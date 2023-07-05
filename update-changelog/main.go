@@ -78,7 +78,12 @@ func main() {
 		logger.Fatal().Msg("No version specified")
 	}
 
-	sv, err := semver.NewVersion(version)
+	rawSV := version
+	if strings.HasSuffix(rawSV, ".x") {
+		rawSV = strings.TrimSuffix(rawSV, ".x") + ".0"
+	}
+
+	sv, err := semver.NewVersion(rawSV)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Invalid version number")
 	}

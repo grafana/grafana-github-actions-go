@@ -7,6 +7,7 @@ import (
 
 	"github.com/grafana/grafana-github-actions-go/pkg/ghgql"
 	"github.com/grafana/grafana-github-actions-go/pkg/toolkit"
+	"github.com/rs/zerolog"
 
 	"github.com/google/go-github/v50/github"
 )
@@ -25,6 +26,7 @@ type Entry struct {
 }
 
 func Build(ctx context.Context, version string, tk *toolkit.Toolkit) (*ChangelogBody, error) {
+	logger := zerolog.Ctx(ctx)
 	body := newChangelogBody()
 
 	milestone, err := getMilestone(ctx, tk, "grafana/grafana", version)
@@ -36,12 +38,21 @@ func Build(ctx context.Context, version string, tk *toolkit.Toolkit) (*Changelog
 		return nil, fmt.Errorf("failed to retrieve OSS milestone: %w", err)
 	}
 
-	ossIssues, err := tk.GitHubGQLClient().GetMilestonedPRsForChangelog(ctx, "grafana", "grafana", milestone.GetNumber())
+	filter := func(pr *ghgql.PullRequest) bool {
+		for _, l := range pr.Labels {
+			if l == "backport" || l == "no-backport" || l == "backport v10.0.x" {
+				return true
+			}
+		}
+		return false
+	}
+
+	ossIssues, err := tk.GitHubGQLClient().GetMilestonedPRsForChangelog(ctx, "grafana", "grafana", milestone, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve OSS issues: %w", err)
 	}
 
-	enterpriseIssues, err := tk.GitHubGQLClient().GetMilestonedPRsForChangelog(ctx, "grafana", "grafana-enterprise", enterpriseMilestone.GetNumber())
+	enterpriseIssues, err := tk.GitHubGQLClient().GetMilestonedPRsForChangelog(ctx, "grafana", "grafana-enterprise", enterpriseMilestone, filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve Enterprise issues: %w", err)
 	}
@@ -49,6 +60,8 @@ func Build(ctx context.Context, version string, tk *toolkit.Toolkit) (*Changelog
 	issues := make([]ghgql.PullRequest, 0, len(ossIssues)+len(enterpriseIssues))
 	issues = append(issues, ossIssues...)
 	issues = append(issues, enterpriseIssues...)
+
+	logger.Info().Msgf("%d issues in total", len(issues))
 
 	body.Version = version
 	if !milestone.GetDueOn().IsZero() {

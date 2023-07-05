@@ -1,3 +1,30 @@
+query getPullRequest($owner: String!, $repo: String!, $prNumber: Int!) {
+  repository(owner: $owner, name: $repo) {
+    pullRequest(number: $prNumber)  {
+      number
+      title
+      body
+      labels(first: 20) {
+        nodes {
+          name
+        }
+      }
+      author {
+        resourcePath
+        login
+      }
+      headRefName
+      # @genqlient(bind:"*github.com/grafana/grafana-github-actions-go/pkg/ghgql/types.GQLMilestone")
+      milestone {
+        title
+        number
+        dueOn
+        closedAt
+      }
+    }
+  }
+}
+
 query getMilestonedPullRequests($owner: String!, $repo: String!, $milestoneNumber: Int!, $cursor: String!) {
   repository(owner: $owner, name: $repo) {
     milestone(number: $milestoneNumber) {
@@ -20,6 +47,13 @@ query getMilestonedPullRequests($owner: String!, $repo: String!, $milestoneNumbe
             login
           }
           headRefName
+          # @genqlient(bind:"*github.com/grafana/grafana-github-actions-go/pkg/ghgql/types.GQLMilestone")
+          milestone {
+            title
+            number
+            dueOn
+            closedAt
+          }
         }
       }
     }
