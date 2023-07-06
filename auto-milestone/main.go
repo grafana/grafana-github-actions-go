@@ -12,6 +12,7 @@ import (
 	"syscall"
 
 	"github.com/google/go-github/v50/github"
+	"github.com/grafana/grafana-github-actions-go/pkg/ghgql"
 	"github.com/grafana/grafana-github-actions-go/pkg/toolkit"
 	"github.com/rs/zerolog"
 	"github.com/spf13/pflag"
@@ -94,18 +95,90 @@ func main() {
 		}
 	}
 
+	prMilestone := pr.GetMilestone()
+
+	if prMilestone != nil {
+		logger.Info().Msgf("Current milestone: %s", prMilestone.GetTitle())
+	}
 	logger.Info().Msgf("Target milestone name: %s", targetMilestoneName)
 	milestone, err := tk.GitHubGQLClient().GetMilestoneByTitle(ctx, repoOwner, repoName, targetMilestoneName)
 	if err != nil {
 		logger.Fatal().Msgf("Failed to find milestone matching `%s`", targetMilestoneName)
 	}
-	logger.Info().Msgf("Milestone number: %d", milestone.Number)
+
+	a := determineAction(ctx, prMilestone, milestone)
+
 	if doPreview {
+		logger.Info().Msgf("The following action would be performed: %v", a)
 		return
 	}
 
-	// TODO: Check if the PR has a milestone. If it does and matches the one we
-	// picked, there's nothing to do. Otherwise overwrite that milestone.
+	switch a.Type {
+	case actionTypeNoop:
+		logger.Info().Msgf("No action necessary.")
+		return
+	case actionTypeSetToMilestone:
+		logger.Info().Msgf("Updating PR to %s", a.Milestone)
+		if _, _, err := gh.Issues.Edit(ctx, repoOwner, repoName, prNumber, &github.IssueRequest{
+			Milestone: &a.Milestone.Number,
+		}); err != nil {
+			logger.Fatal().Err(err).Msgf("Failed to update #%d with new milestone", prNumber)
+			return
+		}
+	}
+
+	logger.Info().Msgf("PR updated")
+}
+
+type actionType int
+
+const (
+	actionTypeSetToMilestone = iota
+	actionTypeNoop
+)
+
+type action struct {
+	Type      actionType
+	Milestone *ghgql.Milestone
+}
+
+func (a action) String() string {
+	switch a.Type {
+	case actionTypeNoop:
+		return "no action"
+	case actionTypeSetToMilestone:
+		return fmt.Sprintf("set milestone to %s", a.Milestone)
+	default:
+		return "<unknown action>"
+	}
+}
+
+func determineAction(ctx context.Context, currentMilestone *github.Milestone, targetMilestone *ghgql.Milestone) action {
+	logger := zerolog.Ctx(ctx)
+	if currentMilestone == nil {
+		return action{
+			Type:      actionTypeSetToMilestone,
+			Milestone: targetMilestone,
+		}
+	}
+	targetMilestoneTitle := targetMilestone.Title
+	currentMilestoneTitle := currentMilestone.GetTitle()
+	if targetMilestoneTitle == currentMilestoneTitle {
+		logger.Info().Msg("The PR already has the correct milestone.")
+		return action{
+			Type: actionTypeNoop,
+		}
+	}
+	if !strings.HasSuffix(currentMilestoneTitle, ".x") {
+		logger.Info().Msg("The PR has a release milestone attached so no action required.")
+		return action{
+			Type: actionTypeNoop,
+		}
+	}
+	return action{
+		Type:      actionTypeSetToMilestone,
+		Milestone: targetMilestone,
+	}
 }
 
 type packageJSON struct {

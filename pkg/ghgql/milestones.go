@@ -8,6 +8,10 @@ type Milestone struct {
 	Closed bool
 }
 
+func (m Milestone) String() string {
+	return m.Title
+}
+
 func (c *Client) GetMilestoneByTitle(ctx context.Context, repoOwner string, repoName string, title string) (*Milestone, error) {
 	resp, err := getMilestonesWithTitle(ctx, c.gql, repoOwner, repoName, title)
 	if err != nil {
