@@ -13,7 +13,10 @@ import (
 )
 
 func main() {
-	actions := []string{"update-changelog"}
+	actions := []string{
+		"update-changelog",
+		"auto-milestone",
+	}
 
 	var doTest bool
 	var doBuild bool
@@ -39,10 +42,10 @@ func main() {
 
 	goModCache := client.CacheVolume("gomodcache")
 
-	goContainer := client.Container(dagger.ContainerOpts{
-		Platform: "linux/amd64",
-	}).From("golang:1.20.2").
+	goContainer := client.Container().From("golang:1.20.2").
 		WithEnvVariable("CGO_ENABLED", "0").
+		WithEnvVariable("GOOS", "linux").
+		WithEnvVariable("GOARCH", "amd64").
 		WithMountedDirectory("/src", srcDir).
 		WithMountedCache("/go/pkg/mod", goModCache).
 		WithWorkdir("/src")

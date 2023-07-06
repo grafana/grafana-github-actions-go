@@ -59,6 +59,11 @@ func main() {
 		tk.ShowInputList()
 		return
 	}
+	defer func() {
+		if err := tk.SubmitUsageMetrics(ctx); err != nil {
+			logger.Warn().Err(err).Msg("Failed to submit usage metrics")
+		}
+	}()
 
 	elems := strings.Split(repo, "/")
 	repoOwner := elems[0]
