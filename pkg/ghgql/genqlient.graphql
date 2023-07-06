@@ -25,3 +25,16 @@ query getMilestonedPullRequests($owner: String!, $repo: String!, $milestoneNumbe
     }
   }
 }
+
+query getMilestonesWithTitle($owner: String!, $repo: String!, $title: String!) {
+  repository(owner: $owner, name: $repo) {
+    milestones(query: $title, first: 30) {
+      nodes {
+        number
+        id
+        closed
+        title
+      }
+    }
+  }
+}
