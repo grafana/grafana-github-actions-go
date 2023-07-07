@@ -83,13 +83,15 @@ func (tk *Toolkit) trackMetric(ctx context.Context, metric Metric) error {
 	now := time.Now()
 	metricName := fmt.Sprintf("%s.%s", tk.metricsNamePrefix, metric.Name)
 	metricName = strings.ReplaceAll(metricName, "/", "_")
-	gm := graphiteMetric{
-		Name:     metricName,
-		Value:    metric.Value,
-		Interval: 60,
-		MType:    "count",
-		Time:     now.Unix(),
-		Tags:     []string{},
+	gm := []graphiteMetric{
+		{
+			Name:     metricName,
+			Value:    metric.Value,
+			Interval: 60,
+			MType:    "count",
+			Time:     now.Unix(),
+			Tags:     []string{},
+		},
 	}
 	httpClient := http.Client{}
 	body := bytes.Buffer{}
