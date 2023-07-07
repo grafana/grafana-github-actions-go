@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/google/go-github/v50/github"
@@ -17,15 +18,28 @@ type Metric struct {
 	Value float64
 }
 
-// SubmitUsageMetrics sends metrics exposed by the GitHub rate limiter et al. to
-// a configured Graphite HTTP endpoint. If username or api key for that endpoint
-// are empty, this operation is a no-op.
-func (tk *Toolkit) SubmitUsageMetrics(ctx context.Context) error {
+func (m Metric) String() string {
+	return fmt.Sprintf("%s=%f", m.Name, m.Value)
+}
+
+func (tk *Toolkit) submitMetrics(ctx context.Context, metrics []Metric) error {
 	logger := zerolog.Ctx(ctx)
 	if tk.metricsAPIKey == "" || tk.metricsAPIUsername == "" {
 		logger.Info().Msg("Metric submission disabled (no API username/key set)")
 		return nil
 	}
+	for _, metric := range metrics {
+		if err := tk.trackMetric(ctx, metric); err != nil {
+			return fmt.Errorf("failed to submit metric %s: %w", metric.Name, err)
+		}
+	}
+	return nil
+}
+
+// SubmitUsageMetrics sends metrics exposed by the GitHub rate limiter et al. to
+// a configured Graphite HTTP endpoint. If username or api key for that endpoint
+// are empty, this operation is a no-op.
+func (tk *Toolkit) SubmitUsageMetrics(ctx context.Context) error {
 	limits, _, err := tk.ghClient.RateLimits(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to retrieve rate limits from GitHub: %w", err)
@@ -49,13 +63,7 @@ func (tk *Toolkit) SubmitUsageMetrics(ctx context.Context) error {
 			Value: calculateUsage(limits.GraphQL),
 		},
 	}
-	for _, metric := range metrics {
-		if err := tk.trackMetric(ctx, metric); err != nil {
-			return fmt.Errorf("failed to submit metric %s: %w", metric.Name, err)
-		}
-	}
-	return nil
-
+	return tk.submitMetrics(ctx, metrics)
 }
 
 func calculateUsage(rate *github.Rate) float64 {
@@ -63,21 +71,25 @@ func calculateUsage(rate *github.Rate) float64 {
 }
 
 type graphiteMetric struct {
-	Name     string  `json:"name"`
-	Value    float64 `json:"value"`
-	Interval int64   `json:"interval"`
-	MType    string  `json:"mtype"`
-	Time     int64   `json:"time"`
+	Name     string   `json:"name"`
+	Value    float64  `json:"value"`
+	Interval int64    `json:"interval"`
+	MType    string   `json:"mtype"`
+	Time     int64    `json:"time"`
+	Tags     []string `json:"tags"`
 }
 
 func (tk *Toolkit) trackMetric(ctx context.Context, metric Metric) error {
 	now := time.Now()
+	metricName := fmt.Sprintf("%s.%s", tk.metricsNamePrefix, metric.Name)
+	metricName = strings.ReplaceAll(metricName, "/", "_")
 	gm := graphiteMetric{
-		Name:     metric.Name,
+		Name:     metricName,
 		Value:    metric.Value,
 		Interval: 60,
 		MType:    "count",
 		Time:     now.Unix(),
+		Tags:     []string{},
 	}
 	httpClient := http.Client{}
 	body := bytes.Buffer{}

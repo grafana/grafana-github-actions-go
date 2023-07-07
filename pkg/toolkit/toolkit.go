@@ -23,6 +23,7 @@ type Toolkit struct {
 	metricsAPIKey      string
 	metricsAPIUsername string
 	metricsAPIEndpoint string
+	metricsNamePrefix  string
 	requestCount       atomic.Int64
 	registeredInputs   map[string]InputConfig
 }
@@ -68,6 +69,11 @@ func Init(ctx context.Context, options ...ToolkitOption) (*Toolkit, error) {
 	if token == "" {
 		return nil, fmt.Errorf("neither INPUT_GITHUB_TOKEN nor GITHUB_TOKEN set")
 	}
+	metricsNamePrefix, err := determineMetricsNamePrefix(ctx)
+	if err != nil {
+		return nil, err
+	}
+	tk.metricsNamePrefix = metricsNamePrefix
 	client := github.NewTokenClient(ctx, token)
 	tk.ghClient = client
 	tk.Token = token
@@ -177,4 +183,18 @@ func (tk *Toolkit) BranchExists(ctx context.Context, owner, repo, branch string)
 		return false, err
 	}
 	return true, nil
+}
+
+func determineMetricsNamePrefix(ctx context.Context) (string, error) {
+	repo := os.Getenv("GITHUB_REPOSITORY")
+	if repo == "" {
+		return "", fmt.Errorf("GITHUB_REPOSITORY not set")
+	}
+	elems := strings.SplitN(repo, "/", 2)
+	owner := elems[0]
+	name := elems[1]
+	if owner == "grafana" && name == "grafana" {
+		return "gh_action", nil
+	}
+	return fmt.Sprintf("repo_stats.%s", name), nil
 }
