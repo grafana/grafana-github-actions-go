@@ -26,6 +26,8 @@ func TestSubmitMetrics(t *testing.T) {
 		}))
 		t.Cleanup(srv.Close)
 		t.Setenv("INPUT_METRICS_API_ENDPOINT", srv.URL)
+		t.Setenv("INPUT_METRICS_API_USERNAME", "")
+		t.Setenv("INPUT_METRICS_API_KEY", "")
 		t.Setenv("GITHUB_REPOSITORY", "grafana/gha-testing")
 		tk, err := Init(ctx)
 		require.NoError(t, err)
@@ -42,10 +44,10 @@ func TestSubmitMetrics(t *testing.T) {
 	t.Run("submission-with-creds", func(t *testing.T) {
 		received := make([]graphiteMetric, 0, 5)
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			m := graphiteMetric{}
+			m := []graphiteMetric{}
 			defer r.Body.Close()
 			require.NoError(t, json.NewDecoder(r.Body).Decode(&m))
-			received = append(received, m)
+			received = append(received, m...)
 		}))
 		t.Cleanup(srv.Close)
 		t.Setenv("INPUT_METRICS_API_ENDPOINT", srv.URL)
@@ -72,10 +74,10 @@ func TestSubmitMetrics(t *testing.T) {
 	t.Run("submission-with-creds-grafana", func(t *testing.T) {
 		received := make([]graphiteMetric, 0, 5)
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			m := graphiteMetric{}
+			m := []graphiteMetric{}
 			defer r.Body.Close()
 			require.NoError(t, json.NewDecoder(r.Body).Decode(&m))
-			received = append(received, m)
+			received = append(received, m...)
 		}))
 		t.Cleanup(srv.Close)
 		t.Setenv("INPUT_METRICS_API_ENDPOINT", srv.URL)
