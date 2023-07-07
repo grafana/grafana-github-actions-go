@@ -35,6 +35,8 @@ func main() {
 	pflag.BoolVar(&listInputs, "list-inputs", false, "Show a list of all available inputs")
 	pflag.Parse()
 
+	logger.Info().Msgf("Operating inside %s", repo)
+
 	rawPRNumber := pflag.Arg(0)
 	if rawPRNumber == "" {
 		logger.Fatal().Msg("No PR specified")
@@ -111,7 +113,7 @@ func main() {
 		logger.Fatal().Msgf("Failed to find milestone matching `%s`", targetMilestoneName)
 	}
 
-	a := determineAction(ctx, prMilestone, milestone)
+	a := determineAction(ctx, pr, prMilestone, milestone)
 
 	if doPreview {
 		logger.Info().Msgf("The following action would be performed: %v", a)
@@ -124,11 +126,18 @@ func main() {
 		return
 	case actionTypeSetToMilestone:
 		logger.Info().Msgf("Updating PR to %s", a.Milestone)
-		if _, _, err := gh.Issues.Edit(ctx, repoOwner, repoName, prNumber, &github.IssueRequest{
-			Milestone: &a.Milestone.Number,
-		}); err != nil {
-			logger.Fatal().Err(err).Msgf("Failed to update #%d with new milestone", prNumber)
-			return
+		if a.Milestone != nil {
+			if _, _, err := gh.Issues.Edit(ctx, repoOwner, repoName, prNumber, &github.IssueRequest{
+				Milestone: &a.Milestone.Number,
+			}); err != nil {
+				logger.Fatal().Err(err).Msgf("Failed to update #%d with new milestone", prNumber)
+				return
+			}
+		} else {
+			if _, _, err := gh.Issues.RemoveMilestone(ctx, repoOwner, repoName, prNumber); err != nil {
+				logger.Fatal().Err(err).Msgf("Failed to remove milestone from #%d", prNumber)
+				return
+			}
 		}
 	}
 
@@ -158,8 +167,23 @@ func (a action) String() string {
 	}
 }
 
-func determineAction(ctx context.Context, currentMilestone *github.Milestone, targetMilestone *ghgql.Milestone) action {
+func determineAction(ctx context.Context, pr *github.PullRequest, currentMilestone *github.Milestone, targetMilestone *ghgql.Milestone) action {
 	logger := zerolog.Ctx(ctx)
+	if pr.ClosedAt != nil && !pr.GetMerged() {
+		// If this PR is closed but wasn't merged, then we remove the milestone:
+		if currentMilestone != nil {
+			logger.Info().Msg("PR is closed but was not merged. Unsetting the milestone.")
+			return action{
+				Type:      actionTypeSetToMilestone,
+				Milestone: nil,
+			}
+		} else {
+			logger.Info().Msg("PR is closed but was not merged. It has no milestone and so none was set.")
+			return action{
+				Type: actionTypeNoop,
+			}
+		}
+	}
 	if currentMilestone == nil {
 		return action{
 			Type:      actionTypeSetToMilestone,

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/google/go-github/v50/github"
 	"github.com/grafana/grafana-github-actions-go/pkg/ghgql"
@@ -59,14 +60,24 @@ func TestVersionExtraction(t *testing.T) {
 func TestDetermineAction(t *testing.T) {
 	v10xTitle := "10.0.x"
 	v10Title := "10.0.0"
+	valFalse := false
+	valTrue := true
+	valPastTimestamp := github.Timestamp{
+		Time: time.Now().AddDate(0, -1, 0),
+	}
 	tests := []struct {
 		name             string
+		pr               *github.PullRequest
 		currentMilestone *github.Milestone
 		targetMilestone  *ghgql.Milestone
 		expected         action
 	}{
 		{
-			name:             "no-milestone-set",
+			name: "no-milestone-set",
+			pr: &github.PullRequest{
+				ClosedAt: &valPastTimestamp,
+				Merged:   &valTrue,
+			},
 			currentMilestone: nil,
 			targetMilestone:  &ghgql.Milestone{Title: "10.0.x"},
 			expected: action{
@@ -76,6 +87,10 @@ func TestDetermineAction(t *testing.T) {
 		},
 		{
 			name: "milestone-correct",
+			pr: &github.PullRequest{
+				ClosedAt: &valPastTimestamp,
+				Merged:   &valTrue,
+			},
 			currentMilestone: &github.Milestone{
 				Title: &v10xTitle,
 			},
@@ -86,6 +101,10 @@ func TestDetermineAction(t *testing.T) {
 		},
 		{
 			name: "milestone-incorrect",
+			pr: &github.PullRequest{
+				ClosedAt: &valPastTimestamp,
+				Merged:   &valTrue,
+			},
 			currentMilestone: &github.Milestone{
 				Title: &v10xTitle,
 			},
@@ -96,7 +115,26 @@ func TestDetermineAction(t *testing.T) {
 			},
 		},
 		{
+			name: "pr-closed",
+			pr: &github.PullRequest{
+				ClosedAt: &valPastTimestamp,
+				Merged:   &valFalse,
+			},
+			currentMilestone: &github.Milestone{
+				Title: &v10xTitle,
+			},
+			targetMilestone: &ghgql.Milestone{Title: "10.1.x"},
+			expected: action{
+				Type:      actionTypeSetToMilestone,
+				Milestone: nil,
+			},
+		},
+		{
 			name: "release-milestone-set",
+			pr: &github.PullRequest{
+				ClosedAt: &valPastTimestamp,
+				Merged:   &valTrue,
+			},
 			currentMilestone: &github.Milestone{
 				Title: &v10Title,
 			},
@@ -110,7 +148,7 @@ func TestDetermineAction(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			ctx := context.Background()
-			output := determineAction(ctx, test.currentMilestone, test.targetMilestone)
+			output := determineAction(ctx, test.pr, test.currentMilestone, test.targetMilestone)
 			require.Equal(t, test.expected, output)
 		})
 	}
