@@ -91,7 +91,7 @@ func main() {
 		return
 	}
 	if cnt, err := content.GetContent(); err != nil {
-		logger.Fatal().Err(err).Msg("Failed to retrieve package.json of PR base")
+		logger.Fatal().Err(err).Msg("Failed to get package.json content")
 		return
 	} else {
 		if v, err := versionFromPackage(cnt); err != nil {
@@ -127,14 +127,14 @@ func main() {
 	case actionTypeSetToMilestone:
 		logger.Info().Msgf("Updating PR to %s", a.Milestone)
 		if a.Milestone != nil {
-			if _, _, err := gh.Issues.Edit(ctx, repoOwner, repoName, prNumber, &github.IssueRequest{
+			if _, resp, err := gh.Issues.Edit(ctx, repoOwner, repoName, prNumber, &github.IssueRequest{
 				Milestone: &a.Milestone.Number,
-			}); err != nil {
+			}); err != nil || resp.StatusCode >= 300 {
 				logger.Fatal().Err(err).Msgf("Failed to update #%d with new milestone", prNumber)
 				return
 			}
 		} else {
-			if _, _, err := gh.Issues.RemoveMilestone(ctx, repoOwner, repoName, prNumber); err != nil {
+			if _, resp, err := gh.Issues.RemoveMilestone(ctx, repoOwner, repoName, prNumber); err != nil || resp.StatusCode >= 300 {
 				logger.Fatal().Err(err).Msgf("Failed to remove milestone from #%d", prNumber)
 				return
 			}

@@ -12,6 +12,8 @@ import (
 	"github.com/spf13/pflag"
 )
 
+const goImage = "golang:1.20.6"
+
 func main() {
 	actions := []string{
 		"update-changelog",
@@ -42,7 +44,7 @@ func main() {
 
 	goModCache := client.CacheVolume("gomodcache")
 
-	goContainer := client.Container().From("golang:1.20.2").
+	goContainer := client.Container().From(goImage).
 		WithEnvVariable("CGO_ENABLED", "0").
 		WithEnvVariable("GOOS", "linux").
 		WithEnvVariable("GOARCH", "amd64").
