@@ -30,6 +30,22 @@ func (v *__getMilestonedPullRequestsInput) GetMilestoneNumber() int { return v.M
 // GetCursor returns __getMilestonedPullRequestsInput.Cursor, and is useful for accessing the field via an interface.
 func (v *__getMilestonedPullRequestsInput) GetCursor() string { return v.Cursor }
 
+// __getMilestonesWithTitleInput is used internally by genqlient
+type __getMilestonesWithTitleInput struct {
+	Owner string `json:"owner"`
+	Repo  string `json:"repo"`
+	Title string `json:"title"`
+}
+
+// GetOwner returns __getMilestonesWithTitleInput.Owner, and is useful for accessing the field via an interface.
+func (v *__getMilestonesWithTitleInput) GetOwner() string { return v.Owner }
+
+// GetRepo returns __getMilestonesWithTitleInput.Repo, and is useful for accessing the field via an interface.
+func (v *__getMilestonesWithTitleInput) GetRepo() string { return v.Repo }
+
+// GetTitle returns __getMilestonesWithTitleInput.Title, and is useful for accessing the field via an interface.
+func (v *__getMilestonesWithTitleInput) GetTitle() string { return v.Title }
+
 // getMilestonedPullRequestsRepository includes the requested fields of the GraphQL type Repository.
 // The GraphQL type's documentation follows.
 //
@@ -529,6 +545,79 @@ func (v *getMilestonedPullRequestsResponse) GetRepository() getMilestonedPullReq
 	return v.Repository
 }
 
+// getMilestonesWithTitleRepository includes the requested fields of the GraphQL type Repository.
+// The GraphQL type's documentation follows.
+//
+// A repository contains the content for a project.
+type getMilestonesWithTitleRepository struct {
+	// A list of milestones associated with the repository.
+	Milestones getMilestonesWithTitleRepositoryMilestonesMilestoneConnection `json:"milestones"`
+}
+
+// GetMilestones returns getMilestonesWithTitleRepository.Milestones, and is useful for accessing the field via an interface.
+func (v *getMilestonesWithTitleRepository) GetMilestones() getMilestonesWithTitleRepositoryMilestonesMilestoneConnection {
+	return v.Milestones
+}
+
+// getMilestonesWithTitleRepositoryMilestonesMilestoneConnection includes the requested fields of the GraphQL type MilestoneConnection.
+// The GraphQL type's documentation follows.
+//
+// The connection type for Milestone.
+type getMilestonesWithTitleRepositoryMilestonesMilestoneConnection struct {
+	// A list of nodes.
+	Nodes []getMilestonesWithTitleRepositoryMilestonesMilestoneConnectionNodesMilestone `json:"nodes"`
+}
+
+// GetNodes returns getMilestonesWithTitleRepositoryMilestonesMilestoneConnection.Nodes, and is useful for accessing the field via an interface.
+func (v *getMilestonesWithTitleRepositoryMilestonesMilestoneConnection) GetNodes() []getMilestonesWithTitleRepositoryMilestonesMilestoneConnectionNodesMilestone {
+	return v.Nodes
+}
+
+// getMilestonesWithTitleRepositoryMilestonesMilestoneConnectionNodesMilestone includes the requested fields of the GraphQL type Milestone.
+// The GraphQL type's documentation follows.
+//
+// Represents a Milestone object on a given repository.
+type getMilestonesWithTitleRepositoryMilestonesMilestoneConnectionNodesMilestone struct {
+	// Identifies the number of the milestone.
+	Number int    `json:"number"`
+	Id     string `json:"id"`
+	// Indicates if the object is closed (definition of closed may depend on type)
+	Closed bool `json:"closed"`
+	// Identifies the title of the milestone.
+	Title string `json:"title"`
+}
+
+// GetNumber returns getMilestonesWithTitleRepositoryMilestonesMilestoneConnectionNodesMilestone.Number, and is useful for accessing the field via an interface.
+func (v *getMilestonesWithTitleRepositoryMilestonesMilestoneConnectionNodesMilestone) GetNumber() int {
+	return v.Number
+}
+
+// GetId returns getMilestonesWithTitleRepositoryMilestonesMilestoneConnectionNodesMilestone.Id, and is useful for accessing the field via an interface.
+func (v *getMilestonesWithTitleRepositoryMilestonesMilestoneConnectionNodesMilestone) GetId() string {
+	return v.Id
+}
+
+// GetClosed returns getMilestonesWithTitleRepositoryMilestonesMilestoneConnectionNodesMilestone.Closed, and is useful for accessing the field via an interface.
+func (v *getMilestonesWithTitleRepositoryMilestonesMilestoneConnectionNodesMilestone) GetClosed() bool {
+	return v.Closed
+}
+
+// GetTitle returns getMilestonesWithTitleRepositoryMilestonesMilestoneConnectionNodesMilestone.Title, and is useful for accessing the field via an interface.
+func (v *getMilestonesWithTitleRepositoryMilestonesMilestoneConnectionNodesMilestone) GetTitle() string {
+	return v.Title
+}
+
+// getMilestonesWithTitleResponse is returned by getMilestonesWithTitle on success.
+type getMilestonesWithTitleResponse struct {
+	// Lookup a given repository by the owner and repository name.
+	Repository getMilestonesWithTitleRepository `json:"repository"`
+}
+
+// GetRepository returns getMilestonesWithTitleResponse.Repository, and is useful for accessing the field via an interface.
+func (v *getMilestonesWithTitleResponse) GetRepository() getMilestonesWithTitleRepository {
+	return v.Repository
+}
+
 // The query or mutation executed by getMilestonedPullRequests.
 const getMilestonedPullRequests_Operation = `
 query getMilestonedPullRequests ($owner: String!, $repo: String!, $milestoneNumber: Int!, $cursor: String!) {
@@ -582,6 +671,52 @@ func getMilestonedPullRequests(
 	var err error
 
 	var data getMilestonedPullRequestsResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by getMilestonesWithTitle.
+const getMilestonesWithTitle_Operation = `
+query getMilestonesWithTitle ($owner: String!, $repo: String!, $title: String!) {
+	repository(owner: $owner, name: $repo) {
+		milestones(query: $title, first: 30) {
+			nodes {
+				number
+				id
+				closed
+				title
+			}
+		}
+	}
+}
+`
+
+func getMilestonesWithTitle(
+	ctx context.Context,
+	client graphql.Client,
+	owner string,
+	repo string,
+	title string,
+) (*getMilestonesWithTitleResponse, error) {
+	req := &graphql.Request{
+		OpName: "getMilestonesWithTitle",
+		Query:  getMilestonesWithTitle_Operation,
+		Variables: &__getMilestonesWithTitleInput{
+			Owner: owner,
+			Repo:  repo,
+			Title: title,
+		},
+	}
+	var err error
+
+	var data getMilestonesWithTitleResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
