@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/google/go-github/v50/github"
 	"github.com/grafana/grafana-github-actions-go/pkg/changelog"
@@ -75,6 +77,9 @@ func main() {
 	if err != nil {
 		logger.Fatal().Err(err).Msgf("No matching milestone found for `%s`", version)
 	}
+	if milestone == nil {
+		logger.Fatal().Msgf("No matching milestone found for `%s`", version)
+	}
 
 	changelogContent, err := retrieveChangelog(ctx, gh, repoOwner, repoName, version)
 	if err != nil {
@@ -83,21 +88,51 @@ func main() {
 
 	releaseTitle := generateReleaseTitle(ctx, version, milestone)
 
+	existingRelease, resp, err := gh.Repositories.GetReleaseByTag(ctx, repoOwner, repoName, tag)
+	if err != nil {
+		if resp.StatusCode == http.StatusNotFound {
+			logger.Info().Msgf("No existing release found for tag `%s`", tag)
+		} else {
+			logger.Fatal().Err(err).Msgf("Failed to check for existing release with tag `%s`", tag)
+		}
+	}
+
 	if doPreview {
 		logger.Info().Msgf("No release will be created but this is what it would look like:")
 		fmt.Printf("TITLE: %s\n\n%s\n", releaseTitle, changelogContent)
 		return
 	}
 
-	logger.Info().Msgf("Creating new release.")
-	logger.Fatal().Msg("Creating the release not yet implemented.")
-
+	if existingRelease != nil {
+		logger.Info().Msgf("Updating existing release")
+		existingRelease.Name = &releaseTitle
+		existingRelease.Body = &changelogContent
+		if rel, _, err := gh.Repositories.EditRelease(ctx, repoOwner, repoName, existingRelease.GetID(), existingRelease); err != nil {
+			logger.Fatal().Err(err).Msgf("Failed to update existing release")
+		} else {
+			logger.Info().Msgf("Release updated: %s", rel.GetHTMLURL())
+		}
+	} else {
+		logger.Info().Msgf("Creating new release.")
+		newRelease := &github.RepositoryRelease{}
+		newRelease.TagName = &tag
+		newRelease.Name = &releaseTitle
+		newRelease.Body = &changelogContent
+		if rel, _, err := gh.Repositories.CreateRelease(ctx, repoOwner, repoName, newRelease); err != nil {
+			logger.Fatal().Err(err).Msgf("Failed to create new release")
+		} else {
+			logger.Info().Msgf("Release created: %s", rel.GetHTMLURL())
+		}
+	}
 }
 
 func generateReleaseTitle(ctx context.Context, version string, milestone *ghgql.Milestone) string {
 	date := milestone.ClosedAt
 	if !milestone.DueOn.IsZero() {
 		date = milestone.DueOn
+	}
+	if date.IsZero() {
+		date = time.Now()
 	}
 	return fmt.Sprintf("%s (%s)", version, date.Format("2006-01-02"))
 }
