@@ -18,6 +18,9 @@ import (
 	"github.com/spf13/pflag"
 )
 
+var makeLatestTrue = "true"
+var makeLatestFalse = "false"
+
 func main() {
 	logger := zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr}).With().Timestamp().Logger()
 	ctx := context.Background()
@@ -42,6 +45,7 @@ func main() {
 
 	tk, err := toolkit.Init(
 		ctx,
+		toolkit.WithRegisteredInput("latest", "`true` for marking the release as lates, otherwise not"),
 	)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Failed to initialize toolkit")
@@ -56,6 +60,8 @@ func main() {
 			logger.Warn().Err(err).Msg("Failed to submit usage metrics")
 		}
 	}()
+
+	markLatest := tk.MustGetBoolInput(ctx, "latest")
 
 	elems := strings.Split(repo, "/")
 	repoOwner := elems[0]
@@ -107,6 +113,11 @@ func main() {
 		logger.Info().Msgf("Updating existing release")
 		existingRelease.Name = &releaseTitle
 		existingRelease.Body = &changelogContent
+		if markLatest {
+			existingRelease.MakeLatest = &makeLatestTrue
+		} else {
+			existingRelease.MakeLatest = &makeLatestFalse
+		}
 		if rel, _, err := gh.Repositories.EditRelease(ctx, repoOwner, repoName, existingRelease.GetID(), existingRelease); err != nil {
 			logger.Fatal().Err(err).Msgf("Failed to update existing release")
 		} else {
@@ -118,6 +129,11 @@ func main() {
 		newRelease.TagName = &tag
 		newRelease.Name = &releaseTitle
 		newRelease.Body = &changelogContent
+		if markLatest {
+			newRelease.MakeLatest = &makeLatestTrue
+		} else {
+			newRelease.MakeLatest = &makeLatestFalse
+		}
 		if rel, _, err := gh.Repositories.CreateRelease(ctx, repoOwner, repoName, newRelease); err != nil {
 			logger.Fatal().Err(err).Msgf("Failed to create new release")
 		} else {

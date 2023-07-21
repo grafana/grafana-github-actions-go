@@ -19,6 +19,9 @@ inputs:
   binary_release_tag:
     required: false
     default: "dev"
+  latest:
+    description: Mark the release as latest (1 for latest, 0 for not)
+    required: false
 runs:
   using: composite
   steps:
@@ -35,3 +38,4 @@ runs:
       INPUT_METRICS_API_USERNAME: ${{inputs.metrics_api_username}}
       INPUT_METRICS_API_KEY: ${{inputs.metrics_api_key}}
       INPUT_METRICS_API_ENDPOINT: ${{inputs.metrics_api_endpoint}}
+      INPUT_LATEST: ${{inputs.latest}}
