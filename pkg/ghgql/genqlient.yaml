@@ -7,3 +7,5 @@ generated: generated.go
 bindings:
   URI:
     type: string
+  DateTime:
+    type: "time.Time"
