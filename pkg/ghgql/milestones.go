@@ -2,14 +2,17 @@ package ghgql
 
 import (
 	"context"
+	"time"
 
 	"github.com/rs/zerolog"
 )
 
 type Milestone struct {
-	Number int
-	Title  string
-	Closed bool
+	Number   int
+	Title    string
+	Closed   bool
+	ClosedAt time.Time
+	DueOn    time.Time
 }
 
 func (m Milestone) String() string {
@@ -29,9 +32,11 @@ func (c *Client) GetMilestoneByTitle(ctx context.Context, repoOwner string, repo
 	for _, candidate := range resp.GetRepository().Milestones.Nodes {
 		if title == candidate.GetTitle() {
 			return &Milestone{
-				Number: candidate.Number,
-				Title:  candidate.Title,
-				Closed: candidate.Closed,
+				Number:   candidate.Number,
+				Title:    candidate.Title,
+				Closed:   candidate.Closed,
+				ClosedAt: candidate.ClosedAt,
+				DueOn:    candidate.DueOn,
 			}, nil
 		}
 	}

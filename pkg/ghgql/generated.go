@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/Khan/genqlient/graphql"
 )
@@ -585,6 +586,10 @@ type getMilestonesWithTitleRepositoryMilestonesMilestoneConnectionNodesMilestone
 	Closed bool `json:"closed"`
 	// Identifies the title of the milestone.
 	Title string `json:"title"`
+	// Identifies the date and time when the object was closed.
+	ClosedAt time.Time `json:"closedAt"`
+	// Identifies the due date of the milestone.
+	DueOn time.Time `json:"dueOn"`
 }
 
 // GetNumber returns getMilestonesWithTitleRepositoryMilestonesMilestoneConnectionNodesMilestone.Number, and is useful for accessing the field via an interface.
@@ -605,6 +610,16 @@ func (v *getMilestonesWithTitleRepositoryMilestonesMilestoneConnectionNodesMiles
 // GetTitle returns getMilestonesWithTitleRepositoryMilestonesMilestoneConnectionNodesMilestone.Title, and is useful for accessing the field via an interface.
 func (v *getMilestonesWithTitleRepositoryMilestonesMilestoneConnectionNodesMilestone) GetTitle() string {
 	return v.Title
+}
+
+// GetClosedAt returns getMilestonesWithTitleRepositoryMilestonesMilestoneConnectionNodesMilestone.ClosedAt, and is useful for accessing the field via an interface.
+func (v *getMilestonesWithTitleRepositoryMilestonesMilestoneConnectionNodesMilestone) GetClosedAt() time.Time {
+	return v.ClosedAt
+}
+
+// GetDueOn returns getMilestonesWithTitleRepositoryMilestonesMilestoneConnectionNodesMilestone.DueOn, and is useful for accessing the field via an interface.
+func (v *getMilestonesWithTitleRepositoryMilestonesMilestoneConnectionNodesMilestone) GetDueOn() time.Time {
+	return v.DueOn
 }
 
 // getMilestonesWithTitleResponse is returned by getMilestonesWithTitle on success.
@@ -692,6 +707,8 @@ query getMilestonesWithTitle ($owner: String!, $repo: String!, $title: String!) 
 				id
 				closed
 				title
+				closedAt
+				dueOn
 			}
 		}
 	}

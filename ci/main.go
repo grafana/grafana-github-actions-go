@@ -16,6 +16,7 @@ const goImage = "golang:1.20.6"
 
 func main() {
 	actions := []string{
+		"github-release",
 		"update-changelog",
 		"auto-milestone",
 	}

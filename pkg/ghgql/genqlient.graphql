@@ -34,6 +34,8 @@ query getMilestonesWithTitle($owner: String!, $repo: String!, $title: String!) {
         id
         closed
         title
+        closedAt
+        dueOn
       }
     }
   }
