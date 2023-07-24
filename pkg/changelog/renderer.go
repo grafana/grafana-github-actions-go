@@ -80,21 +80,34 @@ func (r *defaultRenderer) writeIssueLines(out *strings.Builder, issues []ghgql.P
 
 var titleHeadlinePattern = regexp.MustCompile(`^([^:]*:)`)
 
-func (r *defaultRenderer) issueAsMarkdown(issue ghgql.PullRequest) string {
-	ctx := context.Background()
+// PreparePRTitle converts the title of the pull-request into a format that
+// will then be used for rendering it. Since the output of this function can be
+// used to match PRs from various releases it is public.
+func PreparePRTitle(issue ghgql.PullRequest) string {
 	out := strings.Builder{}
-
 	title := issue.GetTitle()
 	title = stripReleaseStreamPrefix(title)
-	title = titleHeadlinePattern.ReplaceAllString(title, "**$1**")
 	title = strings.TrimSuffix(title, ".")
-
-	out.WriteString("- ")
 	out.WriteString(title)
 	if issueHasLabel(issue, LabelEnterprise) || issue.GetRepoName() == "grafana-enterprise" {
 		out.WriteString(". (Enterprise)")
 	} else {
 		out.WriteString(". ")
+	}
+	return out.String()
+}
+
+func (r *defaultRenderer) issueAsMarkdown(issue ghgql.PullRequest) string {
+	ctx := context.Background()
+	out := strings.Builder{}
+
+	title := PreparePRTitle(issue)
+	title = titleHeadlinePattern.ReplaceAllString(title, "**$1**")
+
+	out.WriteString("- ")
+	out.WriteString(title)
+	if issueHasLabel(issue, LabelEnterprise) || issue.GetRepoName() == "grafana-enterprise" {
+	} else {
 		out.WriteString(r.getIssueLink(issue))
 		if issue.GetAuthorLogin() != "" {
 			userLink, err := r.getUserLink(ctx, issue)

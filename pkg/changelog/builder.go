@@ -1,6 +1,7 @@
 package changelog
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"strings"
@@ -16,13 +17,6 @@ const LabelUI = "area/grafana/ui"
 const LabelToolkit = "area/grafana/toolkit"
 const LabelRuntime = "area/grafana/runtime"
 const LabelBug = "type/bug"
-
-type Entry struct {
-	Title                     string
-	PullRequestNumber         int
-	OriginalPullRequestNumber int
-	Labels                    []string
-}
 
 func Build(ctx context.Context, version string, tk *toolkit.Toolkit) (*ChangelogBody, error) {
 	body := newChangelogBody()
@@ -50,6 +44,35 @@ func Build(ctx context.Context, version string, tk *toolkit.Toolkit) (*Changelog
 	issues = append(issues, ossIssues...)
 	issues = append(issues, enterpriseIssues...)
 
+	// At this point check if the PR is already part of an older release.
+	// Basically any milestone that was part of the stream and the previous one
+	// released before the current milestone should be considered a potential
+	// conflict.
+	milestones, err := getHistoricalMilestones(ctx, tk, version)
+	if err != nil {
+		return nil, err
+	}
+
+	knownTitles := make(map[string]struct{})
+
+	loader := NewLoader(tk.GitHubClient())
+	parser := NewParser()
+	for _, milestone := range milestones {
+		msContent, err := loader.LoadContent(ctx, "grafana", "grafana", milestone.GetTitle(), &LoaderOptions{RemoveHeading: true})
+		if err != nil {
+			return nil, err
+		}
+		sections, err := parser.Parse(ctx, bytes.NewBufferString(msContent))
+		if err != nil {
+			return nil, err
+		}
+		for _, section := range sections {
+			for _, entry := range section.Entries {
+				knownTitles[entry.Title] = struct{}{}
+			}
+		}
+	}
+
 	body.Version = version
 	if !milestone.GetDueOn().IsZero() {
 		body.ReleaseDate = milestone.GetDueOn().Format("2006-01-02")
@@ -57,9 +80,23 @@ func Build(ctx context.Context, version string, tk *toolkit.Toolkit) (*Changelog
 		body.ReleaseDate = milestone.GetClosedAt().Format("2006-01-02")
 	}
 	for _, i := range issues {
+		// If the PR already seems to be present in a previous release, we can
+		// skip it here:
+		newTitle := PreparePRTitle(i)
+		if _, found := knownTitles[newTitle]; found {
+			continue
+		}
 		addToBody(body, i)
 	}
 	return body, nil
+}
+
+// getHistoricalMilestones retrieves all the milestones of the current and
+// previous release stream that were closed n-days before the milestone
+// matching `version`.
+func getHistoricalMilestones(ctx context.Context, tk *toolkit.Toolkit, version string) ([]github.Milestone, error) {
+	// TODO: Provide implementation
+	return nil, nil
 }
 
 type ChangelogBody struct {
