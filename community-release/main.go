@@ -114,13 +114,14 @@ func main() {
 		logger.Fatal().Err(err).Msgf("Failed to parse %s", tk.GetInputEnvName(inputCommunityCategoryID))
 	}
 
-	logger.Info().Msg("Posting to the community boards")
+	logger.Info().Msgf("Posting to the community board in category %d", communityCategoryID)
 	comm := community.New(
 		community.CommunityWithBaseURL(communityBaseURL),
 		community.CommunityWithAPICredentials(username, key),
 	)
 	if _, err := comm.CreateOrUpdatePost(ctx, community.PostInput{
 		Title:    fmt.Sprintf("Changelog: Updates in Grafana %s", version),
+		Author:   username,
 		Body:     changelogContent,
 		Category: communityCategoryID,
 	}); err != nil {

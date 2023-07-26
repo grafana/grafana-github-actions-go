@@ -21,8 +21,10 @@ type Post struct {
 }
 
 type Category struct {
-	ID   int    `json:"id"`
-	Slug string `json:"slug"`
+	Category struct {
+		ID   int    `json:"id"`
+		Slug string `json:"slug"`
+	} `json:"category"`
 }
 
 type SearchOptions struct {
