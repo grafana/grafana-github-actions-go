@@ -5,11 +5,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/grafana/grafana-github-actions-go/pkg/changelog"
-	"github.com/grafana/grafana-github-actions-go/pkg/community"
 	"github.com/grafana/grafana-github-actions-go/pkg/git"
 	"github.com/grafana/grafana-github-actions-go/pkg/toolkit"
 
@@ -19,12 +17,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-const inputCommunityAPIKey = "COMMUNITY_API_KEY"
-const inputCommunityAPIUsername = "COMMUNITY_API_USERNAME"
-const inputCommunityCategoryID = "COMMUNITY_CATEGORY_ID"
-const inputCommunityBaseURL = "COMMUNITY_BASE_URL"
 const inputVersion = "VERSION"
-const inputSkipCommunityPost = "SKIP_COMMUNITY_POST"
 const inputSkipPR = "SKIP_PR"
 
 func main() {
@@ -48,13 +41,8 @@ func main() {
 	ctx := logger.WithContext(context.Background())
 	tk, err := toolkit.Init(
 		ctx,
-		toolkit.WithRegisteredInput(inputCommunityAPIKey, "API token for the Discourse community"),
-		toolkit.WithRegisteredInput(inputCommunityAPIUsername, "API username for the Discourse community"),
-		toolkit.WithRegisteredInput(inputCommunityCategoryID, "Discourse category ID for the changelog post"),
 		toolkit.WithRegisteredInput(inputVersion, "Version number to generate the changelog for"),
-		toolkit.WithRegisteredInput(inputCommunityBaseURL, "URL where the Discourse community can be found"),
 		toolkit.WithRegisteredInput(inputSkipPR, "Skip the PR creation"),
-		toolkit.WithRegisteredInput(inputSkipCommunityPost, "Skip the community post creation"),
 	)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Failed to initialize toolkit")
@@ -71,7 +59,6 @@ func main() {
 	}()
 
 	skipPR := tk.MustGetBoolInput(ctx, inputSkipPR)
-	skipCommunityPost := tk.MustGetBoolInput(ctx, inputSkipCommunityPost)
 
 	version := tk.MustGetInput(ctx, inputVersion)
 	if version == "" {
@@ -234,42 +221,6 @@ func main() {
 			if _, _, err := ghc.Issues.AddLabelsToIssue(ctx, repoOwner, repoRepo, createPR.GetNumber(), labels); err != nil {
 				logger.Fatal().Err(err).Msg("Failed to update PR with default labels")
 			}
-		}
-	}
-
-	if !skipCommunityPost {
-		key := tk.MustGetInput(ctx, inputCommunityAPIKey)
-		username := tk.MustGetInput(ctx, inputCommunityAPIUsername)
-		communityBaseURL := tk.MustGetInput(ctx, inputCommunityBaseURL)
-		rawCommunityCategoryID := tk.MustGetInput(ctx, inputCommunityCategoryID)
-		if key == "" {
-			logger.Fatal().Msgf("No %s provided", tk.GetInputEnvName(inputCommunityAPIKey))
-		}
-		if username == "" {
-			logger.Fatal().Msgf("No %s provided", tk.GetInputEnvName(inputCommunityAPIUsername))
-		}
-		if communityBaseURL == "" {
-			communityBaseURL = "https://community.grafana.com/"
-		}
-		if rawCommunityCategoryID == "" {
-			rawCommunityCategoryID = "9"
-		}
-		communityCategoryID, err := strconv.Atoi(rawCommunityCategoryID)
-		if err != nil {
-			logger.Fatal().Err(err).Msgf("Failed to parse %s", tk.GetInputEnvName(inputCommunityCategoryID))
-		}
-
-		logger.Info().Msg("Posting to the community boards")
-		comm := community.New(
-			community.CommunityWithBaseURL(communityBaseURL),
-			community.CommunityWithAPICredentials(username, key),
-		)
-		if _, err := comm.CreateOrUpdatePost(ctx, community.PostInput{
-			Title:    fmt.Sprintf("Changelog: Updates in Grafana %s", body.Version),
-			Body:     renderedMarkdown,
-			Category: communityCategoryID,
-		}); err != nil {
-			logger.Fatal().Err(err).Msg("Failed to post to the forums")
 		}
 	}
 }
