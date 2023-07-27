@@ -65,7 +65,13 @@ func main() {
 		logger.Fatal().Msg("No version specified")
 	}
 
-	sv, err := semver.NewVersion(version)
+	var sv *semver.Version
+	if strings.HasSuffix(version, ".x") {
+		logger.Warn().Msgf("You requested the changelog for a release stream. While supported, the output might not be completely accurate.")
+		sv, err = semver.NewVersion(strings.TrimSuffix(version, ".x") + ".0")
+	} else {
+		sv, err = semver.NewVersion(version)
+	}
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Invalid version number")
 	}

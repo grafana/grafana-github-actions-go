@@ -13,6 +13,14 @@ import (
 	"github.com/rs/zerolog"
 )
 
+type NoChangelogFound struct {
+	Version string
+}
+
+func (e NoChangelogFound) Error() string {
+	return fmt.Sprintf("no changelog found for `%s`", e.Version)
+}
+
 type LoaderOptions struct {
 	RemoveHeading bool
 }
@@ -65,7 +73,7 @@ func (l *Loader) LoadContent(ctx context.Context, repoOwner string, repoName str
 		}
 	}
 
-	return "", fmt.Errorf("no changelog found")
+	return "", NoChangelogFound{Version: version}
 }
 
 type ExtractContentOptions struct {

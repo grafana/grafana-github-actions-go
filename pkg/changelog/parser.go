@@ -47,7 +47,7 @@ func (p *Parser) Parse(ctx context.Context, content io.Reader) ([]Section, error
 	err = ast.Walk(node, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		switch e := n.(type) {
 		case *ast.Heading:
-			if e.Level == 2 {
+			if e.Level == 3 {
 				inHeading = entering
 			}
 		case *ast.Text:
@@ -91,5 +91,6 @@ func (p *Parser) getTitle(source []byte, listItem ast.Node) string {
 		}
 		return ast.WalkContinue, nil
 	})
-	return strings.TrimSpace(strings.Join(elements, ""))
+	title := strings.TrimSpace(strings.Join(elements, ""))
+	return title
 }
