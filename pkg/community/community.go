@@ -47,7 +47,7 @@ func (c *Community) CreateOrUpdatePost(ctx context.Context, post PostInput) (int
 	if err != nil {
 		return -1, err
 	}
-	searchQuery := fmt.Sprintf("%s @%s #%s in:title order:latest_topic", post.Title, post.Author, category.Slug)
+	searchQuery := fmt.Sprintf("%s @%s #%s in:title order:latest_topic", post.Title, post.Author, category.Category.Slug)
 	opts := SearchOptions{
 		Page: 1,
 	}
@@ -133,9 +133,15 @@ func (c *Community) getCategory(ctx context.Context, id int) (*Category, error) 
 	if err != nil {
 		return nil, err
 	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
 	defer resp.Body.Close()
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, err
+	}
+	if result.Category.ID == 0 {
+		return nil, fmt.Errorf("failed to decode category API data (no ID returned)")
 	}
 	return &result, nil
 }

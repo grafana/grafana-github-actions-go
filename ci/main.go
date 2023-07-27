@@ -19,6 +19,7 @@ func main() {
 		"github-release",
 		"update-changelog",
 		"auto-milestone",
+		"community-release",
 	}
 
 	var doTest bool
