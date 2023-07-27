@@ -22,6 +22,8 @@ const inputCommunityAPIUsername = "COMMUNITY_API_USERNAME"
 const inputCommunityCategoryID = "COMMUNITY_CATEGORY_ID"
 const inputCommunityBaseURL = "COMMUNITY_BASE_URL"
 const inputVersion = "VERSION"
+const defaultCategoryID = "9"
+const defaultBaseURL = "https://community.grafana.com/"
 
 func main() {
 	logger := zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr}).With().Timestamp().Logger()
@@ -104,10 +106,10 @@ func main() {
 		logger.Fatal().Msgf("No %s provided", tk.GetInputEnvName(inputCommunityAPIUsername))
 	}
 	if communityBaseURL == "" {
-		communityBaseURL = "https://community.grafana.com/"
+		communityBaseURL = defaultBaseURL
 	}
 	if rawCommunityCategoryID == "" {
-		rawCommunityCategoryID = "9"
+		rawCommunityCategoryID = defaultCategoryID
 	}
 	communityCategoryID, err := strconv.Atoi(rawCommunityCategoryID)
 	if err != nil {
