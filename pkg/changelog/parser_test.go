@@ -26,15 +26,22 @@ func TestParse(t *testing.T) {
 - **Category:** some title. [#123](https://github.com/grafana/grafana/issue/123), [@user](https://github.com/user)
 - **Other Category:** some other title. [#124](https://github.com/grafana/grafana/issue/124), [@user](https://github.com/user)
 - **Enterprise:** some other title. (Enterprise)
+- **Some HTML:** some <summary>. (Enterprise)
 `)
+		expectedEntries := []string{
+			"Category: some title.",
+			"Other Category: some other title.",
+			"Enterprise: some other title. (Enterprise)",
+			"Some HTML: some <summary>. (Enterprise)",
+		}
 		result, err := p.Parse(ctx, content)
 		require.NoError(t, err)
 		require.Len(t, result, 1)
 		require.Equal(t, "Bug fixes", result[0].Title)
-		require.Len(t, result[0].Entries, 3)
+		require.Len(t, result[0].Entries, len(expectedEntries))
 		entries := result[0].Entries
-		require.Equal(t, "Category: some title.", entries[0].Title)
-		require.Equal(t, "Other Category: some other title.", entries[1].Title)
-		require.Equal(t, "Enterprise: some other title. (Enterprise)", entries[2].Title)
+		for idx, expected := range expectedEntries {
+			require.Equal(t, expected, entries[idx].Title)
+		}
 	})
 }

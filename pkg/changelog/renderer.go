@@ -3,6 +3,7 @@ package changelog
 import (
 	"context"
 	"fmt"
+	"html/template"
 	"regexp"
 	"strconv"
 	"strings"
@@ -102,6 +103,7 @@ func (r *defaultRenderer) issueAsMarkdown(issue ghgql.PullRequest) string {
 	out := strings.Builder{}
 
 	title := PreparePRTitle(issue)
+	title = template.HTMLEscapeString(title)
 	title = titleHeadlinePattern.ReplaceAllString(title, "**$1**")
 
 	out.WriteString("- ")

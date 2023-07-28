@@ -1,14 +1,10 @@
 package changelog
 
 import (
+	"bufio"
 	"context"
 	"io"
-	"io/ioutil"
 	"strings"
-
-	"github.com/yuin/goldmark"
-	"github.com/yuin/goldmark/ast"
-	"github.com/yuin/goldmark/text"
 )
 
 type Entry struct {
@@ -34,43 +30,35 @@ func NewParser() *Parser {
 	return &Parser{}
 }
 
-func (p *Parser) Parse(ctx context.Context, content io.Reader) ([]Section, error) {
+func (p *Parser) rawParse(ctx context.Context, content io.Reader) ([]Section, error) {
 	result := make([]Section, 0, 5)
-	mdParser := goldmark.DefaultParser()
-	rawContent, err := ioutil.ReadAll(content)
-	if err != nil {
-		return nil, err
-	}
-	node := mdParser.Parse(text.NewReader(rawContent))
-	inHeading := false
+	scanner := bufio.NewScanner(content)
+	scanner.Split(bufio.ScanLines)
+	inSection := false
 	var currentSection *Section
-	err = ast.Walk(node, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
-		switch e := n.(type) {
-		case *ast.Heading:
-			if e.Level == 3 {
-				inHeading = entering
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "### ") {
+			inSection = true
+			if currentSection != nil {
+				result = append(result, *currentSection)
 			}
-		case *ast.Text:
-			if inHeading && !entering {
-				title := string(e.Text(rawContent))
-				if currentSection != nil {
-					result = append(result, *currentSection)
-				}
-				currentSection = &Section{
-					Title:   title,
-					Entries: make([]Entry, 0, 10),
-				}
+			currentSection = &Section{
+				Title:   strings.TrimPrefix(line, "### "),
+				Entries: make([]Entry, 0, 10),
 			}
-		case *ast.ListItem:
-			if currentSection != nil && !entering {
-				title := p.getTitle(rawContent, e)
-				currentSection.Entries = append(currentSection.Entries, Entry{Title: title})
-			}
+			continue
 		}
-		return ast.WalkContinue, nil
-	})
-	if err != nil {
-		return nil, err
+		if inSection && strings.HasPrefix(line, "- ") {
+			// For the title we only care about anything that comes before the
+			// link in the list item:
+			elems := strings.SplitN(strings.TrimPrefix(line, "- "), "[", 2)
+			title := elems[0]
+			currentSection.Entries = append(currentSection.Entries, Entry{
+				Title: strings.ReplaceAll(strings.TrimSpace(title), "*", ""),
+			})
+			continue
+		}
 	}
 	if currentSection != nil {
 		result = append(result, *currentSection)
@@ -78,19 +66,6 @@ func (p *Parser) Parse(ctx context.Context, content io.Reader) ([]Section, error
 	return result, nil
 }
 
-func (p *Parser) getTitle(source []byte, listItem ast.Node) string {
-	textBlock := listItem.FirstChild()
-	elements := make([]string, 0, 2)
-	ast.Walk(textBlock, func(c ast.Node, entering bool) (ast.WalkStatus, error) {
-		if c.Parent() == textBlock && !entering {
-			if c.Kind() == ast.KindLink {
-				return ast.WalkStop, nil
-			}
-			text := c.Text(source)
-			elements = append(elements, string(text))
-		}
-		return ast.WalkContinue, nil
-	})
-	title := strings.TrimSpace(strings.Join(elements, ""))
-	return title
+func (p *Parser) Parse(ctx context.Context, content io.Reader) ([]Section, error) {
+	return p.rawParse(ctx, content)
 }
