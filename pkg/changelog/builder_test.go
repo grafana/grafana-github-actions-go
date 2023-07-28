@@ -1,6 +1,7 @@
 package changelog
 
 import (
+	"context"
 	"testing"
 
 	"github.com/grafana/grafana-github-actions-go/pkg/ghgql"
@@ -147,6 +148,105 @@ func TestIssueLine(t *testing.T) {
 			test.issue(issue)
 			output := r.issueAsMarkdown(*issue)
 			require.Equal(t, test.expectedOutput, output)
+		})
+	}
+}
+
+func TestDeduplicateEntries(t *testing.T) {
+	tests := []struct {
+		name                string
+		currentPullRequests []ghgql.PullRequest
+		previousChangelogs  map[string]string
+		expectError         bool
+		expectResult        []ghgql.PullRequest
+	}{
+		{
+			name:                "empty",
+			expectError:         false,
+			expectResult:        []ghgql.PullRequest{},
+			currentPullRequests: []ghgql.PullRequest{},
+			previousChangelogs: map[string]string{
+				"10.0.0": "### Bug fixes",
+			},
+		},
+		{
+			name:        "no-entries-to-remove",
+			expectError: false,
+			expectResult: []ghgql.PullRequest{
+				{
+					Number: pointerOf(1),
+					Title:  pointerOf("Category: Title 1"),
+				},
+			},
+			currentPullRequests: []ghgql.PullRequest{
+				{
+					Number: pointerOf(1),
+					Title:  pointerOf("Category: Title 1"),
+				},
+			},
+			previousChangelogs: map[string]string{
+				"10.0.0": "### Bug fixes",
+			},
+		},
+		{
+			name:        "one-matching-entry-to-be-removed",
+			expectError: false,
+			expectResult: []ghgql.PullRequest{
+				{
+					Number: pointerOf(1),
+					Title:  pointerOf("Category: Title 1"),
+				},
+			},
+			currentPullRequests: []ghgql.PullRequest{
+				{
+					Number: pointerOf(1),
+					Title:  pointerOf("Category: Title 1"),
+				},
+				{
+					Number: pointerOf(2),
+					Title:  pointerOf("Category: Title 2"),
+				},
+			},
+			previousChangelogs: map[string]string{
+				"10.0.0": "### Bug fixes\n\n- **Category:** Title 2.\n",
+			},
+		},
+		{
+			name:        "one-matching-enterprise-entry-to-be-removed",
+			expectError: false,
+			expectResult: []ghgql.PullRequest{
+				{
+					Number: pointerOf(1),
+					Title:  pointerOf("Category: Title 1"),
+				},
+			},
+			currentPullRequests: []ghgql.PullRequest{
+				{
+					Number: pointerOf(1),
+					Title:  pointerOf("Category: Title 1"),
+				},
+				{
+					Number: pointerOf(2),
+					Title:  pointerOf("Category: Title 2"),
+					Labels: []string{"enterprise"},
+				},
+			},
+			previousChangelogs: map[string]string{
+				"10.0.0": "### Bug fixes\n\n- **Category:** Title 2. (Enterprise)\n",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := context.Background()
+			output, err := deduplicateEntries(ctx, test.currentPullRequests, test.previousChangelogs)
+			if test.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, test.expectResult, output)
+			}
 		})
 	}
 }

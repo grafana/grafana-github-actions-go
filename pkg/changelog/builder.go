@@ -58,10 +58,8 @@ func Build(ctx context.Context, version string, tk *toolkit.Toolkit) (*Changelog
 		return nil, err
 	}
 
-	knownTitles := make(map[string]struct{})
-
 	loader := NewLoader(tk.GitHubClient())
-	parser := NewParser()
+	previousChangelogs := make(map[string]string)
 	for _, milestone := range milestones {
 		logger.Info().Msgf("Considering %s for duplicates", milestone.GetTitle())
 		msContent, err := loader.LoadContent(ctx, "grafana", "grafana", milestone.GetTitle(), &LoaderOptions{RemoveHeading: true})
@@ -73,15 +71,15 @@ func Build(ctx context.Context, version string, tk *toolkit.Toolkit) (*Changelog
 			}
 			return nil, err
 		}
-		sections, err := parser.Parse(ctx, bytes.NewBufferString(msContent))
-		if err != nil {
-			return nil, err
-		}
-		for _, section := range sections {
-			for _, entry := range section.Entries {
-				knownTitles[entry.Title] = struct{}{}
-			}
-		}
+		previousChangelogs[milestone.GetTitle()] = msContent
+	}
+
+	filteredIssues, err := deduplicateEntries(ctx, issues, previousChangelogs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to deduplicate entries")
+	}
+	for _, i := range filteredIssues {
+		addToBody(body, i)
 	}
 
 	body.Version = version
@@ -90,20 +88,41 @@ func Build(ctx context.Context, version string, tk *toolkit.Toolkit) (*Changelog
 	} else if !milestone.GetClosedAt().IsZero() {
 		body.ReleaseDate = milestone.GetClosedAt().Format("2006-01-02")
 	}
+	return body, nil
+}
+
+// deduplicateEntries removes all pull requests that have been mentioned in the
+// previous changelogs
+func deduplicateEntries(ctx context.Context, pullRequests []ghgql.PullRequest, previousChangelogs map[string]string) ([]ghgql.PullRequest, error) {
+	logger := zerolog.Ctx(ctx)
+	knownTitles := make(map[string]string)
+	parser := NewParser()
+	for version, changelog := range previousChangelogs {
+		sections, err := parser.Parse(ctx, bytes.NewBufferString(changelog))
+		if err != nil {
+			return nil, err
+		}
+		for _, section := range sections {
+			for _, entry := range section.Entries {
+				knownTitles[entry.Title] = version
+			}
+		}
+	}
+	result := make([]ghgql.PullRequest, 0, len(pullRequests))
 	numDups := 0
-	for _, i := range issues {
+	for _, i := range pullRequests {
 		// If the PR already seems to be present in a previous release, we can
 		// skip it here:
 		newTitle := PreparePRTitle(i)
-		if _, found := knownTitles[strings.TrimSpace(newTitle)]; found {
-			logger.Debug().Msgf("`%s` (#%d) was already mentioned in a previous release", i.GetTitle(), i.GetNumber())
+		if version, found := knownTitles[strings.TrimSpace(newTitle)]; found {
+			logger.Debug().Msgf("`%s` (#%d) was already mentioned in `%s`", i.GetTitle(), i.GetNumber(), version)
 			numDups++
 			continue
 		}
-		addToBody(body, i)
+		result = append(result, i)
 	}
 	logger.Info().Msgf("%d duplicates skipped", numDups)
-	return body, nil
+	return result, nil
 }
 
 // getHistoricalMilestones retrieves all the milestones of the current and
