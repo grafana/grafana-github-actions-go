@@ -3,7 +3,6 @@ package changelog
 import (
 	"context"
 	"fmt"
-	"html/template"
 	"regexp"
 	"strconv"
 	"strings"
@@ -81,6 +80,12 @@ func (r *defaultRenderer) writeIssueLines(out *strings.Builder, issues []ghgql.P
 
 var titleHeadlinePattern = regexp.MustCompile(`^([^:]*:)`)
 
+func escapeMarkdown(s string) string {
+	s = strings.ReplaceAll(s, "<", "&lt;")
+	s = strings.ReplaceAll(s, ">", "&gt;")
+	return s
+}
+
 // PreparePRTitle converts the title of the pull-request into a format that
 // will then be used for rendering it. Since the output of this function can be
 // used to match PRs from various releases it is public.
@@ -89,6 +94,7 @@ func PreparePRTitle(issue ghgql.PullRequest) string {
 	title := issue.GetTitle()
 	title = stripReleaseStreamPrefix(title)
 	title = strings.TrimSuffix(title, ".")
+	title = escapeMarkdown(title)
 	out.WriteString(title)
 	if issueHasLabel(issue, LabelEnterprise) || issue.GetRepoName() == "grafana-enterprise" {
 		out.WriteString(". (Enterprise)")
@@ -103,7 +109,6 @@ func (r *defaultRenderer) issueAsMarkdown(issue ghgql.PullRequest) string {
 	out := strings.Builder{}
 
 	title := PreparePRTitle(issue)
-	title = template.HTMLEscapeString(title)
 	title = titleHeadlinePattern.ReplaceAllString(title, "**$1**")
 
 	out.WriteString("- ")

@@ -27,12 +27,14 @@ func TestParse(t *testing.T) {
 - **Other Category:** some other title. [#124](https://github.com/grafana/grafana/issue/124), [@user](https://github.com/user)
 - **Enterprise:** some other title. (Enterprise)
 - **Some HTML:** some <summary>. (Enterprise)
+- **Some HTML:** some &lt;summary&gt;. (Enterprise)
 `)
 		expectedEntries := []string{
 			"Category: some title.",
 			"Other Category: some other title.",
 			"Enterprise: some other title. (Enterprise)",
 			"Some HTML: some <summary>. (Enterprise)",
+			"Some HTML: some &lt;summary&gt;. (Enterprise)",
 		}
 		result, err := p.Parse(ctx, content)
 		require.NoError(t, err)
