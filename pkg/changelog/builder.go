@@ -21,6 +21,7 @@ const LabelUI = "area/grafana/ui"
 const LabelToolkit = "area/grafana/toolkit"
 const LabelRuntime = "area/grafana/runtime"
 const LabelBug = "type/bug"
+const milestoneAgeDiffThreshold = time.Hour * 24
 
 func Build(ctx context.Context, version string, tk *toolkit.Toolkit) (*ChangelogBody, error) {
 	logger := zerolog.Ctx(ctx)
@@ -29,6 +30,9 @@ func Build(ctx context.Context, version string, tk *toolkit.Toolkit) (*Changelog
 	milestone, err := getMilestone(ctx, tk, "grafana/grafana", version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve OSS milestone: %w", err)
+	}
+	if milestone == nil {
+		return nil, fmt.Errorf("milestone for `%s` not found", version)
 	}
 	enterpriseMilestone, err := getMilestone(ctx, tk, "grafana/grafana-enterprise", version)
 	if err != nil {
@@ -53,7 +57,7 @@ func Build(ctx context.Context, version string, tk *toolkit.Toolkit) (*Changelog
 	// Basically any milestone that was part of the stream and the previous one
 	// released before the current milestone should be considered a potential
 	// conflict.
-	milestones, err := getHistoricalMilestones(ctx, tk, milestone, version)
+	milestones, err := getHistoricalMilestones(ctx, tk, milestone, version, milestoneAgeDiffThreshold)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +65,7 @@ func Build(ctx context.Context, version string, tk *toolkit.Toolkit) (*Changelog
 	loader := NewLoader(tk.GitHubClient())
 	previousChangelogs := make(map[string]string)
 	for _, milestone := range milestones {
-		logger.Info().Msgf("Considering %s for duplicates", milestone.GetTitle())
+		logger.Debug().Msgf("Considering %s for duplicates", milestone.GetTitle())
 		msContent, err := loader.LoadContent(ctx, "grafana", "grafana", milestone.GetTitle(), &LoaderOptions{RemoveHeading: true})
 		if err != nil {
 			var noChangelogFound NoChangelogFound
@@ -78,6 +82,7 @@ func Build(ctx context.Context, version string, tk *toolkit.Toolkit) (*Changelog
 	if err != nil {
 		return nil, fmt.Errorf("failed to deduplicate entries")
 	}
+	logger.Info().Msgf("%d PRs remaining for the changelog", len(filteredIssues))
 	for _, i := range filteredIssues {
 		addToBody(body, i)
 	}
@@ -128,9 +133,7 @@ func deduplicateEntries(ctx context.Context, pullRequests []ghgql.PullRequest, p
 // getHistoricalMilestones retrieves all the milestones of the current and
 // previous release stream that were closed n-days before the milestone
 // matching `version`.
-func getHistoricalMilestones(ctx context.Context, tk *toolkit.Toolkit, currentMilestone *github.Milestone, version string) ([]*github.Milestone, error) {
-	logger := zerolog.Ctx(ctx)
-	result := make([]*github.Milestone, 0, 10)
+func getHistoricalMilestones(ctx context.Context, tk *toolkit.Toolkit, currentMilestone *github.Milestone, version string, ageDiffThreshold time.Duration) ([]*github.Milestone, error) {
 	if strings.HasSuffix(version, ".x") {
 		version = strings.Replace(version, ".x", ".0", 1)
 	}
@@ -142,10 +145,22 @@ func getHistoricalMilestones(ctx context.Context, tk *toolkit.Toolkit, currentMi
 	if err != nil {
 		return nil, err
 	}
+	return filterMilestonesForDeduplication(ctx, allMilestones, currentMilestone, *v, ageDiffThreshold)
+}
+
+// filterMilestonesForDeduplication returns only those milestones that should
+// be considered to look for duplicated changelog entries.
+func filterMilestonesForDeduplication(ctx context.Context, allMilestones []*github.Milestone, currentMilestone *github.Milestone, version semver.Version, ageDiffThreshold time.Duration) ([]*github.Milestone, error) {
+	logger := zerolog.Ctx(ctx)
+	result := make([]*github.Milestone, 0, 10)
 	// Now we need to find the previous minor release so that we can then filter based on that:
-	previousMinorVersion, err := getPreviousMinorRelease(ctx, allMilestones, *v)
+	previousMinorVersion, err := getPreviousMinorRelease(ctx, allMilestones, version)
 	if err != nil {
 		return nil, err
+	}
+	if previousMinorVersion == nil {
+		logger.Info().Msg("No previous minor version found")
+		return result, nil
 	}
 	logger.Info().Msgf("Previous minor version: %s", previousMinorVersion)
 
@@ -165,7 +180,8 @@ func getHistoricalMilestones(ctx context.Context, tk *toolkit.Toolkit, currentMi
 		if otherDueDate.IsZero() {
 			continue
 		}
-		if otherDueDate.Before(currentDueDate) {
+		diff := currentDueDate.Sub(otherDueDate)
+		if diff > ageDiffThreshold {
 			result = append(result, otherMilestone)
 		}
 	}

@@ -3,7 +3,10 @@ package changelog
 import (
 	"context"
 	"testing"
+	"time"
 
+	"github.com/coreos/go-semver/semver"
+	"github.com/google/go-github/v50/github"
 	"github.com/grafana/grafana-github-actions-go/pkg/ghgql"
 	"github.com/stretchr/testify/require"
 )
@@ -251,6 +254,111 @@ func TestDeduplicateEntries(t *testing.T) {
 	}
 }
 
+func TestFilterMilestonesForDeduplication(t *testing.T) {
+	allMilestones := []*github.Milestone{
+		{
+			Title: pointerOf("10.1.0"),
+			DueOn: newTS(t, "2023-01-01T12:00:00+00:00"),
+		},
+		{
+			Title: pointerOf("10.0.3"),
+			DueOn: newTS(t, "2022-12-31T12:00:00+00:00"),
+		},
+		{
+			Title: pointerOf("10.0.2"),
+			DueOn: newTS(t, "2022-12-03T12:00:00+00:00"),
+		},
+		{
+			Title: pointerOf("10.0.1"),
+			DueOn: newTS(t, "2022-12-02T12:00:00+00:00"),
+		},
+		{
+			Title: pointerOf("10.0.0"),
+			DueOn: newTS(t, "2022-12-01T12:00:00+00:00"),
+		},
+		{
+			Title: pointerOf("9.5.3"),
+			DueOn: newTS(t, "2022-11-04T12:00:00+00:00"),
+		},
+		{
+			Title: pointerOf("9.5.2"),
+			DueOn: newTS(t, "2022-11-03T12:00:00+00:00"),
+		},
+		{
+			Title: pointerOf("9.5.1"),
+			DueOn: newTS(t, "2022-11-02T12:00:00+00:00"),
+		},
+		{
+			Title: pointerOf("9.5.0"),
+			DueOn: newTS(t, "2022-11-01T12:00:00+00:00"),
+		},
+		{
+			Title: pointerOf("10.1.x"),
+		},
+		{
+			Title: pointerOf("10.0.x"),
+		},
+		{
+			Title: pointerOf("9.5.x"),
+		},
+	}
+	tests := []struct {
+		name             string
+		currentMilestone string
+		expectOutput     []string
+		expectError      bool
+	}{
+		{
+			name:             "no-previous-milestone",
+			currentMilestone: "9.5.3",
+			expectOutput:     []string{},
+			expectError:      false,
+		},
+		{
+			name:             "all-previous-older-than-one-day",
+			currentMilestone: "10.1.0",
+			// The 10.0.x releases except for 10.0.3 happened more than a day
+			// before 10.1.0 and so they should be included:
+			expectOutput: []string{"10.0.2", "10.0.1", "10.0.0"},
+			expectError:  false,
+		},
+		{
+			name:             "all-previous",
+			currentMilestone: "10.0.3",
+			expectOutput:     []string{"9.5.3", "9.5.2", "9.5.1", "9.5.0"},
+			expectError:      false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := context.Background()
+			version, err := semver.NewVersion(test.currentMilestone)
+			require.NoError(t, err)
+			var currentMilestone *github.Milestone
+			for _, ms := range allMilestones {
+				if ms.GetTitle() == test.currentMilestone {
+					currentMilestone = ms
+					break
+				}
+			}
+			output, err := filterMilestonesForDeduplication(ctx, allMilestones, currentMilestone, *version, time.Hour*24)
+			if test.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				if err != nil {
+				}
+				outputTitles := make([]string, 0, len(output))
+				for _, o := range output {
+					outputTitles = append(outputTitles, o.GetTitle())
+				}
+				require.Equal(t, test.expectOutput, outputTitles)
+			}
+		})
+	}
+}
+
 func addLabel(t *testing.T, issue *ghgql.PullRequest, labelName string) {
 	if issue.Labels == nil {
 		issue.Labels = make([]string, 0, 5)
@@ -260,4 +368,12 @@ func addLabel(t *testing.T, issue *ghgql.PullRequest, labelName string) {
 
 func pointerOf[T any](value T) *T {
 	return &value
+}
+
+func newTS(t *testing.T, s string) *github.Timestamp {
+	t.Helper()
+	ts, err := time.Parse(time.RFC3339, s)
+	require.NoError(t, err)
+	return &github.Timestamp{Time: ts}
+
 }
