@@ -1,12 +1,17 @@
 package changelog
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"strings"
+	"time"
 
+	"github.com/coreos/go-semver/semver"
 	"github.com/grafana/grafana-github-actions-go/pkg/ghgql"
 	"github.com/grafana/grafana-github-actions-go/pkg/toolkit"
+	"github.com/rs/zerolog"
 
 	"github.com/google/go-github/v50/github"
 )
@@ -16,20 +21,18 @@ const LabelUI = "area/grafana/ui"
 const LabelToolkit = "area/grafana/toolkit"
 const LabelRuntime = "area/grafana/runtime"
 const LabelBug = "type/bug"
-
-type Entry struct {
-	Title                     string
-	PullRequestNumber         int
-	OriginalPullRequestNumber int
-	Labels                    []string
-}
+const milestoneAgeDiffThreshold = time.Hour * 24
 
 func Build(ctx context.Context, version string, tk *toolkit.Toolkit) (*ChangelogBody, error) {
+	logger := zerolog.Ctx(ctx)
 	body := newChangelogBody()
 
 	milestone, err := getMilestone(ctx, tk, "grafana/grafana", version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve OSS milestone: %w", err)
+	}
+	if milestone == nil {
+		return nil, fmt.Errorf("milestone for `%s` not found", version)
 	}
 	enterpriseMilestone, err := getMilestone(ctx, tk, "grafana/grafana-enterprise", version)
 	if err != nil {
@@ -50,16 +53,204 @@ func Build(ctx context.Context, version string, tk *toolkit.Toolkit) (*Changelog
 	issues = append(issues, ossIssues...)
 	issues = append(issues, enterpriseIssues...)
 
+	// At this point check if the PR is already part of an older release.
+	// Basically any milestone that was part of the stream and the previous one
+	// released before the current milestone should be considered a potential
+	// conflict.
+	milestones, err := getHistoricalMilestones(ctx, tk, milestone, version, milestoneAgeDiffThreshold)
+	if err != nil {
+		return nil, err
+	}
+
+	loader := NewLoader(tk.GitHubClient())
+	previousChangelogs := make(map[string]string)
+	for _, milestone := range milestones {
+		logger.Debug().Msgf("Considering %s for duplicates", milestone.GetTitle())
+		msContent, err := loader.LoadContent(ctx, "grafana", "grafana", milestone.GetTitle(), &LoaderOptions{RemoveHeading: true})
+		if err != nil {
+			var noChangelogFound NoChangelogFound
+			if errors.As(err, &noChangelogFound) {
+				logger.Warn().Msgf("No changelog found for %s", noChangelogFound.Version)
+				continue
+			}
+			return nil, err
+		}
+		previousChangelogs[milestone.GetTitle()] = msContent
+	}
+
+	filteredIssues, err := deduplicateEntries(ctx, issues, previousChangelogs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to deduplicate entries")
+	}
+	logger.Info().Msgf("%d PRs remaining for the changelog", len(filteredIssues))
+	for _, i := range filteredIssues {
+		addToBody(body, i)
+	}
+
 	body.Version = version
 	if !milestone.GetDueOn().IsZero() {
 		body.ReleaseDate = milestone.GetDueOn().Format("2006-01-02")
 	} else if !milestone.GetClosedAt().IsZero() {
 		body.ReleaseDate = milestone.GetClosedAt().Format("2006-01-02")
 	}
-	for _, i := range issues {
-		addToBody(body, i)
-	}
 	return body, nil
+}
+
+// deduplicateEntries removes all pull requests that have been mentioned in the
+// previous changelogs
+func deduplicateEntries(ctx context.Context, pullRequests []ghgql.PullRequest, previousChangelogs map[string]string) ([]ghgql.PullRequest, error) {
+	logger := zerolog.Ctx(ctx)
+	knownTitles := make(map[string]string)
+	parser := NewParser()
+	for version, changelog := range previousChangelogs {
+		sections, err := parser.Parse(ctx, bytes.NewBufferString(changelog))
+		if err != nil {
+			return nil, err
+		}
+		for _, section := range sections {
+			for _, entry := range section.Entries {
+				knownTitles[entry.Title] = version
+			}
+		}
+	}
+	result := make([]ghgql.PullRequest, 0, len(pullRequests))
+	numDups := 0
+	for _, i := range pullRequests {
+		// If the PR already seems to be present in a previous release, we can
+		// skip it here:
+		newTitle := PreparePRTitle(i)
+		if version, found := knownTitles[strings.TrimSpace(newTitle)]; found {
+			logger.Debug().Msgf("`%s` (#%d) was already mentioned in `%s`", i.GetTitle(), i.GetNumber(), version)
+			numDups++
+			continue
+		}
+		result = append(result, i)
+	}
+	logger.Info().Msgf("%d duplicates skipped", numDups)
+	return result, nil
+}
+
+// getHistoricalMilestones retrieves all the milestones of the current and
+// previous release stream that were closed n-days before the milestone
+// matching `version`.
+func getHistoricalMilestones(ctx context.Context, tk *toolkit.Toolkit, currentMilestone *github.Milestone, version string, ageDiffThreshold time.Duration) ([]*github.Milestone, error) {
+	if strings.HasSuffix(version, ".x") {
+		version = strings.Replace(version, ".x", ".0", 1)
+	}
+	v, err := semver.NewVersion(version)
+	if err != nil {
+		return nil, err
+	}
+	allMilestones, err := getAllMilestones(ctx, tk, "grafana", "grafana")
+	if err != nil {
+		return nil, err
+	}
+	return filterMilestonesForDeduplication(ctx, allMilestones, currentMilestone, *v, ageDiffThreshold)
+}
+
+// filterMilestonesForDeduplication returns only those milestones that should
+// be considered to look for duplicated changelog entries.
+func filterMilestonesForDeduplication(ctx context.Context, allMilestones []*github.Milestone, currentMilestone *github.Milestone, version semver.Version, ageDiffThreshold time.Duration) ([]*github.Milestone, error) {
+	logger := zerolog.Ctx(ctx)
+	result := make([]*github.Milestone, 0, 10)
+	// Now we need to find the previous minor release so that we can then filter based on that:
+	previousMinorVersion, err := getPreviousMinorRelease(ctx, allMilestones, version)
+	if err != nil {
+		return nil, err
+	}
+	if previousMinorVersion == nil {
+		logger.Info().Msg("No previous minor version found")
+		return result, nil
+	}
+	logger.Info().Msgf("Previous minor version: %s", previousMinorVersion)
+
+	// Now we need to find all the milestones for that particular minor version
+	// that have been closed before the date of the version-milestone:
+	currentDueDate := getMilestoneDate(currentMilestone)
+	// If the milestone hasn't been closed yet (e.g. relevant for previewing
+	// new releases), then we assume that it was closed just now:
+	if currentDueDate.IsZero() {
+		currentDueDate = time.Now()
+	}
+	for _, otherMilestone := range allMilestones {
+		if !isInMinorRelease(otherMilestone, previousMinorVersion) {
+			continue
+		}
+		otherDueDate := getMilestoneDate(otherMilestone)
+		if otherDueDate.IsZero() {
+			continue
+		}
+		diff := currentDueDate.Sub(otherDueDate)
+		if diff > ageDiffThreshold {
+			result = append(result, otherMilestone)
+		}
+	}
+	return result, nil
+}
+
+func getMilestoneDate(milestone *github.Milestone) time.Time {
+	if milestone.DueOn != nil {
+		return milestone.DueOn.Time
+	}
+	if milestone.ClosedAt != nil {
+		return milestone.ClosedAt.Time
+	}
+	return time.Time{}
+}
+
+func isInMinorRelease(milestone *github.Milestone, version *semver.Version) bool {
+	title := milestone.GetTitle()
+	v, err := semver.NewVersion(title)
+	if err != nil || v == nil {
+		return false
+	}
+	return v.Major == version.Major && v.Minor == version.Minor
+}
+
+func getAllMilestones(ctx context.Context, tk *toolkit.Toolkit, owner, repo string) ([]*github.Milestone, error) {
+	opts := &github.MilestoneListOptions{}
+	opts.State = "all"
+	opts.Page = 1
+	result := make([]*github.Milestone, 0, 20)
+	for {
+		milestones, resp, err := tk.GitHubClient().Issues.ListMilestones(ctx, owner, repo, opts)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, milestones...)
+		if resp.NextPage <= opts.Page {
+			break
+		}
+		opts.Page = resp.NextPage
+	}
+	return result, nil
+}
+
+// getPreviousMinorRelease tries to find the previous minor release of the provided version
+func getPreviousMinorRelease(ctx context.Context, allMilestones []*github.Milestone, version semver.Version) (*semver.Version, error) {
+	currentMinor := version
+	currentMinor.Patch = 0
+	// For this it should be enough to go through all the ".x" milestones:
+	var candidateVersion *semver.Version
+	for _, m := range allMilestones {
+		if strings.HasSuffix(m.GetTitle(), ".x") {
+			mTitle := m.GetTitle()
+			mTitle = strings.Replace(mTitle, ".x", ".0", 1)
+			mVersion, err := semver.NewVersion(mTitle)
+			if err != nil {
+				continue
+			}
+			if mVersion.LessThan(currentMinor) {
+				if candidateVersion == nil || !mVersion.LessThan(*candidateVersion) {
+					candidateVersion = mVersion
+				}
+			}
+		}
+	}
+	if candidateVersion != nil {
+		return candidateVersion, nil
+	}
+	return nil, nil
 }
 
 type ChangelogBody struct {
