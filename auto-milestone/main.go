@@ -52,6 +52,7 @@ func main() {
 	// Determine the base-branch of that pull request
 	tk, err := toolkit.Init(
 		ctx,
+		toolkit.WithRegisteredInput("version_source_repository", "owner/repo of the repository to check for a package.json file"),
 	)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Failed to initialize toolkit")
@@ -67,10 +68,7 @@ func main() {
 		}
 	}()
 
-	elems := strings.Split(repo, "/")
-	repoOwner := elems[0]
-	repoName := elems[1]
-
+	repoOwner, repoName := splitRepo(repo)
 	gh := tk.GitHubClient()
 
 	pr, _, err := gh.PullRequests.Get(ctx, repoOwner, repoName, prNumber)
@@ -83,9 +81,15 @@ func main() {
 		return
 	}
 
+	versionSourceRepoOverride := tk.MustGetInput(ctx, "version_source_repository")
+	if versionSourceRepoOverride == "" {
+		versionSourceRepoOverride = fmt.Sprintf("%s/%s", prTargetBranch.GetRepo().GetOwner().GetLogin(), prTargetBranch.GetRepo().GetName())
+	}
+	versionSourceOwner, versionSourceName := splitRepo(versionSourceRepoOverride)
+
 	var targetMilestoneName string
 
-	content, _, _, err := gh.Repositories.GetContents(ctx, prTargetBranch.GetRepo().GetOwner().GetLogin(), prTargetBranch.GetRepo().GetName(), "package.json", &github.RepositoryContentGetOptions{Ref: prTargetBranch.GetRef()})
+	content, _, _, err := gh.Repositories.GetContents(ctx, versionSourceOwner, versionSourceName, "package.json", &github.RepositoryContentGetOptions{Ref: prTargetBranch.GetRef()})
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Failed to retrieve package.json of PR base")
 		return
@@ -111,6 +115,9 @@ func main() {
 	milestone, err := tk.GitHubGQLClient().GetMilestoneByTitle(ctx, repoOwner, repoName, targetMilestoneName)
 	if err != nil {
 		logger.Fatal().Msgf("Failed to find milestone matching `%s`", targetMilestoneName)
+	}
+	if milestone == nil {
+		logger.Fatal().Msgf("Milestone not found: `%s`", targetMilestoneName)
 	}
 
 	a := determineAction(ctx, pr, prMilestone, milestone)
@@ -227,4 +234,11 @@ func versionFromPackage(content string) (string, error) {
 		return "", fmt.Errorf("unsupported version format")
 	}
 	return fmt.Sprintf("%s.%s.x", match[1], match[2]), nil
+}
+
+func splitRepo(repo string) (string, string) {
+	elems := strings.Split(repo, "/")
+	repoOwner := elems[0]
+	repoName := elems[1]
+	return repoOwner, repoName
 }

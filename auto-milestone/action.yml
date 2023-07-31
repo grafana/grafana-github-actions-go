@@ -7,6 +7,9 @@ inputs:
   pr:
     description: The PR number that should be updated
     required: true
+  version_source_repository:
+    description: owner/repo to check for the package.json file
+    required: false
   metrics_api_key:
     description: API key/password for a Graphite HTTP endpoint
     required: false
@@ -35,3 +38,4 @@ runs:
       INPUT_METRICS_API_USERNAME: ${{inputs.metrics_api_username}}
       INPUT_METRICS_API_KEY: ${{inputs.metrics_api_key}}
       INPUT_METRICS_API_ENDPOINT: ${{inputs.metrics_api_endpoint}}
+      INPUT_VERSION_SOURCE_REPOSITORY: ${{inputs.version_source_repository}}
