@@ -142,6 +142,17 @@ func TestIssueLine(t *testing.T) {
 			},
 			expectedOutput: "- hello. [#123](https://github.com/grafana/grafana/issues/123), [@author](https://github.com/author)\n",
 		},
+		{
+			// HTML should be escaped in the simplest possible way since
+			// authors assume that the title of a PR will be rendered as-is:
+			name: "oss-pull-request-with-html-like-title",
+			issue: func(i *ghgql.PullRequest) {
+				i.Title = pointerOf("hello <summary> world")
+				i.Number = pointerOf(123)
+				i.AuthorLogin = pointerOf("author")
+			},
+			expectedOutput: "- hello &lt;summary&gt; world. [#123](https://github.com/grafana/grafana/issues/123), [@author](https://github.com/author)\n",
+		},
 	}
 
 	for _, test := range tests {

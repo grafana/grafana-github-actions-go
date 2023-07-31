@@ -28,6 +28,12 @@ func TestParse(t *testing.T) {
 - **Enterprise:** some other title. (Enterprise)
 - **Some HTML:** some <summary>. (Enterprise)
 - **Some HTML:** some &lt;summary&gt;. (Enterprise)
+
+### Breaking changes
+- Something else
+
+### Deprecations
+- Some more
 `)
 		expectedEntries := []string{
 			"Category: some title.",

@@ -16,6 +16,8 @@ type Section struct {
 	Entries []Entry
 }
 
+var defaultIgnoredSections = []string{"breaking changes", "deprecations"}
+
 // Parser provides functionality to parse the entries of a single
 // version-changelog into a collection of sections. Note that the parsing
 // cannot restore the complete state of the original ChangelogBody as the
@@ -23,11 +25,25 @@ type Section struct {
 //
 // Add this point only tickets in the "Bug fixes", "Features and enhancements",
 // and "Plugin development fixes & changes" section work reliably.
-type Parser struct{}
+type Parser struct {
+	ignoredSections []string
+}
 
 // NewParser generates a new Parser instance.
 func NewParser() *Parser {
-	return &Parser{}
+	return &Parser{
+		ignoredSections: defaultIgnoredSections,
+	}
+}
+
+func (p *Parser) isIgnoredSection(title string) bool {
+	t := strings.TrimSpace(strings.ToLower(title))
+	for _, s := range p.ignoredSections {
+		if s == t {
+			return true
+		}
+	}
+	return false
 }
 
 func (p *Parser) rawParse(ctx context.Context, content io.Reader) ([]Section, error) {
@@ -39,12 +55,21 @@ func (p *Parser) rawParse(ctx context.Context, content io.Reader) ([]Section, er
 	for scanner.Scan() {
 		line := scanner.Text()
 		if strings.HasPrefix(line, "### ") {
-			inSection = true
 			if currentSection != nil {
 				result = append(result, *currentSection)
+				currentSection = nil
 			}
+			sectionTitle := strings.TrimPrefix(line, "### ")
+
+			// If the new section is to be ignored:
+			if p.isIgnoredSection(sectionTitle) {
+				inSection = false
+				continue
+			}
+
+			inSection = true
 			currentSection = &Section{
-				Title:   strings.TrimPrefix(line, "### "),
+				Title:   sectionTitle,
 				Entries: make([]Entry, 0, 10),
 			}
 			continue
