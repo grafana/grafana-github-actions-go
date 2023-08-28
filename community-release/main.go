@@ -125,12 +125,12 @@ func main() {
 		community.CommunityWithAPICredentials(username, key),
 	)
 	if _, err := comm.CreateOrUpdatePost(ctx, community.PostInput{
-		Title:    fmt.Sprintf("Changelog: Updates in Grafana %s", version),
+		Title:    releaseTitle,
 		Author:   username,
 		Body:     changelogContent,
 		Category: communityCategoryID,
 	}, &community.PostOptions{
-		FallbackBody: changelogFooter(version),
+		FallbackBody: fallbackChangelog(version),
 	}); err != nil {
 		logger.Fatal().Err(err).Msg("Failed to post to the forums")
 	}
@@ -153,4 +153,9 @@ func retrieveChangelog(ctx context.Context, gh *github.Client, repoOwner string,
 func changelogFooter(version string) string {
 	return fmt.Sprintf(`[Download page](https://grafana.com/grafana/download/%s)
 [What's new highlights](https://grafana.com/docs/grafana/latest/whatsnew/)`, version)
+}
+
+func fallbackChangelog(version string) string {
+	return fmt.Sprintf(`[Full changelog](https://github.com/grafana/grafana/releases/tag/v%s)
+%s`, version, changelogFooter(version))
 }

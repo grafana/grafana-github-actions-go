@@ -112,10 +112,10 @@ func (c *Community) createTopic(ctx context.Context, post PostInput) (*Post, err
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		io.Copy(os.Stderr, resp.Body)
 		if resp.StatusCode == http.StatusUnprocessableEntity {
 			return nil, errPostTooLong
 		}
+		io.Copy(os.Stderr, resp.Body)
 		return nil, fmt.Errorf("creating a new post failed with status code %d", resp.StatusCode)
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
@@ -146,10 +146,10 @@ func (c *Community) updatePost(ctx context.Context, postID int, raw string) erro
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		io.Copy(os.Stderr, resp.Body)
 		if resp.StatusCode == http.StatusUnprocessableEntity {
 			return errPostTooLong
 		}
+		io.Copy(os.Stderr, resp.Body)
 		return fmt.Errorf("updating existing post failed with status code %d", resp.StatusCode)
 	}
 	return nil
