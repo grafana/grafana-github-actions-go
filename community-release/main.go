@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"unicode/utf8"
 
 	"github.com/google/go-github/v50/github"
 	"github.com/grafana/grafana-github-actions-go/pkg/changelog"
@@ -87,6 +88,8 @@ func main() {
 		logger.Fatal().Err(err).Msgf("Failed to retrieve changelog for %s", version)
 	}
 
+	logger.Info().Msgf("Changelog received with %d characters", utf8.RuneCountInString(changelogContent))
+
 	releaseTitle := fmt.Sprintf("Changelog: Updates in Grafana %s", version)
 
 	if doPreview {
@@ -122,10 +125,12 @@ func main() {
 		community.CommunityWithAPICredentials(username, key),
 	)
 	if _, err := comm.CreateOrUpdatePost(ctx, community.PostInput{
-		Title:    fmt.Sprintf("Changelog: Updates in Grafana %s", version),
+		Title:    releaseTitle,
 		Author:   username,
 		Body:     changelogContent,
 		Category: communityCategoryID,
+	}, &community.PostOptions{
+		FallbackBody: fallbackChangelog(version),
 	}); err != nil {
 		logger.Fatal().Err(err).Msg("Failed to post to the forums")
 	}
@@ -142,6 +147,15 @@ func retrieveChangelog(ctx context.Context, gh *github.Client, repoOwner string,
 	}
 	return fmt.Sprintf(`%s
 
-[Download page](https://grafana.com/grafana/download/%s)
-[What's new highlights](https://grafana.com/docs/grafana/latest/whatsnew/)`, output, version), nil
+%s`, output, changelogFooter(version)), nil
+}
+
+func changelogFooter(version string) string {
+	return fmt.Sprintf(`[Download page](https://grafana.com/grafana/download/%s)
+[What's new highlights](https://grafana.com/docs/grafana/latest/whatsnew/)`, version)
+}
+
+func fallbackChangelog(version string) string {
+	return fmt.Sprintf(`[Full changelog](https://github.com/grafana/grafana/releases/tag/v%s)
+%s`, version, changelogFooter(version))
 }

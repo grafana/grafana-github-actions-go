@@ -18,12 +18,12 @@ type Community struct {
 	key        string
 	username   string
 	baseURL    string
-	httpClient http.Client
+	httpClient *http.Client
 }
 
 func New(options ...CommunityOption) *Community {
 	c := &Community{
-		httpClient: http.Client{},
+		httpClient: &http.Client{},
 	}
 	for _, opt := range options {
 		opt(c)
@@ -38,14 +38,22 @@ type PostInput struct {
 	Author   string `json:"-"`
 }
 
+type PostOptions struct {
+	// FallbackBody is used for situations where the server returns a size-limit error.
+	FallbackBody string
+}
+
 // CreateOrUpdate tries to update an existing post with the provided title in
 // the specified category. If no such topic exists, a new topic with the same
 // content will be created.
-func (c *Community) CreateOrUpdatePost(ctx context.Context, post PostInput) (int, error) {
+func (c *Community) CreateOrUpdatePost(ctx context.Context, post PostInput, postOpts *PostOptions) (int, error) {
+	if postOpts == nil {
+		postOpts = &PostOptions{}
+	}
 	logger := zerolog.Ctx(ctx)
 	category, err := c.getCategory(ctx, post.Category)
 	if err != nil {
-		return -1, err
+		return -1, fmt.Errorf("failed to retrieve category: %w", err)
 	}
 	searchQuery := fmt.Sprintf("%s @%s #%s in:title order:latest_topic", post.Title, post.Author, category.Category.Slug)
 	opts := SearchOptions{
@@ -58,15 +66,33 @@ func (c *Community) CreateOrUpdatePost(ctx context.Context, post PostInput) (int
 	if len(result.Posts) > 0 {
 		// No post found, so let's create a new one
 		logger.Info().Msgf("Updating post %d", result.Posts[0].ID)
-		return result.Posts[0].ID, c.updatePost(ctx, result.Posts[0].ID, post.Body)
+		if err := c.updatePost(ctx, result.Posts[0].ID, post.Body); err != nil {
+			if err == errPostTooLong {
+				if err := c.updatePost(ctx, result.Posts[0].ID, postOpts.FallbackBody); err != nil {
+					return result.Posts[0].ID, err
+				}
+				return result.Posts[0].ID, nil
+			}
+			return result.Posts[0].ID, err
+		}
+		return result.Posts[0].ID, nil
 	}
 
 	topic, err := c.createTopic(ctx, post)
 	if err != nil {
+		if err == errPostTooLong {
+			post.Body = postOpts.FallbackBody
+			topic, err = c.createTopic(ctx, post)
+			if err != nil {
+				return -1, err
+			}
+		}
 		return -1, err
 	}
 	return topic.ID, nil
 }
+
+var errPostTooLong = fmt.Errorf("post content is too long")
 
 func (c *Community) createTopic(ctx context.Context, post PostInput) (*Post, error) {
 	body := bytes.Buffer{}
@@ -86,8 +112,11 @@ func (c *Community) createTopic(ctx context.Context, post PostInput) (*Post, err
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == http.StatusUnprocessableEntity {
+			return nil, errPostTooLong
+		}
 		io.Copy(os.Stderr, resp.Body)
-		return nil, fmt.Errorf("creating a new post failed")
+		return nil, fmt.Errorf("creating a new post failed with status code %d", resp.StatusCode)
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, err
@@ -117,8 +146,11 @@ func (c *Community) updatePost(ctx context.Context, postID int, raw string) erro
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == http.StatusUnprocessableEntity {
+			return errPostTooLong
+		}
 		io.Copy(os.Stderr, resp.Body)
-		return fmt.Errorf("unexpected status code %d", resp.StatusCode)
+		return fmt.Errorf("updating existing post failed with status code %d", resp.StatusCode)
 	}
 	return nil
 }
