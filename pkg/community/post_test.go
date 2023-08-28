@@ -23,7 +23,9 @@ func TestCommunityPost(t *testing.T) {
 		// In such a situation, the client should try again with a shorter
 		// message.
 		ctx := context.Background()
-		srv := NewMockCommunityServer()
+		srv := NewMockCommunityServer(func(o *MockCommunityServerOptions) {
+			o.PostSizeLimit = 50_000
+		})
 		comm := New(CommunityWithBaseURL(srv.GetURL()), CommunityWithHTTPClient(srv.GetClient()))
 
 		// This produces a string with 50005 characters, which will go beyond
@@ -46,13 +48,15 @@ func TestCommunityPost(t *testing.T) {
 	t.Run("too-much-content-update", func(t *testing.T) {
 		// Same as the previous test but for updating an existing post.
 		ctx := context.Background()
-		srv := NewMockCommunityServer()
-		srv.ExistingPosts = []TestSearchPost{
-			{
-				ID:      1,
-				TopicID: 1,
-			},
-		}
+		srv := NewMockCommunityServer(func(opts *MockCommunityServerOptions) {
+			opts.PostSizeLimit = 50_000
+			opts.ExistingPosts = []TestSearchPost{
+				{
+					ID:      1,
+					TopicID: 1,
+				},
+			}
+		})
 		comm := New(CommunityWithBaseURL(srv.GetURL()), CommunityWithHTTPClient(srv.GetClient()))
 		body := strings.Repeat("hello", 10001)
 		_, err := comm.CreateOrUpdatePost(ctx, PostInput{
@@ -87,17 +91,23 @@ type TestSearchPost struct {
 	TopicID int `json:"topic_id"`
 }
 
-type MockCommunityServer struct {
-	srv           *httptest.Server
+type MockCommunityServerOptions struct {
 	PostSizeLimit int
 	ExistingPosts []TestSearchPost
-	postCalls     []TestPost
 }
 
-func NewMockCommunityServer() *MockCommunityServer {
+type MockCommunityServer struct {
+	opts      MockCommunityServerOptions
+	srv       *httptest.Server
+	postCalls []TestPost
+}
+
+func NewMockCommunityServer(options func(*MockCommunityServerOptions)) *MockCommunityServer {
+	opts := MockCommunityServerOptions{}
+	options(&opts)
 	s := MockCommunityServer{
-		PostSizeLimit: 50000,
-		postCalls:     make([]TestPost, 0, 5),
+		opts:      opts,
+		postCalls: make([]TestPost, 0, 5),
 	}
 	handler := http.NewServeMux()
 	handler.HandleFunc("/c/4/show.json", func(w http.ResponseWriter, r *http.Request) {
@@ -105,7 +115,7 @@ func NewMockCommunityServer() *MockCommunityServer {
 	})
 	handler.HandleFunc("/search.json", func(w http.ResponseWriter, r *http.Request) {
 		data := map[string]interface{}{
-			"posts": s.ExistingPosts,
+			"posts": s.opts.ExistingPosts,
 		}
 		json.NewEncoder(w).Encode(data)
 	})
@@ -117,30 +127,32 @@ func NewMockCommunityServer() *MockCommunityServer {
 			return
 		}
 		s.postCalls = append(s.postCalls, post)
-		if size := utf8.RuneCountInString(post.Raw); size > s.PostSizeLimit {
+		if size := utf8.RuneCountInString(post.Raw); size > s.opts.PostSizeLimit {
 			w.WriteHeader(http.StatusUnprocessableEntity)
-			fmt.Fprintf(w, `{"action":"create_post","errors":["Body is limited to %d characters; you entered %d."]}`, s.PostSizeLimit, size)
+			fmt.Fprintf(w, `{"action":"create_post","errors":["Body is limited to %d characters; you entered %d."]}`, s.opts.PostSizeLimit, size)
 			return
 		}
 		fmt.Fprintf(w, `{}`)
 	})
-	handler.HandleFunc("/posts/1.json", func(w http.ResponseWriter, r *http.Request) {
-		defer r.Body.Close()
-		post := TestPostUpdate{}
-		if err := json.NewDecoder(r.Body).Decode(&post); err != nil {
-			http.Error(w, "Decoding failed", http.StatusInternalServerError)
-			return
-		}
-		s.postCalls = append(s.postCalls, TestPost{
-			Raw: post.Post.Raw,
+	for _, existing := range s.opts.ExistingPosts {
+		handler.HandleFunc(fmt.Sprintf("/posts/%d.json", existing.ID), func(w http.ResponseWriter, r *http.Request) {
+			defer r.Body.Close()
+			post := TestPostUpdate{}
+			if err := json.NewDecoder(r.Body).Decode(&post); err != nil {
+				http.Error(w, "Decoding failed", http.StatusInternalServerError)
+				return
+			}
+			s.postCalls = append(s.postCalls, TestPost{
+				Raw: post.Post.Raw,
+			})
+			if size := utf8.RuneCountInString(post.Post.Raw); size > s.opts.PostSizeLimit {
+				w.WriteHeader(http.StatusUnprocessableEntity)
+				fmt.Fprintf(w, `{"action":"create_post","errors":["Body is limited to %d characters; you entered %d."]}`, s.opts.PostSizeLimit, size)
+				return
+			}
+			fmt.Fprintf(w, `{}`)
 		})
-		if size := utf8.RuneCountInString(post.Post.Raw); size > s.PostSizeLimit {
-			w.WriteHeader(http.StatusUnprocessableEntity)
-			fmt.Fprintf(w, `{"action":"create_post","errors":["Body is limited to %d characters; you entered %d."]}`, s.PostSizeLimit, size)
-			return
-		}
-		fmt.Fprintf(w, `{}`)
-	})
+	}
 	srv := httptest.NewServer(handler)
 	s.srv = srv
 	return &s
