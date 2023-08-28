@@ -14,6 +14,27 @@ import (
 )
 
 func TestCommunityPost(t *testing.T) {
+	t.Run("short-content-create", func(t *testing.T) {
+		// For short content we can post the content directly to the server:
+		ctx := context.Background()
+		srv := NewMockCommunityServer(func(o *MockCommunityServerOptions) {
+			o.PostSizeLimit = 50_000
+		})
+		comm := New(CommunityWithBaseURL(srv.GetURL()), CommunityWithHTTPClient(srv.GetClient()))
+		body := strings.Repeat("hello", 10)
+		_, err := comm.CreateOrUpdatePost(ctx, PostInput{
+			Title:    "Sample Post",
+			Category: 4,
+			Body:     body,
+			Author:   "test",
+		}, &PostOptions{
+			FallbackBody: "fallback",
+		})
+		require.NoError(t, err)
+		postCalls := srv.GetPostCalls()
+		require.Len(t, postCalls, 1)
+		require.Equal(t, body, postCalls[0].Raw)
+	})
 	t.Run("too-much-content-create", func(t *testing.T) {
 		// If the changelog is larger than 50000 characters, then the server
 		// will respond with an error code 422 and the following message:
