@@ -1,0 +1,14 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  title: Grafana GitHub Actions (Go)
+  name: grafana-github-actions-go
+  description: Various GitHub Actions for the Grafana project
+  annotations:
+    github.com/project-slug: grafana/grafana-github-actions-go
+    backstage.io/source-location: url:https://github.com/grafana/grafana-github-actions-go/
+spec:
+  type: library
+  lifecycle: production
+  owner: "group:grafana-delivery"
+  system: grafana
