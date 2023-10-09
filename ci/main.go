@@ -56,7 +56,7 @@ func main() {
 
 	if doTest {
 		logger.Info().Msg("Running tests")
-		if _, err := goContainer.WithExec([]string{"go", "test", "./...", "-v"}).ExitCode(ctx); err != nil {
+		if _, err := goContainer.WithExec([]string{"go", "test", "./...", "-v"}).Sync(ctx); err != nil {
 			logger.Fatal().Err(err).Msg("Executing the tests failed")
 		}
 	}
@@ -69,7 +69,7 @@ func main() {
 				logger.Info().Msg("Building")
 
 				goContainer = goContainer.WithWorkdir("/src/" + action).WithExec([]string{"go", "build"})
-				if _, err := goContainer.ExitCode(ctx); err != nil {
+				if _, err := goContainer.Sync(ctx); err != nil {
 					logger.Fatal().Msg("Building failed")
 				}
 			}
