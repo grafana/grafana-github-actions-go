@@ -1,18 +1,18 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"dagger.io/dagger"
 	"github.com/google/go-github/v50/github"
 	"github.com/rs/zerolog"
 	"github.com/spf13/pflag"
 )
-
-const goImage = "golang:1.20.6"
 
 func main() {
 	actions := []string{
@@ -46,7 +46,7 @@ func main() {
 
 	goModCache := client.CacheVolume("gomodcache")
 
-	goContainer := client.Container().From(goImage).
+	goContainer := client.Container().From(mustGetImage("golang")).
 		WithEnvVariable("CGO_ENABLED", "0").
 		WithEnvVariable("GOOS", "linux").
 		WithEnvVariable("GOARCH", "amd64").
@@ -127,4 +127,30 @@ func main() {
 			fmt.Println(release.GetAssetsURL())
 		}
 	}
+}
+
+func mustGetImage(basename string) string {
+	fp, err := os.Open("Dockerfile.dagger")
+	if err != nil {
+		panic(err)
+	}
+	scanner := bufio.NewScanner(fp)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "FROM ") {
+			elems := strings.SplitN(line, " ", 3)
+			if len(elems) < 2 {
+				continue
+			}
+			image := elems[1]
+			imageParts := strings.SplitN(image, ":", 2)
+			if len(imageParts) < 2 {
+				continue
+			}
+			if imageParts[0] == basename {
+				return image
+			}
+		}
+	}
+	panic(fmt.Errorf("no matching image found for %s", basename))
 }
