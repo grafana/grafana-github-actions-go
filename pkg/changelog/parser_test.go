@@ -51,5 +51,6 @@ func TestParse(t *testing.T) {
 		for idx, expected := range expectedEntries {
 			require.Equal(t, expected, entries[idx].Title)
 		}
+		require.Equal(t, "https://github.com/grafana/grafana/issue/124", result[0].Entries[1].Issue)
 	})
 }

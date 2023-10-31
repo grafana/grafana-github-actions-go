@@ -4,11 +4,14 @@ import (
 	"bufio"
 	"context"
 	"io"
+	"regexp"
 	"strings"
 )
 
 type Entry struct {
-	Title string
+	Title   string
+	Version string
+	Issue   string
 }
 
 type Section struct {
@@ -81,6 +84,7 @@ func (p *Parser) rawParse(ctx context.Context, content io.Reader) ([]Section, er
 			title := elems[0]
 			currentSection.Entries = append(currentSection.Entries, Entry{
 				Title: strings.ReplaceAll(strings.TrimSpace(title), "*", ""),
+				Issue: p.issueLink(line),
 			})
 			continue
 		}
@@ -89,6 +93,15 @@ func (p *Parser) rawParse(ctx context.Context, content io.Reader) ([]Section, er
 		result = append(result, *currentSection)
 	}
 	return result, nil
+}
+
+func (p *Parser) issueLink(line string) string {
+	re := regexp.MustCompile("\\[#\\d+\\]\\(([^\\)]*)\\)")
+	elems := re.FindStringSubmatch(line)
+	if len(elems) > 0 {
+		return elems[1]
+	}
+	return ""
 }
 
 func (p *Parser) Parse(ctx context.Context, content io.Reader) ([]Section, error) {
