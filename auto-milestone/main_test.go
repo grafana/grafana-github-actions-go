@@ -60,6 +60,8 @@ func TestVersionExtraction(t *testing.T) {
 func TestDetermineAction(t *testing.T) {
 	v10xTitle := "10.0.x"
 	v10Title := "10.0.0"
+	releaseBaseTitle := "main"
+	notReleaseBaseTitle := "notMainOrReleaseBranch"
 	valFalse := false
 	valTrue := true
 	valPastTimestamp := github.Timestamp{
@@ -77,6 +79,9 @@ func TestDetermineAction(t *testing.T) {
 			pr: &github.PullRequest{
 				ClosedAt: &valPastTimestamp,
 				Merged:   &valTrue,
+				Base: &github.PullRequestBranch{
+					Label: &releaseBaseTitle,
+				},
 			},
 			currentMilestone: nil,
 			targetMilestone:  &ghgql.Milestone{Title: "10.0.x"},
@@ -86,10 +91,28 @@ func TestDetermineAction(t *testing.T) {
 			},
 		},
 		{
+			name: "no-milestone-set-non-release-branch",
+			pr: &github.PullRequest{
+				ClosedAt: &valPastTimestamp,
+				Merged:   &valTrue,
+				Base: &github.PullRequestBranch{
+					Label: &notReleaseBaseTitle,
+				},
+			},
+			currentMilestone: nil,
+			targetMilestone:  &ghgql.Milestone{Title: "10.0.x"},
+			expected: action{
+				Type: actionTypeNoop,
+			},
+		},
+		{
 			name: "milestone-correct",
 			pr: &github.PullRequest{
 				ClosedAt: &valPastTimestamp,
 				Merged:   &valTrue,
+				Base: &github.PullRequestBranch{
+					Label: &releaseBaseTitle,
+				},
 			},
 			currentMilestone: &github.Milestone{
 				Title: &v10xTitle,
@@ -104,6 +127,9 @@ func TestDetermineAction(t *testing.T) {
 			pr: &github.PullRequest{
 				ClosedAt: &valPastTimestamp,
 				Merged:   &valTrue,
+				Base: &github.PullRequestBranch{
+					Label: &releaseBaseTitle,
+				},
 			},
 			currentMilestone: &github.Milestone{
 				Title: &v10xTitle,
@@ -119,6 +145,9 @@ func TestDetermineAction(t *testing.T) {
 			pr: &github.PullRequest{
 				ClosedAt: &valPastTimestamp,
 				Merged:   &valFalse,
+				Base: &github.PullRequestBranch{
+					Label: &releaseBaseTitle,
+				},
 			},
 			currentMilestone: &github.Milestone{
 				Title: &v10xTitle,
@@ -134,6 +163,9 @@ func TestDetermineAction(t *testing.T) {
 			pr: &github.PullRequest{
 				ClosedAt: &valPastTimestamp,
 				Merged:   &valTrue,
+				Base: &github.PullRequestBranch{
+					Label: &releaseBaseTitle,
+				},
 			},
 			currentMilestone: &github.Milestone{
 				Title: &v10Title,

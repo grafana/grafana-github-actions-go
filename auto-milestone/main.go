@@ -191,6 +191,13 @@ func determineAction(ctx context.Context, pr *github.PullRequest, currentMilesto
 			}
 		}
 	}
+	prTargetBranchLabel := pr.GetBase().GetLabel()
+	if prTargetBranchLabel != "main" && !strings.HasSuffix(prTargetBranchLabel, ".x") {
+		logger.Info().Msg("The requested pull-request is not targetting main or a release branch. No action required.")
+		return action{
+			Type: actionTypeNoop,
+		}
+	}
 	if currentMilestone == nil {
 		return action{
 			Type:      actionTypeSetToMilestone,
