@@ -60,8 +60,8 @@ func TestVersionExtraction(t *testing.T) {
 func TestDetermineAction(t *testing.T) {
 	v10xTitle := "10.0.x"
 	v10Title := "10.0.0"
-	releaseBaseTitle := "main"
-	notReleaseBaseTitle := "notMainOrReleaseBranch"
+	releaseBaseTitle := "grafana:main"
+	notReleaseBaseTitle := "grafana:notMainOrReleaseBranch"
 	valFalse := false
 	valTrue := true
 	valPastTimestamp := github.Timestamp{
