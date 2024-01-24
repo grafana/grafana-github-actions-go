@@ -5,7 +5,7 @@ go 1.21
 toolchain go1.21.5
 
 require (
-	dagger.io/dagger v0.9.6
+	dagger.io/dagger v0.9.7
 	github.com/Khan/genqlient v0.6.0
 	github.com/coreos/go-semver v0.3.1
 	github.com/google/go-github/v50 v50.2.0
