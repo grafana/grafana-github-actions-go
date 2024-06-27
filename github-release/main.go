@@ -45,7 +45,7 @@ func main() {
 
 	tk, err := toolkit.Init(
 		ctx,
-		toolkit.WithRegisteredInput("latest", "`true` for marking the release as lates, otherwise not"),
+		toolkit.WithRegisteredInput("latest", "`true` for marking the release as latest, otherwise not"),
 	)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Failed to initialize toolkit")
