@@ -34,7 +34,7 @@ runs:
       curl --fail -L -o /tmp/github-release https://github.com/grafana/grafana-github-actions-go/releases/download/${{inputs.binary_release_tag}}/github-release
       chmod +x /tmp/github-release
       # Execute action
-      /tmp/github-release -preview=${{inputs.dry_run}} ${{inputs.version}}
+      /tmp/github-release --preview=${{inputs.dry_run}} ${{inputs.version}}
     shell: bash
     env:
       GITHUB_TOKEN: ${{inputs.token}}
