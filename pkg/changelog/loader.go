@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/google/go-github/v50/github"
+	"github.com/grafana/grafana-github-actions-go/pkg/versions"
 	"github.com/rs/zerolog"
 )
 
@@ -48,8 +49,17 @@ func (l *Loader) LoadContent(ctx context.Context, repoOwner string, repoName str
 		"CHANGELOG.md",
 		fmt.Sprintf(".changelog-archive/CHANGELOG.%s.md", majorVersion),
 	}
+
+	versionBranch, err := versions.VersionBranch(version)
+	if err != nil {
+		return "", err
+	}
+
+	// Loads the CHANGELOG from the v branch instead of main
 	for _, clPath := range fileCandidates {
-		fc, _, resp, err := l.gh.Repositories.GetContents(ctx, repoOwner, repoName, clPath, nil)
+		fc, _, resp, err := l.gh.Repositories.GetContents(ctx, repoOwner, repoName, clPath, &github.RepositoryContentGetOptions{
+			Ref: versionBranch,
+		})
 		if resp.StatusCode == http.StatusNotFound {
 			logger.Warn().Msgf("Changelog file not found: %s", clPath)
 			continue
