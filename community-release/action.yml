@@ -29,13 +29,15 @@ inputs:
   binary_release_tag:
     required: false
     default: "dev"
+  dry_run:
+    default: false
 runs:
   using: composite
   steps:
   - run: |
       set -e
       # Download the action from the store
-      curl --fail -L -o /tmp/community-release https://github.com/grafana/grafana-github-actions-go/releases/download/${{inputs.binary_release_tag}}/community-release
+      curl --fail -L -o /tmp/community-release --preview=${{inputs.dry_run}} https://github.com/grafana/grafana-github-actions-go/releases/download/${{inputs.binary_release_tag}}/community-release
       chmod +x /tmp/community-release
       # Execute action
       /tmp/community-release
