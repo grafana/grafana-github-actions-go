@@ -38,7 +38,7 @@ func main() {
 	var listInputs bool
 
 	pflag.StringVar(&repo, "repo", os.Getenv("GITHUB_REPOSITORY"), "owner/repo pair for a repository on GitHub")
-	pflag.BoolVar(&doPreview, "preview", false, "Only determine the milestone but don't set it")
+	pflag.BoolVar(&doPreview, "preview", false, "Print the community post instead of posting it")
 	pflag.BoolVar(&listInputs, "list-inputs", false, "Show a list of all available inputs")
 	pflag.Parse()
 
@@ -73,15 +73,6 @@ func main() {
 	repoName := elems[1]
 
 	gh := tk.GitHubClient()
-
-	// We also need the milestone for that release to get the date for the release title:
-	milestone, err := tk.GitHubGQLClient().GetMilestoneByTitle(ctx, repoOwner, repoName, version)
-	if err != nil {
-		logger.Fatal().Err(err).Msgf("No matching milestone found for `%s`", version)
-	}
-	if milestone == nil {
-		logger.Fatal().Msgf("No matching milestone found for `%s`", version)
-	}
 
 	changelogContent, err := retrieveChangelog(ctx, gh, repoOwner, repoName, version)
 	if err != nil {

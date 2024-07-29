@@ -78,21 +78,12 @@ func main() {
 		logger.Fatal().Err(err).Msgf("Tag `%s` does not exist", version)
 	}
 
-	// We also need the milestone for that release to get the date for the release title:
-	milestone, err := tk.GitHubGQLClient().GetMilestoneByTitle(ctx, repoOwner, repoName, version)
-	if err != nil {
-		logger.Fatal().Err(err).Msgf("No matching milestone found for `%s`", version)
-	}
-	if milestone == nil {
-		logger.Fatal().Msgf("No matching milestone found for `%s`", version)
-	}
-
 	changelogContent, err := retrieveChangelog(ctx, gh, repoOwner, repoName, version)
 	if err != nil {
 		logger.Fatal().Err(err).Msgf("Failed to retrieve changelog for %s", version)
 	}
 
-	releaseTitle := generateReleaseTitle(ctx, version, milestone)
+	releaseTitle := version
 
 	existingRelease, resp, err := gh.Repositories.GetReleaseByTag(ctx, repoOwner, repoName, tag)
 	if err != nil {
