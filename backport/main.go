@@ -41,9 +41,6 @@ func GetInputs() Inputs {
 	}
 }
 
-type Label struct {
-}
-
 func main() {
 	log := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	ghctx, err := githubactions.Context()
