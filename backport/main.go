@@ -81,21 +81,34 @@ func main() {
 		panic(err)
 	}
 
+	failures := []FailureOpts{}
+
 	for _, target := range targets {
 		log := log.With("target", target)
-		u, err := Backport(ctx, client, BackportOpts{
-			SourceSHA:     payload.PullRequest.GetMergeCommitSHA(),
-			Target:        target,
-			Labels:        append(inputs.Labels, payload.GetPullRequest().Labels...),
-			IssueURL:      payload.PullRequest.GetIssueURL(),
-			TitleTemplate: "",
-			Owner:         owner,
-			Repository:    repo,
-		})
-		if err != nil {
-			log.Error("error backporting", "error", err)
-			panic(err)
+		opts := BackportOpts{
+			PullRequestNumber: payload.GetPullRequest().GetNumber(),
+			SourceSHA:         payload.GetPullRequest().GetMergeCommitSHA(),
+			SourceTitle:       payload.GetPullRequest().GetTitle(),
+			SourceBody:        payload.GetPullRequest().GetBody(),
+			Target:            target,
+			Labels:            append(inputs.Labels, payload.GetPullRequest().Labels...),
+			Owner:             owner,
+			Repository:        repo,
 		}
-		log.Info("Backport successful", "url", u)
+		u, err := Backport(ctx, client, opts)
+		if err != nil {
+			log.Error("backport failed")
+			failures = append(failures, FailureOpts{
+				BackportOpts: opts,
+				Error:        err,
+			})
+		}
+		log.Info("backport successful", "url", u)
+	}
+
+	for _, v := range failures {
+		if err := CommentFailure(ctx, client, v); err != nil {
+			log.Error("error commenting backport instructions", "error", err)
+		}
 	}
 }
