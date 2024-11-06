@@ -11,8 +11,12 @@ import (
 	"github.com/google/go-github/v50/github"
 )
 
-func GetReleaseBranches(ctx context.Context, client *github.Client, owner, repo string) ([]string, error) {
-	branches, _, err := client.Repositories.ListBranches(ctx, owner, repo, &github.BranchListOptions{
+type BranchClient interface {
+	ListBranches(ctx context.Context, owner string, repo string, opts *github.BranchListOptions) ([]*github.Branch, *github.Response, error)
+}
+
+func GetReleaseBranches(ctx context.Context, client BranchClient, owner, repo string) ([]string, error) {
+	branches, _, err := client.ListBranches(ctx, owner, repo, &github.BranchListOptions{
 		Protected: github.Bool(true),
 	})
 	if err != nil {

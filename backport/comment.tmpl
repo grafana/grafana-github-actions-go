@@ -1,4 +1,4 @@
-The backport to {{ .Target }} failed:
+The backport to `{{ .Target }}` failed:
 
 ```
 {{ .Error }}
@@ -23,10 +23,10 @@ If you have the [GitHub CLI](https://cli.github.com/) installed:
 ```bash
 git push --set-upstream origin {{ .BackportBranch }}
 PR_BODY=$(gh pr view {{ .SourcePullRequestNumber }} --json body --template 'Backport {{ .SourceSHA }} from #{{ .SourcePullRequestNumber }}{{ `{{ "\\n\\n---\\n\\n" }}` }}{{ `{{ index . "body" }}` }}')
-echo "{{ .Body }}" | gh pr create --title '{{ .BackportTitle }}' --body-file - {{ .Labels }} --base {{ .Target }} --web
+echo "${PR_BODY}" | gh pr create --title '{{ .BackportTitle }}' --body-file - {{ range .Labels }}--label '{{ . }}' {{ end }}--base {{ .Target }} --web
 ```
 
-Or, if you don't have the GitHub CLI installed ([we recommend you install it!](https://github.com/cli/cli#installation)):`,
+Or, if you don't have the GitHub CLI installed ([we recommend you install it!](https://github.com/cli/cli#installation)):
 
 ```bash
 git push --set-upstream origin {{ .BackportBranch }}

@@ -4,22 +4,21 @@ inputs:
   token:
     description: |
       GitHub token with read and write permissions for issues, comments, and labels.
-
-      Additionally, the token needs read permissions for organization members if `removeDefaultReviewers` is set to `true`.
     default: ${{ github.token }}
-  title:
-    description: Title for the backport PR
-    default: "[Backport to {{base}}] {{originalTitle}}"
   labelsToAdd:
     description: Comma separated list of labels to add to the backport PR.
     required: false
-  removeDefaultReviewers:
-    default: true
-    description: Whether to remove default reviewers from the backport PRs.
-    type: boolean
-  metricsWriteAPIKey:
-    description: Grfanaa Cloud metrics api key
-    required: false
 runs:
-  using: 'node20'
-  main: 'index.js'
+  using: composite
+  steps:
+  - run: |
+      set -e
+      # Download the action from the store
+      curl --fail -L -o /tmp/backport https://github.com/grafana/grafana-github-actions-go/releases/download/${{inputs.binary_release_tag}}/backport
+      chmod +x /tmp/backport
+      # Execute action
+      /tmp/backport ${{inputs.pr}}
+    shell: bash
+    env:
+      GITHUB_TOKEN: ${{inputs.token}}
+      INPUT_LABELS_TO_ADD: ${{inputs.labelsToAdd}}

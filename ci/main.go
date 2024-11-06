@@ -20,6 +20,7 @@ func main() {
 		"update-changelog",
 		"auto-milestone",
 		"community-release",
+		"backport",
 	}
 
 	var doTest bool

@@ -69,7 +69,7 @@ func main() {
 
 	log = log.With("pull_request", payload.GetNumber())
 
-	branches, err := GetReleaseBranches(ctx, client, owner, repo)
+	branches, err := GetReleaseBranches(ctx, client.Repositories, owner, repo)
 	if err != nil {
 		log.Error("error getting branches", "error", err)
 		panic(err)
@@ -80,8 +80,6 @@ func main() {
 		log.Error("error getting backport target", "error", err)
 		panic(err)
 	}
-
-	failures := []FailureOpts{}
 
 	for _, target := range targets {
 		log := log.With("target", target)
@@ -95,20 +93,11 @@ func main() {
 			Owner:             owner,
 			Repository:        repo,
 		}
-		u, err := Backport(ctx, client, opts)
+		pr, err := Backport(ctx, client.PullRequests, NewShellCommandRunner(), opts)
 		if err != nil {
-			log.Error("backport failed")
-			failures = append(failures, FailureOpts{
-				BackportOpts: opts,
-				Error:        err,
-			})
+			log.Error("backport failed", "error", err)
+			continue
 		}
-		log.Info("backport successful", "url", u)
-	}
-
-	for _, v := range failures {
-		if err := CommentFailure(ctx, client, v); err != nil {
-			log.Error("error commenting backport instructions", "error", err)
-		}
+		log.Info("backport successful", "url", pr.GetURL())
 	}
 }

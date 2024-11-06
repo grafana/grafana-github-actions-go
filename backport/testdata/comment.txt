@@ -1,0 +1,35 @@
+The backport to `release-12.0.0` failed:
+
+```
+error cherry-picking: error running git cherry-pick: The process '/usr/bin/git' failed with exit code 1
+```
+
+To backport manually, run these commands in your terminal:
+
+```bash
+git fetch
+git switch --create backport-100-to-release-12.0.0 origin/release-12.0.0
+git cherry-pick -x asdf1234
+```
+
+Resolve the conflicts, then add the changes and run `git cherry-pick --continue`:
+
+```bash
+git add . && git cherry-pick --continue
+```
+
+If you have the [GitHub CLI](https://cli.github.com/) installed:
+
+```bash
+git push --set-upstream origin backport-100-to-release-12.0.0
+PR_BODY=$(gh pr view 100 --json body --template 'Backport asdf1234 from #100{{ "\\n\\n---\\n\\n" }}{{ index . "body" }}')
+echo "${PR_BODY}" | gh pr create --title '[release-12.0.0] Example Bug Fix' --body-file - --label 'backport' --label 'type/bug' --base release-12.0.0 --web
+```
+
+Or, if you don't have the GitHub CLI installed ([we recommend you install it!](https://github.com/cli/cli#installation)):
+
+```bash
+git push --set-upstream origin backport-100-to-release-12.0.0
+```
+
+And open a pull request where the `base` branch is `release-12.0.0` and the `compare`/`head` branch is `backport-100-to-release-12.0.0`
