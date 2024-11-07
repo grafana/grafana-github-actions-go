@@ -5,9 +5,11 @@ on:
       labelsToAdd:
         description: Comma separated list of labels to add to the backport PR.
         required: false
+        type: string
     secrets:
-        token:
-          required: true
+      token:
+        required: true
+        type: string
 
 jobs:
   main:
