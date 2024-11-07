@@ -19,8 +19,8 @@ jobs:
         path: actions-go
     - uses: actions/setup-go@v5
       with:
-        go-version-file: $GITHUB_WORKSPACE/actions-go/go.mod
-    - run: cd $GITHUB_WORKSPACE/grafana-github-actions-go && go run ./backport
+        go-version-file: ./actions-go/go.mod
+    - run: cd actions-go && go run ./backport
       env:
         GITHUB_TOKEN: ${{secrets.token}}
         INPUT_LABELS_TO_ADD: ${{inputs.labelsToAdd}}
