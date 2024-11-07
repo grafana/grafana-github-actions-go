@@ -11,12 +11,16 @@ on:
         required: true
 
 jobs:
-  main:
+  create-backport-pr:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+        path: grafana-github-actions-go
     - uses: actions/setup-go@v5
-    - run: go run ./backport
+      with:
+        go-version-file: grafana-github-actions-go/go.mod
+    - run: cd $GITHUB_WORKSPACE/grafana-github-actions-go && go run ./backport
       env:
         GITHUB_TOKEN: ${{secrets.token}}
         INPUT_LABELS_TO_ADD: ${{inputs.labelsToAdd}}
