@@ -34,6 +34,10 @@ func GetReleaseBranches(ctx context.Context, client BranchClient, owner, repo st
 func BackportTargets(branches []string, labels []*github.Label) ([]string, error) {
 	targets := []string{}
 	for _, label := range labels {
+		if !strings.HasPrefix(label.GetName(), "backport ") {
+			continue
+		}
+
 		target, err := BackportTarget(label, branches)
 		if err != nil {
 			return nil, fmt.Errorf("error getting target for backport label '%s': %w", label, err)
