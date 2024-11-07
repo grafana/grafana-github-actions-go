@@ -16,6 +16,8 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
+        repository: grafana/grafana-github-actions-go
+        ref: km/backport-to-release-branches
         path: actions-go
     - uses: actions/setup-go@v5
       with:
