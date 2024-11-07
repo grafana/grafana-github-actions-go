@@ -48,9 +48,12 @@ func (r *ShellCommandRunner) Run(ctx context.Context, command string, args ...st
 	cmd.Stderr = stderr
 
 	err := cmd.Run()
-	cmdstr := strings.Join(append([]string{command}, args...), " ")
+	if err != nil {
+		cmdstr := strings.Join(append([]string{command}, args...), " ")
+		fmt.Errorf("error running command '%s': %w", cmdstr, err)
+	}
 
-	return strings.TrimSpace(stderr.String()), fmt.Errorf("error running command '%s': %w", cmdstr, err)
+	return strings.TrimSpace(stderr.String()), nil
 }
 
 type ErrorRunner struct {
