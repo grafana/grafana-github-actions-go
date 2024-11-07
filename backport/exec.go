@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"os/exec"
 	"strings"
 	"sync"
@@ -47,7 +48,9 @@ func (r *ShellCommandRunner) Run(ctx context.Context, command string, args ...st
 	cmd.Stderr = stderr
 
 	err := cmd.Run()
-	return strings.TrimSpace(stderr.String()), err
+	cmdstr := strings.Join(append([]string{command}, args...), " ")
+
+	return strings.TrimSpace(stderr.String()), fmt.Errorf("error running command '%s': %w", err, cmdstr)
 }
 
 type ErrorRunner struct {
