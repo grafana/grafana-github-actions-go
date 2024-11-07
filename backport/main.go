@@ -51,11 +51,15 @@ func main() {
 
 	var (
 		ctx     = context.Background()
-		token   = githubactions.GetInput("token")
+		token   = os.Getenv("GITHUB_TOKEN")
 		client  = github.NewTokenClient(ctx, token)
 		inputs  = GetInputs()
 		payload = &github.PullRequestEvent{}
 	)
+
+	if token == "" {
+		panic("token can not be empty")
+	}
 
 	if err := UnmarshalEventData(ghctx, &payload); err != nil {
 		log.Error("error reading github payload", "error", err)
