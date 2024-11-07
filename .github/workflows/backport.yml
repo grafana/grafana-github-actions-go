@@ -4,7 +4,7 @@ on:
     inputs:
       labelsToAdd:
         description: Comma separated list of labels to add to the backport PR.
-      required: false
+        required: false
     secrets:
         token:
           required: true
