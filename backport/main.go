@@ -42,7 +42,10 @@ func GetInputs() Inputs {
 }
 
 func main() {
-	log := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	}))
+
 	ghctx, err := githubactions.Context()
 	if err != nil {
 		log.Error("error reading github context", "error", err)
