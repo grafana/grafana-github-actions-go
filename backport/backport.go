@@ -39,8 +39,11 @@ type BackportOpts struct {
 
 type BackportClient interface {
 	Create(ctx context.Context, owner string, repo string, pull *github.NewPullRequest) (*github.PullRequest, *github.Response, error)
-	CreateComment(ctx context.Context, owner, repo string, number int, comment *github.PullRequestComment) (*github.PullRequestComment, *github.Response, error)
 	Edit(ctx context.Context, owner string, repo string, number int, pull *github.PullRequest) (*github.PullRequest, *github.Response, error)
+}
+
+type CommentClient interface {
+	CreateComment(ctx context.Context, owner, repo string, number int, comment *github.IssueComment) (*github.IssueComment, *github.Response, error)
 }
 
 func Push(ctx context.Context, runner CommandRunner, branch string) error {
@@ -97,7 +100,7 @@ func backport(ctx context.Context, client BackportClient, runner CommandRunner, 
 	return pr, nil
 }
 
-func Backport(ctx context.Context, client BackportClient, execClient CommandRunner, opts BackportOpts) (*github.PullRequest, error) {
+func Backport(ctx context.Context, backportClient BackportClient, commentClient CommentClient, execClient CommandRunner, opts BackportOpts) (*github.PullRequest, error) {
 	// Remove any `backport` related labels from the original PR, and mark this PR as a "backport"
 	labels := []*github.Label{
 		&github.Label{
@@ -113,9 +116,9 @@ func Backport(ctx context.Context, client BackportClient, execClient CommandRunn
 	}
 
 	opts.Labels = labels
-	pr, err := backport(ctx, client, execClient, opts)
+	pr, err := backport(ctx, backportClient, execClient, opts)
 	if err != nil {
-		if err := CommentFailure(ctx, client, FailureOpts{
+		if err := CommentFailure(ctx, commentClient, FailureOpts{
 			BackportOpts: opts,
 			Error:        err,
 		}); err != nil {

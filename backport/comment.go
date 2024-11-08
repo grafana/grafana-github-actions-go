@@ -25,7 +25,7 @@ type FailureOpts struct {
 	Error error
 }
 
-func CommentFailure(ctx context.Context, client BackportClient, opts FailureOpts) error {
+func CommentFailure(ctx context.Context, client CommentClient, opts FailureOpts) error {
 	var (
 		branch   = BackportBranch(opts.PullRequestNumber, opts.Target)
 		bodyText = opts.SourceBody
@@ -60,7 +60,7 @@ func CommentFailure(ctx context.Context, client BackportClient, opts FailureOpts
 	if err := tmpl.Execute(body, data); err != nil {
 		return err
 	}
-	_, _, err = client.CreateComment(ctx, opts.Owner, opts.Repository, opts.PullRequestNumber, &github.PullRequestComment{
+	_, _, err = client.CreateComment(ctx, opts.Owner, opts.Repository, opts.PullRequestNumber, &github.IssueComment{
 		Body: github.String(body.String()),
 	})
 	if err != nil {

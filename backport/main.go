@@ -118,7 +118,7 @@ func main() {
 			Owner:             owner,
 			Repository:        repo,
 		}
-		pr, err := Backport(ctx, client.PullRequests, NewShellCommandRunner(log), opts)
+		pr, err := Backport(ctx, client.PullRequests, client.Issues, NewShellCommandRunner(log), opts)
 		if err != nil {
 			log.Error("backport failed", "error", err)
 			continue

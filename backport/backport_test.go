@@ -138,14 +138,14 @@ func TestBackportTarget(t *testing.T) {
 
 type TestBackportClient struct {
 	CreateFunc        func(ctx context.Context, owner string, repo string, pull *github.NewPullRequest) (*github.PullRequest, *github.Response, error)
-	CreateCommentFunc func(ctx context.Context, owner, repo string, number int, comment *github.PullRequestComment) (*github.PullRequestComment, *github.Response, error)
+	CreateCommentFunc func(ctx context.Context, owner, repo string, number int, comment *github.IssueComment) (*github.IssueComment, *github.Response, error)
 	EditFunc          func(ctx context.Context, owner string, repo string, number int, pull *github.PullRequest) (*github.PullRequest, *github.Response, error)
 }
 
 func (c *TestBackportClient) Create(ctx context.Context, owner string, repo string, pull *github.NewPullRequest) (*github.PullRequest, *github.Response, error) {
 	return c.CreateFunc(ctx, owner, repo, pull)
 }
-func (c *TestBackportClient) CreateComment(ctx context.Context, owner, repo string, number int, comment *github.PullRequestComment) (*github.PullRequestComment, *github.Response, error) {
+func (c *TestBackportClient) CreateComment(ctx context.Context, owner, repo string, number int, comment *github.IssueComment) (*github.IssueComment, *github.Response, error) {
 	return c.CreateCommentFunc(ctx, owner, repo, number, comment)
 }
 func (c *TestBackportClient) Edit(ctx context.Context, owner string, repo string, number int, pull *github.PullRequest) (*github.PullRequest, *github.Response, error) {
@@ -160,7 +160,7 @@ func TestBackport(t *testing.T) {
 				Title:  pull.Title,
 			}, nil, nil
 		}
-		createCommentFn := func(ctx context.Context, owner, repo string, number int, comment *github.PullRequestComment) (*github.PullRequestComment, *github.Response, error) {
+		createCommentFn := func(ctx context.Context, owner, repo string, number int, comment *github.IssueComment) (*github.IssueComment, *github.Response, error) {
 			return comment, nil, nil
 		}
 		editFn := func(ctx context.Context, owner string, repo string, number int, pull *github.PullRequest) (*github.PullRequest, *github.Response, error) {
@@ -175,7 +175,7 @@ func TestBackport(t *testing.T) {
 			EditFunc:          editFn,
 		}
 
-		pr, err := Backport(context.Background(), client, runner, BackportOpts{
+		pr, err := Backport(context.Background(), client, client, runner, BackportOpts{
 			PullRequestNumber: 100,
 			SourceSHA:         "asdf1234",
 			SourceTitle:       "Example Bug Fix",
@@ -214,14 +214,14 @@ func TestBackport(t *testing.T) {
 			"git cherry-pick -x asdf1234": errors.New("The process '/usr/bin/git' failed with exit code 1"),
 		})
 
-		var comment *github.PullRequestComment
+		var comment *github.IssueComment
 		createFn := func(ctx context.Context, owner string, repo string, pull *github.NewPullRequest) (*github.PullRequest, *github.Response, error) {
 			return &github.PullRequest{
 				Number: github.Int(101),
 				Title:  pull.Title,
 			}, nil, nil
 		}
-		createCommentFn := func(ctx context.Context, owner, repo string, number int, c *github.PullRequestComment) (*github.PullRequestComment, *github.Response, error) {
+		createCommentFn := func(ctx context.Context, owner, repo string, number int, c *github.IssueComment) (*github.IssueComment, *github.Response, error) {
 			comment = c
 			return c, nil, nil
 		}
@@ -235,7 +235,7 @@ func TestBackport(t *testing.T) {
 			EditFunc:          editFn,
 		}
 
-		_, err := Backport(context.Background(), client, runner, BackportOpts{
+		_, err := Backport(context.Background(), client, client, runner, BackportOpts{
 			PullRequestNumber: 100,
 			SourceSHA:         "asdf1234",
 			SourceTitle:       "Example Bug Fix",
