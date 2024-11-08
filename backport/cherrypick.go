@@ -32,7 +32,7 @@ func CreateCherryPickBranch(ctx context.Context, runner CommandRunner, branch st
 		return fmt.Errorf("error fetching: %w", err)
 	}
 
-	if stderr, err := runner.Run(ctx, "git", "switch", "--create", branch, opts.Target); err != nil {
+	if stderr, err := runner.Run(ctx, "git", "switch", "--create", branch, "origin/"+opts.Target); err != nil {
 		return fmt.Errorf("error creating branch: %w\nstderr:%s", err, stderr)
 	}
 
