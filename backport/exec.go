@@ -54,18 +54,17 @@ func (r *ShellCommandRunner) Run(ctx context.Context, command string, args ...st
 	)
 	pwd, _ := os.Getwd()
 
-	log := r.Logger.With("command", cmdstr, "wd", pwd)
-	r.Logger.Debug("running command")
+	log := r.Logger.With("wd", pwd)
+	r.Logger.Debug(fmt.Sprintf("running command '%s'", pwd))
 
 	cmd := exec.CommandContext(ctx, command, args...)
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
 
-	log.Debug(fmt.Sprintf("stderr:\n%s", stderr.String()))
-	log.Debug(fmt.Sprintf("stdout:\n%s", stdout.String()))
+	log.Debug(stdout.String(), "stream", "stdout")
+	log.Debug(stderr.String(), "stream", "stderr")
 
-	err := cmd.Run()
-	if err != nil {
+	if err := cmd.Run(); err != nil {
 		fmt.Errorf("error running command '%s': %w", cmdstr, err)
 	}
 
