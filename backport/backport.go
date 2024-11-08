@@ -39,7 +39,10 @@ type BackportOpts struct {
 
 type BackportClient interface {
 	Create(ctx context.Context, owner string, repo string, pull *github.NewPullRequest) (*github.PullRequest, *github.Response, error)
-	Edit(ctx context.Context, owner string, repo string, number int, pull *github.PullRequest) (*github.PullRequest, *github.Response, error)
+}
+
+type IssueClient interface {
+	Edit(ctx context.Context, owner string, repo string, number int, issue *github.IssueRequest) (*github.Issue, *github.Response, error)
 }
 
 type CommentClient interface {
@@ -51,14 +54,17 @@ func Push(ctx context.Context, runner CommandRunner, branch string) error {
 	return err
 }
 
-func CreatePullRequest(ctx context.Context, client BackportClient, branch string, opts BackportOpts) (*github.PullRequest, error) {
+func CreatePullRequest(ctx context.Context, client BackportClient, issueClient IssueClient, branch string, opts BackportOpts) (*github.PullRequest, error) {
 	title := fmt.Sprintf("[%s] %s", opts.Target, opts.SourceTitle)
+
+	body := fmt.Sprintf("Backport %s from #%d\n\n---\n\n%s", opts.SourceSHA, opts.PullRequestNumber, opts.SourceBody)
 
 	pr, _, err := client.Create(ctx, opts.Owner, opts.Repository, &github.NewPullRequest{
 		Title: github.String(title),
 		Head:  github.String(branch),
 		Base:  github.String(opts.Target),
 		Issue: opts.IssueNumber,
+		Body:  github.String(body),
 		Draft: github.Bool(false),
 	})
 
@@ -66,11 +72,22 @@ func CreatePullRequest(ctx context.Context, client BackportClient, branch string
 		return nil, err
 	}
 
-	pr.Labels = opts.Labels
-	if _, _, err := client.Edit(ctx, opts.Owner, opts.Repository, *pr.Number, pr); err != nil {
+	labels := make([]string, len(opts.Labels))
+	for i, v := range opts.Labels {
+		labels[i] = v.GetName()
+	}
+
+	issue, _, err := issueClient.Edit(ctx, opts.Owner, opts.Repository, *pr.Number, &github.IssueRequest{
+		Labels: &labels,
+	})
+
+	if err != nil {
 		return nil, fmt.Errorf("error updating pull request with new labels: %w", err)
 	}
 
+	// Instead of wasting time querying for the PR again to make sure it updated, just
+	// use the returned issue, which is basically the same thing
+	pr.Labels = issue.Labels
 	return pr, nil
 }
 
@@ -78,7 +95,7 @@ func BackportBranch(number int, target string) string {
 	return fmt.Sprintf("backport-%d-to-%s", number, target)
 }
 
-func backport(ctx context.Context, client BackportClient, runner CommandRunner, opts BackportOpts) (*github.PullRequest, error) {
+func backport(ctx context.Context, client BackportClient, issueClient IssueClient, runner CommandRunner, opts BackportOpts) (*github.PullRequest, error) {
 	// 1. Run CLI commands to create a branch and cherry-pick
 	//   * If the cherry-pick fails, write a comment in the source PR with instructions on manual backporting
 	// 2. git push
@@ -92,7 +109,7 @@ func backport(ctx context.Context, client BackportClient, runner CommandRunner, 
 		return nil, fmt.Errorf("error pushing: %w", err)
 	}
 
-	pr, err := CreatePullRequest(ctx, client, branch, opts)
+	pr, err := CreatePullRequest(ctx, client, issueClient, branch, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error creating pull request: %w", err)
 	}
@@ -100,7 +117,7 @@ func backport(ctx context.Context, client BackportClient, runner CommandRunner, 
 	return pr, nil
 }
 
-func Backport(ctx context.Context, backportClient BackportClient, commentClient CommentClient, execClient CommandRunner, opts BackportOpts) (*github.PullRequest, error) {
+func Backport(ctx context.Context, backportClient BackportClient, commentClient CommentClient, issueClient IssueClient, execClient CommandRunner, opts BackportOpts) (*github.PullRequest, error) {
 	// Remove any `backport` related labels from the original PR, and mark this PR as a "backport"
 	labels := []*github.Label{
 		&github.Label{
@@ -116,7 +133,7 @@ func Backport(ctx context.Context, backportClient BackportClient, commentClient 
 	}
 
 	opts.Labels = labels
-	pr, err := backport(ctx, backportClient, execClient, opts)
+	pr, err := backport(ctx, backportClient, issueClient, execClient, opts)
 	if err != nil {
 		if err := CommentFailure(ctx, commentClient, FailureOpts{
 			BackportOpts: opts,
