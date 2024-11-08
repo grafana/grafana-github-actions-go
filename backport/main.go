@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"log/slog"
 	"os"
 	"strconv"
@@ -58,7 +58,7 @@ func main() {
 		token   = os.Getenv("GITHUB_TOKEN")
 		client  = github.NewTokenClient(ctx, token)
 		inputs  = GetInputs()
-		payload = &github.PullRequestEvent{}
+		payload = &github.PullRequestTargetEvent{}
 	)
 
 	if token == "" {
@@ -82,28 +82,15 @@ func main() {
 		panic(err)
 	}
 
-	var targets []string
-
-	switch payload.GetAction() {
-	case "labeled":
-		t, err := BackportTargets(branches, []*github.Label{payload.GetLabel()})
-		if err != nil {
-			log.Error("error getting backport target", "error", err)
+	targets, err := BackportTargetsFromPayload(branches, payload)
+	if err != nil {
+		if errors.Is(err, ErrorNotMerged) {
+			log.Warn("pull request is not merged; nothing to do")
+			return
+		} else {
+			log.Error("error getting backport targets", "error", err)
 			panic(err)
 		}
-
-		targets = t
-	case "closed":
-		t, err := BackportTargets(branches, payload.GetPullRequest().Labels)
-		if err != nil {
-			log.Error("error getting backport target", "error", err)
-			panic(err)
-		}
-
-		targets = t
-	default:
-		log.Warn(fmt.Sprintf("action '%s' is neither 'closed' nor 'labeled'", payload.GetAction()))
-		return
 	}
 
 	for _, target := range targets {

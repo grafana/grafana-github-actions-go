@@ -49,6 +49,26 @@ func BackportTargets(branches []string, labels []*github.Label) ([]string, error
 	return targets, nil
 }
 
+var (
+	ErrorNotMerged = errors.New("pull request is not merged; nothing to do")
+	ErrorBadAction = errors.New("unrecognized action")
+)
+
+func BackportTargetsFromPayload(branches []string, payload *github.PullRequestTargetEvent) ([]string, error) {
+	if !payload.PullRequest.GetMerged() {
+		return nil, ErrorNotMerged
+	}
+
+	switch payload.GetAction() {
+	case "labeled":
+		return BackportTargets(branches, []*github.Label{payload.GetLabel()})
+	case "closed":
+		return BackportTargets(branches, payload.GetPullRequest().Labels)
+	}
+
+	return nil, ErrorBadAction
+}
+
 func MajorMinorPatch(v string) (string, string, string) {
 	matches := semverRegex.FindStringSubmatch(strings.TrimPrefix(v, "v"))
 	groups := make(map[string]string)
