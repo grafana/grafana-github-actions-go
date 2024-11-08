@@ -31,6 +31,7 @@ func CreateCherryPickBranch(ctx context.Context, runner CommandRunner, branch st
 	runner.Run(ctx, "ls", "-al")
 	runner.Run(ctx, "git", "status")
 	runner.Run(ctx, "git", "remote", "-v")
+	runner.Run(ctx, "git", "config", "list")
 	if _, err := runner.Run(ctx, "git", "fetch"); err != nil {
 		return fmt.Errorf("error fetching: %w", err)
 	}
