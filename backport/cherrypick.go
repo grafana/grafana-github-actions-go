@@ -20,7 +20,7 @@ func ResolveBettererConflict(ctx context.Context, runner CommandRunner) error {
 		return err
 	}
 
-	if _, err := runner.Run(ctx, "git", "cherry-pick", "--continue"); err != nil {
+	if _, err := runner.Run(ctx, "git", "-c", "core.editor=true", "cherry-pick", "--continue"); err != nil {
 		return err
 	}
 
