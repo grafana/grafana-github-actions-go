@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
 	"strconv"
@@ -81,10 +82,28 @@ func main() {
 		panic(err)
 	}
 
-	targets, err := BackportTargets(branches, payload.GetPullRequest().Labels)
-	if err != nil {
-		log.Error("error getting backport target", "error", err)
-		panic(err)
+	var targets []string
+
+	switch payload.GetAction() {
+	case "labeled":
+		t, err := BackportTargets(branches, []*github.Label{payload.GetLabel()})
+		if err != nil {
+			log.Error("error getting backport target", "error", err)
+			panic(err)
+		}
+
+		targets = t
+	case "closed":
+		t, err := BackportTargets(branches, payload.GetPullRequest().Labels)
+		if err != nil {
+			log.Error("error getting backport target", "error", err)
+			panic(err)
+		}
+
+		targets = t
+	default:
+		log.Warn(fmt.Sprintf("action '%s' is neither 'closed' nor 'labeled'", payload.GetAction()))
+		return
 	}
 
 	for _, target := range targets {
