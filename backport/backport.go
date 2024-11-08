@@ -72,12 +72,16 @@ func CreatePullRequest(ctx context.Context, client BackportClient, issueClient I
 		return nil, err
 	}
 
-	labels := make([]string, len(opts.Labels))
-	for i, v := range opts.Labels {
-		labels[i] = v.GetName()
+	labels := []string{}
+	for _, v := range opts.Labels {
+		if strings.TrimSpace(v.GetName()) == "" {
+			continue
+		}
+
+		labels = append(labels, v.GetName())
 	}
 
-	issue, _, err := issueClient.Edit(ctx, opts.Owner, opts.Repository, *pr.Number, &github.IssueRequest{
+	issue, _, err := issueClient.Edit(ctx, opts.Owner, opts.Repository, pr.GetNumber(), &github.IssueRequest{
 		Labels: &labels,
 	})
 
@@ -124,6 +128,7 @@ func Backport(ctx context.Context, backportClient BackportClient, commentClient 
 			Name: github.String("backport"),
 		},
 	}
+
 	for _, v := range opts.Labels {
 		if strings.Contains(v.GetName(), "backport") {
 			continue

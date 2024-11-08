@@ -87,10 +87,10 @@ func main() {
 		if errors.Is(err, ErrorNotMerged) {
 			log.Warn("pull request is not merged; nothing to do")
 			return
-		} else {
-			log.Error("error getting backport targets", "error", err)
-			panic(err)
 		}
+
+		log.Error("error getting backport targets", "error", err)
+		panic(err)
 	}
 
 	for _, target := range targets {

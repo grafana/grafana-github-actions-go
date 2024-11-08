@@ -194,6 +194,12 @@ func TestBackport(t *testing.T) {
 					Name: github.String("type/bug"),
 				},
 				{
+					Name: github.String("type/example"),
+				},
+				{
+					Name: github.String("add-to-changelog"),
+				},
+				{
 					Name: github.String("backport v12.0.x"),
 				},
 			},
@@ -214,6 +220,11 @@ func TestBackport(t *testing.T) {
 		RequireNotContainsLabel(t, pr.Labels, &github.Label{
 			Name: github.String("backport v12.0.x"),
 		})
+
+		// Ensure that we're not sending an "empty" label
+		for i, v := range pr.Labels {
+			require.NotEmptyf(t, v.GetName(), "label at index '%d' is empty", i)
+		}
 	})
 
 	t.Run("Backport comments", func(t *testing.T) {
@@ -260,6 +271,12 @@ func TestBackport(t *testing.T) {
 			Labels: []*github.Label{
 				{
 					Name: github.String("type/bug"),
+				},
+				{
+					Name: github.String("type/example"),
+				},
+				{
+					Name: github.String("add-to-changelog"),
 				},
 			},
 			Owner:      "grafana",
