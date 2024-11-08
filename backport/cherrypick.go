@@ -36,7 +36,7 @@ func CreateCherryPickBranch(ctx context.Context, runner CommandRunner, branch st
 		return fmt.Errorf("error creating branch: %w\nstderr:%s", err, stderr)
 	}
 
-	_, err := runner.Run(ctx, "git", "cherry-pick", "-x", opts.SourceSHA, "-s", "ours")
+	_, err := runner.Run(ctx, "git", "cherry-pick", "--strategy", "ours", "-x", opts.SourceSHA)
 	if err != nil {
 		if err := ResolveBettererConflict(ctx, runner); err == nil {
 			return nil
