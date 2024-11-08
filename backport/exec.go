@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log/slog"
+	"os"
 	"os/exec"
 	"strings"
 	"sync"
@@ -34,22 +36,36 @@ func (n *NoOpRunner) Run(ctx context.Context, command string, args ...string) (s
 	return "", nil
 }
 
-type ShellCommandRunner struct{}
+type ShellCommandRunner struct {
+	Logger *slog.Logger
+}
 
-func NewShellCommandRunner() *ShellCommandRunner {
-	return &ShellCommandRunner{}
+func NewShellCommandRunner(log *slog.Logger) *ShellCommandRunner {
+	return &ShellCommandRunner{
+		Logger: log,
+	}
 }
 
 func (r *ShellCommandRunner) Run(ctx context.Context, command string, args ...string) (string, error) {
 	var (
+		stdout = bytes.NewBuffer(nil)
 		stderr = bytes.NewBuffer(nil)
+		cmdstr = strings.Join(append([]string{command}, args...), " ")
 	)
+	pwd, _ := os.Getwd()
+
+	log := r.Logger.With("command", cmdstr, "wd", pwd)
+	r.Logger.Debug("running command")
+
 	cmd := exec.CommandContext(ctx, command, args...)
+	cmd.Stdout = stdout
 	cmd.Stderr = stderr
+
+	log.Debug(fmt.Sprintf("stderr:\n%s", stderr.String()))
+	log.Debug(fmt.Sprintf("stdout:\n%s", stdout.String()))
 
 	err := cmd.Run()
 	if err != nil {
-		cmdstr := strings.Join(append([]string{command}, args...), " ")
 		fmt.Errorf("error running command '%s': %w", cmdstr, err)
 	}
 

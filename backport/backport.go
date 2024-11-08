@@ -56,6 +56,7 @@ func CreatePullRequest(ctx context.Context, client BackportClient, branch string
 		Head:  github.String(branch),
 		Base:  github.String(opts.Target),
 		Issue: opts.IssueNumber,
+		Draft: github.Bool(false),
 	})
 
 	if err != nil {

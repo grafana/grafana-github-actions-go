@@ -72,7 +72,6 @@ func main() {
 	)
 
 	log = log.With("pull_request", payload.GetNumber())
-
 	branches, err := GetReleaseBranches(ctx, client.Repositories, owner, repo)
 	if err != nil {
 		log.Error("error getting branches", "error", err)
@@ -97,7 +96,7 @@ func main() {
 			Owner:             owner,
 			Repository:        repo,
 		}
-		pr, err := Backport(ctx, client.PullRequests, NewShellCommandRunner(), opts)
+		pr, err := Backport(ctx, client.PullRequests, NewShellCommandRunner(log), opts)
 		if err != nil {
 			log.Error("backport failed", "error", err)
 			continue
