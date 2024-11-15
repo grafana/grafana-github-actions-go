@@ -1,0 +1,12 @@
+name: Check Branch for Open PRs
+on: 
+  workflow_call: 
+    inputs:
+      prevBranch:
+        description: 'The superseded release branch to check for open PRs'
+        required: true
+        type: string  
+      nextBranch:
+        description: 'The current release branch to check for open PRs'
+        required: true
+        type: string
