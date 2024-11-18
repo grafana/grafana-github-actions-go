@@ -12,3 +12,8 @@ import (
 )
 
 type PullRequestInfo struct {}
+
+func main() {}
+
+// JEV: abstract this out?
+func getOpenPullRequests() {}
