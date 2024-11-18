@@ -6,10 +6,29 @@ inputs:
     required: true
     type: string
   branch:
-    description: 'The branch to check for open PRs'
+    description: 'The branch to migrate open PRs to'
     required: true
     type: string
   prs:
     description: 'JSON array of open PRs found on the branch'
     required: true
     type: string
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@v4
+      with:
+        path: actions-go
+
+    - uses: actions/setup-go@v5
+      with:
+        go-version-file: ./actons-go/go.mod
+        cache: true
+
+    - run: cd actions-go && go run ./pr-migration-notifier
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.token }}
+        BRANCH: ${{ inputs.branch }}
+        PRS: ${{ inputs.prs }}
