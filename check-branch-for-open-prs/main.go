@@ -24,8 +24,11 @@ func main() {
 	// set output
 }
 
-// JEV: abstract this out?
+// JEV: for extraction?
+func setUpLogger() {}
+
+func buildGitHubClient() {}
+
 func getOpenPullRequests() {}
 
-// JEV: abstract this out?
 func formatPullRequests() {}
