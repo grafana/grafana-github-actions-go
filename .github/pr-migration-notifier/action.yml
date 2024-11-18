@@ -1,0 +1,15 @@
+name: PR Migration Notifier
+description: 'Notify PR authors of need to migrate open PRs'
+inputs:
+  token:
+    description: 'The GitHub token to use for authentication'
+    required: true
+    type: string
+  branch:
+    description: 'The branch to check for open PRs'
+    required: true
+    type: string
+  prs:
+    description: 'JSON array of open PRs found on the branch'
+    required: true
+    type: string
