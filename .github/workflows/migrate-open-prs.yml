@@ -17,3 +17,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: ./check-branch-for-open-prs
+        id: branch-checker
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ inputs.prevBranch }}
+
+      - uses: ./pr-migration-notifier
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ inputs.nextBranch }}
+          prs: ${{ steps.branch-checker.outputs.open_prs }}
