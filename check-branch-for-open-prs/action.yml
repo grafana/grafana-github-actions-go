@@ -16,6 +16,19 @@ outputs:
 
 jobs:
   check-branch-for-open-prs:
-    runs-on: ubuntu-latest
+  using: composite
     steps:
-      - 
+      - uses: actions/checkout@v4
+        with:
+          path: actions-go
+      
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: ./actons-go/go.mod
+          cache: true
+
+      - run: cd actions-go && go run ./check-branch-for-open-prs
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ inputs.token }}
+          BRANCH: ${{ inputs.branch }}
