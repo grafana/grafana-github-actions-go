@@ -2,6 +2,7 @@ package main
 
 import ()
 
+// JEV: reuse from check-branch-for-open-prs/main.go?
 type PullRequestInfo struct {}
 
 func main() {
@@ -9,11 +10,9 @@ func main() {
 	// get context - shared util?
 	// get inputs - shared util?
 	// verify GHA inputs - shared util?
+	// parse pr JSON
 	// build client
-	// get open pull requests
-	// format prs?
-	// convert to JSON?
-	// set output
+	// notify authors for each pr
 }
 
 // JEV: for extraction?
@@ -21,6 +20,6 @@ func setUpLogger() {}
 
 func buildGitHubClient() {}
 
-func getOpenPullRequests() {}
+func parseJSON() {}
 
-func formatPullRequests() {}
+func notifyAuthors() {}
