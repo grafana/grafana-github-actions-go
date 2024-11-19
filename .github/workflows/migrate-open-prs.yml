@@ -1,5 +1,5 @@
 name: Migrate open PRs
-# Migrate open PRs from a superseded release branch to the current release branch
+# Migrate open PRs from a superseded release branch to the current release branch and notify authors
 on: 
   workflow_call:
     inputs:
@@ -13,17 +13,22 @@ on:
         type: string
 
 jobs:
-  check-and-migrate-open-prs:
+  migrate-open-prs:
     runs-on: ubuntu-latest
     steps:
-      - uses: ./check-branch-for-open-prs
-        id: branch-checker
+      - uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ inputs.prevBranch }}
+          repository: grafana/grafana-github-actions-go
+          ref: baldm0mma/branch_prs
+          path: actions-go
 
-      - uses: ./pr-migration-notifier
+      - uses: actions/setup-go@v5
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ inputs.nextBranch }}
-          prs: ${{ steps.branch-checker.outputs.open_prs }}
+          go-version-file: ./actions-go/go.mod
+          cache: true
+
+      - run: cd actions-go && go run ./pr-migration
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INPUT_PREV_BRANCH: ${{ inputs.prevBranch }}
+          INPUT_NEXT_BRANCH: ${{ inputs.nextBranch }}

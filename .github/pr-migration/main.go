@@ -6,10 +6,10 @@ import ()
 type PullRequestInfo struct {}
 
 func main() {
-	// set up logger - shared util?
-	// get context - shared util?
-	// get inputs - shared util?
-	// verify GHA inputs - shared util?
+	// set up logger
+	// get context
+	// get inputs
+	// verify GHA inputs
 	// parse pr JSON
 	// build client
 	// notify authors for each pr
