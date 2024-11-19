@@ -1,0 +1,35 @@
+The backport to `{{ .Target }}` failed:
+
+```
+{{ .Error }}
+```
+
+To backport manually, run these commands in your terminal:
+
+```bash
+git fetch
+git switch --create {{ .BackportBranch }} origin/{{ .Target }}
+git cherry-pick -x {{ .SourceSHA }}
+```
+
+Resolve the conflicts, then add the changes and run `git cherry-pick --continue`:
+
+```bash
+git add . && git cherry-pick --continue
+```
+
+If you have the [GitHub CLI](https://cli.github.com/) installed:
+
+```bash
+git push --set-upstream origin {{ .BackportBranch }}
+PR_BODY=$(gh pr view {{ .SourcePullRequestNumber }} --json body --template 'Backport {{ .SourceSHA }} from #{{ .SourcePullRequestNumber }}{{ `{{ "\\n\\n---\\n\\n" }}` }}{{ `{{ index . "body" }}` }}')
+echo "${PR_BODY}" | gh pr create --title '{{ .BackportTitle }}' --body-file - {{ range .Labels }}--label '{{ . }}' {{ end }}--base {{ .Target }} --web
+```
+
+Or, if you don't have the GitHub CLI installed ([we recommend you install it!](https://github.com/cli/cli#installation)):
+
+```bash
+git push --set-upstream origin {{ .BackportBranch }}
+```
+
+And open a pull request where the `base` branch is `{{ .Target }}` and the `compare`/`head` branch is `{{ .BackportBranch }}`
