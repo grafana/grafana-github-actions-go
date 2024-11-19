@@ -17,6 +17,12 @@ func main() {
 	}))
 
 	// setup github context
+	ghctx, err := githubactions.Context()
+	if err != nil {
+		log.Error("error reading github context", "error", err)
+		panic(err)
+	}
+
 	// get inputs
 	// validate inputs
 	// build github client
