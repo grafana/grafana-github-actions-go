@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"os"
 
@@ -23,28 +24,32 @@ func main() {
 	ghctx, err := githubactions.Context()
 	if err != nil {
 		log.Error("error reading github context", "error", err)
-		panic(err)
+		githubactions.Fatalf("failed to read github context: %v", err)
 	}
 
 	// get and validate inputs
 	prevBranch := githubactions.GetInput("prevBranch")
 	if prevBranch == "" {
-		panic("prevBranch is undefined")
+		githubactions.Fatalf("prevBranch input is undefined")
 	}
 
 	nextBranch := githubactions.GetInput("nextBranch")
 	if nextBranch == "" {
-		panic("nextBranch is undefined")
+		githubactions.Fatalf("nextBranch input is undefined")
 	}
 
 	token := os.Getenv("GITHUB_TOKEN")
 	if token == "" {
-		panic("GITHUB_TOKEN is undefined")
+		githubactions.Fatalf("GITHUB_TOKEN is undefined")
 	}
 
 	// build github client
-	
+	ctx := context.Background()
+	client := github.NewTokenClient(ctx, token)
+
 	// get owner and repo from context
+	owner, repo := ghctx.Repo()
+
 	// get all open pull requests from prevBranch
 	// update base branch for each pull request to nextBranch
 	// notify user of update
