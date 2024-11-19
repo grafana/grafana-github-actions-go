@@ -26,9 +26,24 @@ func main() {
 		panic(err)
 	}
 
-	// get inputs
-	// validate inputs
+	// get and validate inputs
+	prevBranch := githubactions.GetInput("prevBranch")
+	if prevBranch == "" {
+		panic("prevBranch is undefined")
+	}
+
+	nextBranch := githubactions.GetInput("nextBranch")
+	if nextBranch == "" {
+		panic("nextBranch is undefined")
+	}
+
+	token := os.Getenv("GITHUB_TOKEN")
+	if token == "" {
+		panic("GITHUB_TOKEN is undefined")
+	}
+
 	// build github client
+	
 	// get owner and repo from context
 	// get all open pull requests from prevBranch
 	// update base branch for each pull request to nextBranch
