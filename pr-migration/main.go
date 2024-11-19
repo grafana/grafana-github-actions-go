@@ -54,7 +54,7 @@ func main() {
 	if err != nil {
 		githubactions.Fatalf("failed to find open PRs: %v", err)
 	}
-	// if no open PRs, exit
+	// if no open PRs, exit/early return?
 
 	// update base branch for each pull request to nextBranch
 	// notify user of update
