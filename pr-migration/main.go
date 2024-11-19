@@ -23,7 +23,6 @@ func main() {
 	// setup github context
 	ghctx, err := githubactions.Context()
 	if err != nil {
-		log.Error("error reading github context", "error", err)
 		githubactions.Fatalf("failed to read github context: %v", err)
 	}
 
@@ -52,6 +51,11 @@ func main() {
 
 	// get all open pull requests from prevBranch
 	openPRs, err := findOpenPRs()
+	if err != nil {
+		githubactions.Fatalf("failed to find open PRs: %v", err)
+	}
+	// if no open PRs, exit
+
 	// update base branch for each pull request to nextBranch
 	// notify user of update
 }
