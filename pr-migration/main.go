@@ -8,7 +8,10 @@ import (
 	"github.com/sethvargo/go-githubactions"
 )
 
-type PullRequestInfo struct{}
+type PullRequestInfo struct {
+	Number     int
+	AuthorName string
+}
 
 func main() {
 	// setup logging
