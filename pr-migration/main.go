@@ -51,6 +51,14 @@ func main() {
 	owner, repo := ghctx.Repo()
 
 	// get all open pull requests from prevBranch
+	openPRs, err := findOpenPRs()
 	// update base branch for each pull request to nextBranch
 	// notify user of update
+}
+
+func findOpenPRs(ctx context.Context, client *github.Client, owner, repo, branch string) {
+	opts := &github.PullRequestListOptions{
+		State: "open",
+		Base:  branch,
+	}
 }
