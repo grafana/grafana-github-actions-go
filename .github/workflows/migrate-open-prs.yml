@@ -11,6 +11,16 @@ on:
         description: 'The current release branch to migrate open PRs'
         required: true
         type: string
+  workflow_dispatch:
+    inputs:
+      prevBranch:
+        description: 'The superseded release branch to check for open PRs'
+        required: true
+        type: string
+      nextBranch:
+        description: 'The current release branch to migrate open PRs'
+        required: true
+        type: string
 
 jobs:
   migrate-open-prs:
