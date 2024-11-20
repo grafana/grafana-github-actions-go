@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"os"
 
 	"github.com/google/go-github/v50/github"
@@ -16,17 +15,11 @@ type PullRequestInfo struct {
 }
 
 func main() {
-	// setup logging
-	// log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-	// 	Level: slog.LevelDebug,
-	// }))
-
 	// setup github context
 	ghctx, err := githubactions.Context()
 	if err != nil {
 		githubactions.Fatalf("failed to read github context: %v", err)
 	}
-	// log.Debug("github context loaded")
 
 	// get and validate inputs
 	prevBranch := githubactions.GetInput("prevBranch")
@@ -41,7 +34,6 @@ func main() {
 	if token == "" {
 		githubactions.Fatalf("GITHUB_TOKEN is undefined")
 	}
-	// log.Debug("inputs retrieved", "prevBranch:", prevBranch, "nextBranch:", nextBranch)
 
 	// build github client
 	ctx := context.Background()
@@ -72,8 +64,13 @@ func main() {
 		}
 
 		if err := notifyUserOfUpdate(ctx, client, owner, repo, openPr, prevBranch, nextBranch); err != nil {
-
+			// log error and continue
+			githubactions.Errorf("failed to notify user of update for PR %d: %v", openPr.Number, err)
+			continue
 		}
+
+		// log success
+		githubactions.Noticef("successfully updated PR %d to target %s", openPr.Number, nextBranch)
 	}
 
 }
@@ -125,4 +122,14 @@ func notifyUserOfUpdate(ctx context.Context, client *github.Client, owner, repo 
 			"I've updated this PR to target the new branch. "+
 			"Please check for any merge conflicts that may need to be resolved.",
 		pr.AuthorName, prevBranch, nextBranch)
+
+	_, _, err := client.Issues.CreateComment(ctx, owner, repo, pr.Number, &github.IssueComment{
+		Body: &comment,
+	})
+	if err != nil {
+		// JEV: should this error be handled in the function or returned?
+		return err
+	}
+
+	return nil
 }
