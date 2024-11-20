@@ -15,13 +15,7 @@ type PullRequestInfo struct {
 }
 
 func main() {
-	// setup github context
-	ghctx, err := githubactions.Context()
-	if err != nil {
-		githubactions.Fatalf("failed to read github context: %v", err)
-	}
-
-	// get and validate inputs
+	// retrieve and validate inputs
 	prevBranch := githubactions.GetInput("prevBranch")
 	if prevBranch == "" {
 		githubactions.Fatalf("prevBranch input is undefined")
@@ -35,27 +29,29 @@ func main() {
 		githubactions.Fatalf("GITHUB_TOKEN is undefined")
 	}
 
-	// build github client
+	// setup Go context and github client and context
 	ctx := context.Background()
 	client := github.NewTokenClient(ctx, token)
+	ghctx, err := githubactions.Context()
+	if err != nil {
+		githubactions.Fatalf("failed to read github context: %v", err)
+	}
 
-	// get owner and repo from context
 	owner, repo := ghctx.Repo()
 	// JEV: do we need to check of the owner and repo are empty?
 
-	// get all open pull requests from prevBranch
 	openPRs, err := findOpenPRs(ctx, client, owner, repo, prevBranch)
 	if err != nil {
 		githubactions.Fatalf("failed to find open PRs: %v", err)
 	}
 
-	// if no open PRs, exit successfully with a notification
+	// if no open PRs, exit Action successfully with a notification
 	if len(openPRs) == 0 {
 		githubactions.Noticef("no open PRs found for %s", prevBranch)
 		os.Exit(0)
 	}
 
-	// update base branch for each pull request to nextBranch, and notify user of update
+	// iterate through all open PRs and update the base branch for each PR to `nextBranch`, then notify user of successful update
 	for _, openPr := range openPRs {
 		if err := updateBaseBranch(ctx, client, owner, repo, openPr.Number, nextBranch); err != nil {
 			// log error and continue
@@ -76,20 +72,17 @@ func main() {
 }
 
 func findOpenPRs(ctx context.Context, client *github.Client, owner, repo, branch string) ([]PullRequestInfo, error) {
-	// build pull request list options
 	opts := &github.PullRequestListOptions{
 		State: "open",
 		Base:  branch,
 	}
 
-	// get all open pull requests
 	openPRs, _, err := client.PullRequests.List(ctx, owner, repo, opts)
 	if err != nil {
 		// handle error with early return
 		return nil, err
 	}
 
-	// create new empty slice and clean up data
 	results := make([]PullRequestInfo, len(openPRs))
 	for i, openPR := range openPRs {
 		results[i] = PullRequestInfo{
