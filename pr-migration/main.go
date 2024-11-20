@@ -16,31 +16,31 @@ type PullRequestInfo struct {
 
 func main() {
 	// setup logging
-	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		Level: slog.LevelDebug,
-	}))
+	// log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+	// 	Level: slog.LevelDebug,
+	// }))
 
 	// setup github context
 	ghctx, err := githubactions.Context()
 	if err != nil {
 		githubactions.Fatalf("failed to read github context: %v", err)
 	}
+	// log.Debug("github context loaded")
 
 	// get and validate inputs
 	prevBranch := githubactions.GetInput("prevBranch")
 	if prevBranch == "" {
 		githubactions.Fatalf("prevBranch input is undefined")
 	}
-
 	nextBranch := githubactions.GetInput("nextBranch")
 	if nextBranch == "" {
 		githubactions.Fatalf("nextBranch input is undefined")
 	}
-
 	token := os.Getenv("GITHUB_TOKEN")
 	if token == "" {
 		githubactions.Fatalf("GITHUB_TOKEN is undefined")
 	}
+	// log.Debug("inputs retrieved", "prevBranch:", prevBranch, "nextBranch:", nextBranch)
 
 	// build github client
 	ctx := context.Background()
@@ -48,13 +48,19 @@ func main() {
 
 	// get owner and repo from context
 	owner, repo := ghctx.Repo()
+	// JEV: do we need to check of the owner and repo are empty?
 
 	// get all open pull requests from prevBranch
 	openPRs, err := findOpenPRs(ctx, client, owner, repo, prevBranch)
 	if err != nil {
 		githubactions.Fatalf("failed to find open PRs: %v", err)
 	}
-	// if no open PRs, exit/early return?
+
+	// if no open PRs, exit successfully with a notification
+	if len(openPRs) == 0 {
+		githubactions.Noticef("no open PRs found for %s", prevBranch)
+		os.Exit(0)
+	}
 
 	// update base branch for each pull request to nextBranch
 	// notify user of update
@@ -68,7 +74,7 @@ func findOpenPRs(ctx context.Context, client *github.Client, owner, repo, branch
 	}
 
 	// get all open pull requests
-	open_prs, _, err := client.PullRequests.List(ctx, owner, repo, opts)
+	openPRs, _, err := client.PullRequests.List(ctx, owner, repo, opts)
 	if err != nil {
 		// handle error with early return
 		return nil, err
@@ -76,12 +82,12 @@ func findOpenPRs(ctx context.Context, client *github.Client, owner, repo, branch
 
 	// create new empty slice and clean up data
 	results := make([]PullRequestInfo, len(open_prs))
-	for i, open_pr := range open_prs {
- 		results[i] = PullRequestInfo{
-			Number: open_pr.GetNumber(),
+	for i, openPR := range open_prs {
+		results[i] = PullRequestInfo{
+			Number:     open_pr.GetNumber(),
 			AuthorName: open_pr.GetUser().GetLogin(),
 		}
- 	}
+	}
 
 	return results, nil
 }
