@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
 
@@ -62,8 +63,19 @@ func main() {
 		os.Exit(0)
 	}
 
-	// update base branch for each pull request to nextBranch
-	// notify user of update
+	// update base branch for each pull request to nextBranch, and notify user of update
+	for _, openPr := range openPRs {
+		if err := updateBaseBranch(ctx, client, owner, repo, openPr.Number, nextBranch); err != nil {
+			// log error and continue
+			githubactions.Errorf("failed to update base branch for PR %d: %v", openPr.Number, err)
+			continue
+		}
+
+		if err := notifyUserOfUpdate(ctx, client, owner, repo, openPr, prevBranch, nextBranch); err != nil {
+
+		}
+	}
+
 }
 
 func findOpenPRs(ctx context.Context, client *github.Client, owner, repo, branch string) ([]PullRequestInfo, error) {
@@ -81,13 +93,36 @@ func findOpenPRs(ctx context.Context, client *github.Client, owner, repo, branch
 	}
 
 	// create new empty slice and clean up data
-	results := make([]PullRequestInfo, len(open_prs))
-	for i, openPR := range open_prs {
+	results := make([]PullRequestInfo, len(openPRs))
+	for i, openPR := range openPRs {
 		results[i] = PullRequestInfo{
-			Number:     open_pr.GetNumber(),
-			AuthorName: open_pr.GetUser().GetLogin(),
+			Number:     openPR.GetNumber(),
+			AuthorName: openPR.GetUser().GetLogin(),
 		}
 	}
 
 	return results, nil
+}
+
+func updateBaseBranch(ctx context.Context, client *github.Client, owner, repo string, number int, branch string) error {
+	_, _, err := client.PullRequests.Edit(ctx, owner, repo, number, &github.PullRequest{
+		Base: &github.PullRequestBranch{
+			Ref: github.String(branch),
+		},
+	})
+
+	if err != nil {
+		// JEV: should this error be handled in the function or returned?
+		return err
+	}
+
+	return nil
+}
+
+func notifyUserOfUpdate(ctx context.Context, client *github.Client, owner, repo string, pr PullRequestInfo, prevBranch, nextBranch string) error {
+	comment := fmt.Sprintf(
+		"Hello @%s, the base branch for this PR has been updated from `%s` to `%s`. "+
+			"I've updated this PR to target the new branch. "+
+			"Please check for any merge conflicts that may need to be resolved.",
+		pr.AuthorName, prevBranch, nextBranch)
 }
