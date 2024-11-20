@@ -50,7 +50,7 @@ func main() {
 	owner, repo := ghctx.Repo()
 
 	// get all open pull requests from prevBranch
-	openPRs, err := findOpenPRs()
+	openPRs, err := findOpenPRs(ctx, client, owner, repo, prevBranch)
 	if err != nil {
 		githubactions.Fatalf("failed to find open PRs: %v", err)
 	}
@@ -60,9 +60,28 @@ func main() {
 	// notify user of update
 }
 
-func findOpenPRs(ctx context.Context, client *github.Client, owner, repo, branch string) {
+func findOpenPRs(ctx context.Context, client *github.Client, owner, repo, branch string) ([]PullRequestInfo, error) {
+	// build pull request list options
 	opts := &github.PullRequestListOptions{
 		State: "open",
 		Base:  branch,
 	}
+
+	// get all open pull requests
+	open_prs, _, err := client.PullRequests.List(ctx, owner, repo, opts)
+	if err != nil {
+		// handle error with early return
+		return nil, err
+	}
+
+	// create new empty slice and clean up data
+	results := make([]PullRequestInfo, len(open_prs))
+	for i, open_pr := range open_prs {
+ 		results[i] = PullRequestInfo{
+			Number: open_pr.GetNumber(),
+			AuthorName: open_pr.GetUser().GetLogin(),
+		}
+ 	}
+
+	return results, nil
 }
