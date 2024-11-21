@@ -18,7 +18,7 @@ func main() {
 	// retrieve and validate inputs
 	prevBranch := githubactions.GetInput("prevBranch")
 	if prevBranch == "" {
-			githubactions.Fatalf("prevBranch input is undefined (value: '%s')", prevBranch)
+		githubactions.Fatalf("prevBranch input is undefined (value: '%s')", prevBranch)
 	}
 	nextBranch := githubactions.GetInput("nextBranch")
 	if nextBranch == "" {
@@ -111,9 +111,10 @@ func updateBaseBranch(ctx context.Context, client *github.Client, owner, repo st
 
 func notifyUserOfUpdate(ctx context.Context, client *github.Client, owner, repo string, pr PullRequestInfo, prevBranch, nextBranch string) error {
 	comment := fmt.Sprintf(
-		"Hello @%s, we've noticed that the original base branch ('%s') for this PR is no longer a release candidate. "+
-			"We've automatically updated your PR's base branch to the current release target: '%s'. "+
-			"Please review and resolve any potential merge conflicts.",
+		"Hello @%s, we've noticed that the original base branch (`%s`) for this PR is no longer a release candidate. "+
+			"We've automatically updated your PR's base branch to the current release target: `%s`. "+
+			"Please review and resolve any potential merge conflicts. "+
+			"If this PR is not merged it will NOT be included in the next release.",
 		pr.AuthorName, prevBranch, nextBranch)
 
 	_, _, err := client.Issues.CreateComment(ctx, owner, repo, pr.Number, &github.IssueComment{
