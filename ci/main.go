@@ -21,6 +21,7 @@ func main() {
 		"auto-milestone",
 		"community-release",
 		"backport",
+		"migrate-open-prs",
 	}
 
 	var doTest bool
