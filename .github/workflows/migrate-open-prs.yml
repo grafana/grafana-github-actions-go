@@ -40,5 +40,5 @@ jobs:
       - run: cd actions-go && go run ./migrate-open-prs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          INPUT_PREV_BRANCH: ${{ inputs.prevBranch }}
-          INPUT_NEXT_BRANCH: ${{ inputs.nextBranch }}
+          INPUT_PREVBRANCH: ${{ inputs.prevBranch }}
+          INPUT_NEXTBRANCH: ${{ inputs.nextBranch }}
