@@ -17,12 +17,10 @@ type PullRequestInfo struct {
 func main() {
 	// retrieve and validate inputs
 	prevBranch := githubactions.GetInput("prevBranch")
-	// prevBranch := os.Getenv("INPUT_PREV_BRANCH")
 	if prevBranch == "" {
 			githubactions.Fatalf("prevBranch input is undefined (value: '%s')", prevBranch)
 	}
 	nextBranch := githubactions.GetInput("nextBranch")
-	// nextBranch := os.Getenv("INPUT_NEXT_BRANCH")
 	if nextBranch == "" {
 		githubactions.Fatalf("nextBranch input is undefined")
 	}
@@ -113,9 +111,9 @@ func updateBaseBranch(ctx context.Context, client *github.Client, owner, repo st
 
 func notifyUserOfUpdate(ctx context.Context, client *github.Client, owner, repo string, pr PullRequestInfo, prevBranch, nextBranch string) error {
 	comment := fmt.Sprintf(
-		"Hello @%s, the base branch for this PR has been updated from `%s` to `%s`. "+
-			"I've updated this PR to target the new branch. "+
-			"Please check for any merge conflicts that may need to be resolved.",
+		"Hello @%s, we've noticed that the original base branch ('%s') for this PR is no longer a release candidate. "+
+			"We've automatically updated your PR's base branch to the current release target: '%s'. "+
+			"Please review and resolve any potential merge conflicts.",
 		pr.AuthorName, prevBranch, nextBranch)
 
 	_, _, err := client.Issues.CreateComment(ctx, owner, repo, pr.Number, &github.IssueComment{
