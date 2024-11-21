@@ -16,21 +16,11 @@ type PullRequestInfo struct {
 
 func main() {
 	// retrieve and validate inputs
-	fmt.Println("Debug: All environment variables:")
-	for _, env := range os.Environ() {
-			fmt.Println(env)
-	}
-	
-	prevBranchEnv := os.Getenv("INPUT_PREV_BRANCH")
-	prevBranchAction := githubactions.GetInput("prevBranch")
-	
-	fmt.Printf("Debug: prevBranchEnv = '%s'\n", prevBranchEnv)
-	fmt.Printf("Debug: prevBranchAction = '%s'\n", prevBranchAction)
-	
+	// prevBranch := githubactions.GetInput("prevBranch")
 	prevBranch := os.Getenv("INPUT_PREV_BRANCH")
-	// if prevBranch == "" {
-	// 		githubactions.Fatalf("prevBranch input is undefined (value: '%s')", prevBranch)
-	// }
+	if prevBranch == "" {
+			githubactions.Fatalf("prevBranch input is undefined (value: '%s')", prevBranch)
+	}
 	// nextBranch := githubactions.GetInput("nextBranch")
 	nextBranch := os.Getenv("INPUT_NEXT_BRANCH")
 	if nextBranch == "" {
