@@ -37,7 +37,7 @@ jobs:
           go-version-file: ./actions-go/go.mod
           cache: true
 
-      - run: cd actions-go && go run ./pr-migration
+      - run: cd actions-go && go run ./migrate-open-prs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           INPUT_PREV_BRANCH: ${{ inputs.prevBranch }}
