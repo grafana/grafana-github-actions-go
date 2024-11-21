@@ -101,12 +101,7 @@ func updateBaseBranch(ctx context.Context, client *github.Client, owner, repo st
 		},
 	})
 
-	if err != nil {
-		// JEV: should this error be handled in the function or returned?
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func notifyUserOfUpdate(ctx context.Context, client *github.Client, owner, repo string, pr PullRequestInfo, prevBranch, nextBranch string) error {
@@ -120,10 +115,6 @@ func notifyUserOfUpdate(ctx context.Context, client *github.Client, owner, repo 
 	_, _, err := client.Issues.CreateComment(ctx, owner, repo, pr.Number, &github.IssueComment{
 		Body: &comment,
 	})
-	if err != nil {
-		// JEV: should this error be handled in the function or returned?
-		return err
-	}
 
-	return nil
+	return err
 }
