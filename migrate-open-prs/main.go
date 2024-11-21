@@ -16,13 +16,13 @@ type PullRequestInfo struct {
 
 func main() {
 	// retrieve and validate inputs
-	// prevBranch := githubactions.GetInput("prevBranch")
-	prevBranch := os.Getenv("INPUT_PREV_BRANCH")
+	prevBranch := githubactions.GetInput("prevBranch")
+	// prevBranch := os.Getenv("INPUT_PREV_BRANCH")
 	if prevBranch == "" {
 			githubactions.Fatalf("prevBranch input is undefined (value: '%s')", prevBranch)
 	}
-	// nextBranch := githubactions.GetInput("nextBranch")
-	nextBranch := os.Getenv("INPUT_NEXT_BRANCH")
+	nextBranch := githubactions.GetInput("nextBranch")
+	// nextBranch := os.Getenv("INPUT_NEXT_BRANCH")
 	if nextBranch == "" {
 		githubactions.Fatalf("nextBranch input is undefined")
 	}
