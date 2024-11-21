@@ -111,10 +111,10 @@ func updateBaseBranch(ctx context.Context, client *github.Client, owner, repo st
 
 func notifyUserOfUpdate(ctx context.Context, client *github.Client, owner, repo string, pr PullRequestInfo, prevBranch, nextBranch string) error {
 	comment := fmt.Sprintf(
-		"Hello @%s, we've noticed that the original base branch (`%s`) for this PR is no longer a release candidate. "+
+		"Hello @%s, we've noticed that the original base branch `%s` for this PR is no longer a release candidate. "+
 			"We've automatically updated your PR's base branch to the current release target: `%s`. "+
 			"Please review and resolve any potential merge conflicts. "+
-			"If this PR is not merged it will NOT be included in the next release.",
+			"If this PR is not merged it will NOT be included in the next release. Thanks!",
 		pr.AuthorName, prevBranch, nextBranch)
 
 	_, _, err := client.Issues.CreateComment(ctx, owner, repo, pr.Number, &github.IssueComment{
