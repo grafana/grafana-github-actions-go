@@ -29,7 +29,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: grafana/grafana-github-actions-go
-          ref: bm0/manual_testing
+          ref: main
           path: actions-go
 
       - uses: actions/setup-go@v5
