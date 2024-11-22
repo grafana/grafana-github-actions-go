@@ -54,12 +54,16 @@ func main() {
 	// iterate through all open PRs and update the base branch for each PR to `nextBranch`, then notify user of successful update
 	for _, openPr := range openPRs {
 		if err := updateBaseBranch(ctx, client, owner, repo, openPr.Number, nextBranch); err != nil {
-			// log error and continue
+			// log error and notify user to manually update their base branch
 			githubactions.Errorf("failed to update base branch for PR %d: %v", openPr.Number, err)
+			if err := notifyUserOfUpdate(ctx, client, owner, repo, openPr, prevBranch, nextBranch, false); err != nil {
+				githubactions.Errorf("failed to notify user of update for PR %d: %v", openPr.Number, err)
+			}
 			continue
 		}
 
-		if err := notifyUserOfUpdate(ctx, client, owner, repo, openPr, prevBranch, nextBranch); err != nil {
+		// notify user of successful update
+		if err := notifyUserOfUpdate(ctx, client, owner, repo, openPr, prevBranch, nextBranch, true); err != nil {
 			// log error and continue
 			githubactions.Errorf("failed to notify user of update for PR %d: %v", openPr.Number, err)
 			continue
@@ -104,13 +108,25 @@ func updateBaseBranch(ctx context.Context, client *github.Client, owner, repo st
 	return err
 }
 
-func notifyUserOfUpdate(ctx context.Context, client *github.Client, owner, repo string, pr PullRequestInfo, prevBranch, nextBranch string) error {
-	comment := fmt.Sprintf(
+func notifyUserOfUpdate(ctx context.Context, client *github.Client, owner, repo string, pr PullRequestInfo, prevBranch, nextBranch string, succeeded bool) error {
+	successComment := fmt.Sprintf(
 		"Hello @%s, we've noticed that the original base branch `%s` for this PR is no longer a release candidate. "+
-			"We've automatically updated your PR's base branch to the current release target: `%s`. "+
+			"We've attempted to automatically updated your PR's base branch to the current release target: `%s`. "+
 			"Please review and resolve any potential merge conflicts. "+
 			"If this PR is not merged it will NOT be included in the next release. Thanks!",
 		pr.AuthorName, prevBranch, nextBranch)
+
+	failComment := fmt.Sprintf(
+		"Hello @%s, we've noticed that the original base branch `%s` for this PR is no longer a release candidate. "+
+			"We attempted to automatically update your PR's base branch to the current release target `%s`, but encountered an error. "+
+			"Please manually update your PR's base branch to `%s` and resolve any merge conflicts. "+
+			"If this PR is not rebased and merged it will NOT be included in the next release.",
+		pr.AuthorName, prevBranch, nextBranch, nextBranch)
+
+	comment := successComment
+	if !succeeded {
+		comment = failComment
+	}
 
 	_, _, err := client.Issues.CreateComment(ctx, owner, repo, pr.Number, &github.IssueComment{
 		Body: &comment,
