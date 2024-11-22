@@ -1,4 +1,4 @@
-package handleprs
+package main
 
 import (
 	"context"
@@ -39,4 +39,31 @@ func (g *GitHubClient) CreateComment(ctx context.Context, number int, body strin
 	})
 
 	return err
+}
+
+func UpdateBaseBranch(ctx context.Context, client Client, pr PullRequestInfo, nextBranch string) error {
+	return client.EditPR(ctx, pr.Number, nextBranch)
+}
+
+func NotifyUser(ctx context.Context, client Client, pr PullRequestInfo, prevBranch, nextBranch string, succeeded bool) error {
+	comment := buildComment(pr.AuthorName, prevBranch, nextBranch, succeeded)
+	return client.CreateComment(ctx, pr.Number, comment)
+}
+
+func buildComment(authorName, prevBranch, nextBranch string, succeeded bool) string {
+	if succeeded {
+		return fmt.Sprintf(
+			"Hello @%s, we've noticed that the original base branch `%s` for this PR is no longer a release candidate. "+
+				"We've attempted to automatically updated your PR's base branch to the current release target: `%s`. "+
+				"Please review and resolve any potential merge conflicts. "+
+				"If this PR is not merged it will NOT be included in the next release. Thanks!",
+			authorName, prevBranch, nextBranch)
+	}
+
+	return fmt.Sprintf(
+		"Hello @%s, we've noticed that the original base branch `%s` for this PR is no longer a release candidate. "+
+			"We attempted to automatically update your PR's base branch to the current release target `%s`, but encountered an error. "+
+			"Please manually update your PR's base branch to `%s` and resolve any merge conflicts. "+
+			"If this PR is not rebased and merged it will NOT be included in the next release. Thanks!",
+		authorName, prevBranch, nextBranch, nextBranch)
 }
