@@ -32,3 +32,11 @@ func (g *GitHubClient) EditPR(ctx context.Context, number int, branch string) er
 
 	return err
 }
+
+func (g *GitHubClient) CreateComment(ctx context.Context, number int, body string) error {
+	_, _, err := g.Client.Issues.CreateComment(ctx, g.Owner, g.Repo, number, &github.IssueComment{
+		Body: github.String(body),
+	})
+
+	return err
+}
