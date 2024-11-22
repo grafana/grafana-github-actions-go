@@ -37,8 +37,8 @@ func main() {
 		githubactions.Fatalf("failed to read github context: %v", err)
 	}
 
+	// retrieve owner and repo from github context
 	owner, repo := ghctx.Repo()
-	// JEV: do we need to check of the owner and repo are empty?
 
 	openPRs, err := findOpenPRs(ctx, client, owner, repo, prevBranch)
 	if err != nil {
