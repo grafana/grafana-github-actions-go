@@ -7,6 +7,7 @@ import (
 	"testing"
 )
 
+// MockClient implements the `Client`` interface for testing purposes
 type MockClient struct {
 	EditPRCalled        bool
 	CreateCommentCalled bool
