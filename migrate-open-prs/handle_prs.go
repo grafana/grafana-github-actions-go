@@ -1,3 +1,7 @@
+// Package main provides PR migration functionality for updating pull request base branches and notifying users of the update.
+// It centers around the Client interface which defines the contract for PR operations:
+// - `GitHubClient` implements Client for production GitHub API calls
+// - `MockClient` implements Client for testing
 package main
 
 import (
