@@ -54,7 +54,7 @@ func buildComment(authorName, prevBranch, nextBranch string, succeeded bool) str
 	if succeeded {
 		return fmt.Sprintf(
 			"Hello @%s, we've noticed that the original base branch `%s` for this PR is no longer a release candidate. "+
-				"We've attempted to automatically updated your PR's base branch to the current release target: `%s`. "+
+				"We've automatically updated your PR's base branch to the current release target: `%s`. "+
 				"Please review and resolve any potential merge conflicts. "+
 				"If this PR is not merged it will NOT be included in the next release. Thanks!",
 			authorName, prevBranch, nextBranch)
