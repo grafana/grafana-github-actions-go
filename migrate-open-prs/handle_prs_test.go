@@ -65,7 +65,7 @@ func TestUpdatePRBranch(t *testing.T) {
 				t.Error("expected error but got none")
 			}
 			if !tt.shouldError && err != nil {
-				t.Errorf("unexpected error occured: %v", err)
+				t.Errorf("unexpected error occurred: %v", err)
 			}
 			if !mock.EditPRCalled {
 				t.Error("EditPR was not called")
@@ -114,7 +114,7 @@ func TestNotifyUser(t *testing.T) {
 				t.Error("expected error but got none")
 			}
 			if !tt.shouldError && err != nil {
-				t.Errorf("unexpected error occured: %v", err)
+				t.Errorf("unexpected error occurred: %v", err)
 			}
 			if !mock.CreateCommentCalled {
 				t.Error("CreateComment was not called")
