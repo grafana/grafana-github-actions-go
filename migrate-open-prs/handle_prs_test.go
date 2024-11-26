@@ -7,18 +7,18 @@ import (
 	"testing"
 )
 
-// MockClient implements the `Client`` interface for testing purposes
+// MockClient implements the `Client` interface for testing purposes
 type MockClient struct {
 	EditPRCalled        bool
 	CreateCommentCalled bool
 	ShouldError         bool
-	PrevBranch          string
+	TargetBranch        string // Stores the branch name passed to EditPR
 	Comment             string
 }
 
 func (m *MockClient) EditPR(ctx context.Context, number int, branch string) error {
 	m.EditPRCalled = true
-	m.PrevBranch = branch
+	m.TargetBranch = branch
 	if m.ShouldError {
 		return fmt.Errorf("MOCK error: failed to edit PR %d to target %s", number, branch)
 	}
@@ -34,6 +34,8 @@ func (m *MockClient) CreateComment(ctx context.Context, number int, body string)
 	return nil
 }
 
+// `TestUpdatePRBranch“ verifies that PRs are correctly updated to target a new branch
+// and that errors are handled appropriately
 func TestUpdatePRBranch(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -56,25 +58,28 @@ func TestUpdatePRBranch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mock := &MockClient{ShouldError: tt.shouldError}
 			pr := PullRequestInfo{Number: 1, AuthorName: "testuser"}
-			
+
 			err := UpdateBaseBranch(context.Background(), mock, pr, tt.branch)
-			
+
 			if tt.shouldError && err == nil {
 				t.Error("expected error but got none")
 			}
 			if !tt.shouldError && err != nil {
-				t.Errorf("unexpected error: %v", err)
+				t.Errorf("unexpected error occurred: %v", err)
 			}
 			if !mock.EditPRCalled {
 				t.Error("EditPR was not called")
 			}
-			if !tt.shouldError && mock.PrevBranch != tt.branch {
-				t.Errorf("wrong branch used, got: %s, want: %s", mock.PrevBranch, tt.branch)
+			// On success, verify the correct target branch was used
+			if !tt.shouldError && mock.TargetBranch != tt.branch {
+				t.Errorf("wrong branch used, got: %s, want: %s", mock.TargetBranch, tt.branch)
 			}
 		})
 	}
 }
 
+// `TestNotifyUser“ verifies that users are notified with appropriate messages
+// for both successful and failed PR updates
 func TestNotifyUser(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -102,18 +107,19 @@ func TestNotifyUser(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mock := &MockClient{ShouldError: tt.shouldError}
 			pr := PullRequestInfo{Number: 1, AuthorName: "testuser"}
-			
+
 			err := NotifyUser(context.Background(), mock, pr, "old-branch", "new-branch", tt.succeeded)
-			
+
 			if tt.shouldError && err == nil {
 				t.Error("expected error but got none")
 			}
 			if !tt.shouldError && err != nil {
-				t.Errorf("unexpected error: %v", err)
+				t.Errorf("unexpected error occurred: %v", err)
 			}
 			if !mock.CreateCommentCalled {
 				t.Error("CreateComment was not called")
 			}
+			// On success, verify comment contains required information
 			if !tt.shouldError {
 				if !strings.Contains(mock.Comment, "@testuser") {
 					t.Error("comment should mention user")
@@ -129,41 +135,40 @@ func TestNotifyUser(t *testing.T) {
 	}
 }
 
+// TestBuildNotificationComment verifies the correct comment is built
 func TestBuildNotificationComment(t *testing.T) {
 	tests := []struct {
-		name      string
-		author    string
-		prev      string
-		next      string
-		succeeded bool
-		want      []string // strings that should be in the comment
+		name            string
+		author          string
+		prev            string
+		next            string
+		succeeded       bool
+		expectedComment string
 	}{
 		{
-			name:      "success message",
-			author:    "testuser",
-			prev:      "old-branch",
-			next:      "new-branch",
-			succeeded: true,
-			want:      []string{"@testuser", "old-branch", "new-branch", "automatically updated"},
+			name:            "success message",
+			author:          "testuser",
+			prev:            "old-branch",
+			next:            "new-branch",
+			succeeded:       true,
+			expectedComment: fmt.Sprintf(successCommentTemplate, "testuser", "old-branch", "new-branch"),
 		},
 		{
-			name:      "failure message",
-			author:    "testuser",
-			prev:      "old-branch",
-			next:      "new-branch",
-			succeeded: false,
-			want:      []string{"@testuser", "old-branch", "new-branch", "manually update"},
+			name:            "failure message",
+			author:          "testuser",
+			prev:            "old-branch",
+			next:            "new-branch",
+			succeeded:       false,
+			expectedComment: fmt.Sprintf(failureCommentTemplate, "testuser", "old-branch", "new-branch"),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			comment := buildComment(tt.author, tt.prev, tt.next, tt.succeeded)
-			
-			for _, want := range tt.want {
-				if !strings.Contains(comment, want) {
-					t.Errorf("comment should contain %q", want)
-				}
+
+			if comment != tt.expectedComment {
+				t.Errorf("unexpected comment\ngot:  %q\nwant: %q", comment, tt.expectedComment)
 			}
 		})
 	}

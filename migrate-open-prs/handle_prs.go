@@ -54,20 +54,22 @@ func NotifyUser(ctx context.Context, client Client, pr PullRequestInfo, prevBran
 	return client.CreateComment(ctx, pr.Number, comment)
 }
 
+// Comment templates for PR notifications
+const (
+	successCommentTemplate = "Hello @%s, we've noticed that the original base branch `%s` for this PR is no longer a release candidate. " +
+		"We've automatically updated your PR's base branch to the current release target: `%s`. " +
+		"Please review and resolve any potential merge conflicts. " +
+		"If this PR is not merged it will NOT be included in the next release. Thanks!"
+
+	failureCommentTemplate = "Hello @%s, we've noticed that the original base branch `%s` for this PR is no longer a release candidate. " +
+		"We attempted to automatically update your PR's base branch to the current release target `%s`, but encountered an error. " +
+		"Please manually update your PR's base branch to resolve any merge conflicts. " +
+		"If this PR is not rebased and merged it will NOT be included in the next release. Thanks!"
+)
+
 func buildComment(authorName, prevBranch, nextBranch string, succeeded bool) string {
 	if succeeded {
-		return fmt.Sprintf(
-			"Hello @%s, we've noticed that the original base branch `%s` for this PR is no longer a release candidate. "+
-				"We've automatically updated your PR's base branch to the current release target: `%s`. "+
-				"Please review and resolve any potential merge conflicts. "+
-				"If this PR is not merged it will NOT be included in the next release. Thanks!",
-			authorName, prevBranch, nextBranch)
+		return fmt.Sprintf(successCommentTemplate, authorName, prevBranch, nextBranch)
 	}
-
-	return fmt.Sprintf(
-		"Hello @%s, we've noticed that the original base branch `%s` for this PR is no longer a release candidate. "+
-			"We attempted to automatically update your PR's base branch to the current release target `%s`, but encountered an error. "+
-			"Please manually update your PR's base branch to `%s` and resolve any merge conflicts. "+
-			"If this PR is not rebased and merged it will NOT be included in the next release. Thanks!",
-		authorName, prevBranch, nextBranch, nextBranch)
+	return fmt.Sprintf(failureCommentTemplate, authorName, prevBranch, nextBranch)
 }
