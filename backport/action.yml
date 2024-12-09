@@ -1,0 +1,26 @@
+name: Backport
+description: Backports a commit to the selected release branches
+inputs:
+  token:
+    description: GitHub token with access to all necessary repositories
+    required: true
+  labelsToAdd:
+    description: Comma delimited list of labels to add to the backport PRs
+    required: true
+  binary_release_tag:
+    required: false
+    default: "dev"
+runs:
+  using: composite
+  steps:
+  - run: |
+      set -e
+      # Download the action from the store
+      curl --fail -L -o /tmp/backport https://github.com/grafana/grafana-github-actions-go/releases/download/${{inputs.binary_release_tag}}/backport
+      chmod +x /tmp/backport
+      # Execute action
+      /tmp/backport ${{inputs.pr}}
+    shell: bash
+    env:
+      GITHUB_TOKEN: ${{inputs.token}}
+      INPUT_LABELS_TO_ADD: ${{inputs.labels_to_add}}
