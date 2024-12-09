@@ -157,6 +157,7 @@ func TestBackport(t *testing.T) {
 		createFn := func(ctx context.Context, owner string, repo string, pull *github.NewPullRequest) (*github.PullRequest, *github.Response, error) {
 			return &github.PullRequest{
 				Number: github.Int(101),
+				Body:   pull.Body,
 				Title:  pull.Title,
 			}, nil, nil
 		}
@@ -187,9 +188,12 @@ func TestBackport(t *testing.T) {
 			PullRequestNumber: 100,
 			SourceSHA:         "asdf1234",
 			SourceTitle:       "Example Bug Fix",
-			SourceBody:        "body",
+			SourceBody:        "Example bug fix body",
 			Target:            "release-12.0.0",
 			Labels: []*github.Label{
+				{
+					Name: github.String(" "),
+				},
 				{
 					Name: github.String("type/bug"),
 				},
@@ -209,7 +213,12 @@ func TestBackport(t *testing.T) {
 
 		require.NoError(t, err)
 		require.Equal(t, *pr.Title, "[release-12.0.0] Example Bug Fix")
-		require.Equal(t, *pr.Title, "[release-12.0.0] Example Bug Fix")
+
+		// Ensure that the call to "CreatePullRequest" includes a description of the backport with the commit hash and original pull request number
+		require.Contains(t, pr.GetBody(), "Backport asdf1234 from #100")
+
+		// Ensure taht the body of the backport PR includes the original pull request body
+		require.Contains(t, pr.GetBody(), "Example bug fix body")
 
 		// Ensure that all "backport" PRs have the "backport" label
 		RequireContainsLabel(t, pr.Labels, &github.Label{
@@ -225,6 +234,14 @@ func TestBackport(t *testing.T) {
 		for i, v := range pr.Labels {
 			require.NotEmptyf(t, v.GetName(), "label at index '%d' is empty", i)
 		}
+
+		// Ensure that the cherry-pick commands fetch, create a new branch, cherry-pick the pr commit, and push
+		require.Equal(t, []string{
+			"git fetch --unshallow",
+			"git checkout -b backport-100-to-release-12.0.0 --track origin/release-12.0.0",
+			"git cherry-pick -x asdf1234",
+			"git push origin backport-100-to-release-12.0.0",
+		}, runner.Commands)
 	})
 
 	t.Run("Backport comments", func(t *testing.T) {

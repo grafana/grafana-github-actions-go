@@ -75,16 +75,19 @@ func (r *ShellCommandRunner) Run(ctx context.Context, command string, args ...st
 
 type ErrorRunner struct {
 	Commands map[string]error
+	History  *NoOpRunner
 }
 
 func NewErrorRunner(errors map[string]error) *ErrorRunner {
 	return &ErrorRunner{
 		Commands: errors,
+		History:  NewNoOpRunner(),
 	}
 }
 
 func (r *ErrorRunner) Run(ctx context.Context, command string, args ...string) (string, error) {
 	cmd := strings.Join(append([]string{command}, args...), " ")
+	r.History.Run(ctx, command, args...)
 	if err, ok := r.Commands[cmd]; ok {
 		return "", err
 	}

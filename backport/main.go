@@ -5,7 +5,6 @@ import (
 	"errors"
 	"log/slog"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/google/go-github/v50/github"
@@ -13,16 +12,13 @@ import (
 )
 
 type Inputs struct {
-	Title                  string
-	Labels                 []*github.Label
-	RemoveDefaultReviewers bool
+	Title  string
+	Labels []*github.Label
 }
 
 func GetInputs() Inputs {
 	var (
-		labelsStr                 = githubactions.GetInput("labelsToAdd")
-		removeDefaultReviewersStr = githubactions.GetInput("removeDefaultReviewers")
-		title                     = githubactions.GetInput("title")
+		labelsStr = githubactions.GetInput("labels_to_add")
 	)
 
 	labelStrings := strings.Split(labelsStr, ",")
@@ -33,12 +29,8 @@ func GetInputs() Inputs {
 		}
 	}
 
-	removeDefaultReviewers, _ := strconv.ParseBool(removeDefaultReviewersStr)
-
 	return Inputs{
-		Title:                  title,
-		Labels:                 labels,
-		RemoveDefaultReviewers: removeDefaultReviewers,
+		Labels: labels,
 	}
 }
 
