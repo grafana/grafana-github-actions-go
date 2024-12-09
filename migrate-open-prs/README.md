@@ -14,3 +14,9 @@ The action performs several key tasks:
 | ------------ | --------------------------------------------------------------------- | -------- |
 | `prevBranch` | The superseded release branch to check for open PRs (e.g., `v10.0.x`) | Yes      |
 | `nextBranch` | The current release branch to migrate open PRs to (e.g., `v10.1.x`)   | Yes      |
+
+## Environment Variables
+
+| Variable       | Description                         | Required |
+| -------------- | ----------------------------------- | -------- |
+| `GITHUB_TOKEN` | GitHub token for API authentication | Yes      |
