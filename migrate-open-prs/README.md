@@ -20,3 +20,45 @@ The action performs several key tasks:
 | Variable       | Description                         | Required |
 | -------------- | ----------------------------------- | -------- |
 | `GITHUB_TOKEN` | GitHub token for API authentication | Yes      |
+
+## Example Workflow
+
+```yaml
+name: Migrate Open Pull Requests
+on:
+  workflow_dispatch:
+    inputs:
+      prevBranch:
+        description: "The superseded release branch to check for open PRs"
+        required: true
+        type: string
+      nextBranch:
+        description: "The current release branch to migrate open PRs"
+        required: true
+        type: string
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout actions repository
+        uses: actions/checkout@v4
+        with:
+          repository: grafana/grafana-github-actions-go
+          ref: main
+          path: actions-go
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: ./actions-go/go.mod
+          cache: true
+
+      - name: Run migration
+        uses: grafana/grafana-github-actions-go/migrate-open-prs@main
+        with:
+          prevBranch: ${{ inputs.prevBranch }}
+          nextBranch: ${{ inputs.nextBranch }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
