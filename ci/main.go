@@ -21,6 +21,7 @@ func main() {
 		"auto-milestone",
 		"community-release",
 		"backport",
+		"bump-release",
 		"migrate-open-prs",
 	}
 
