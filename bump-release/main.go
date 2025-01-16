@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 
@@ -45,9 +47,12 @@ func main() {
 		panic("token can not be empty")
 	}
 
-	if err := CreateNewReleaseBranch(ctx, client.Git, inputs.Owner, inputs.Repo, inputs.Source); err != nil {
+	branch, err := CreateNewReleaseBranch(ctx, client.Git, inputs.Owner, inputs.Repo, inputs.Source)
+	if err != nil {
 		panic(fmt.Errorf("error creating new release branch: %s", err))
 	}
+
+	log.Println("created new branch:", branch)
 }
 
 type GitClient interface {
@@ -55,23 +60,27 @@ type GitClient interface {
 	CreateRef(ctx context.Context, owner string, repo string, ref *github.Reference) (*github.Reference, *github.Response, error)
 }
 
-func CreateNewReleaseBranch(ctx context.Context, client GitClient, owner, repo, source string) error {
+func CreateNewReleaseBranch(ctx context.Context, client GitClient, owner, repo, source string) (string, error) {
 	target, err := versions.BumpReleaseBranch(source)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	ref, _, err := client.GetRef(ctx, owner, repo, source)
+	ref, _, err := client.GetRef(ctx, owner, repo, "heads/"+source)
 	if err != nil {
-		return err
+		return "", err
+	}
+
+	if _, _, err := client.GetRef(ctx, owner, repo, "heads/"+target); err == nil {
+		return "", errors.New("requested branch already exists")
 	}
 
 	if _, _, err := client.CreateRef(ctx, owner, repo, &github.Reference{
-		Ref:    github.String(target),
+		Ref:    github.String("heads/" + target),
 		Object: ref.Object,
 	}); err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	return target, nil
 }

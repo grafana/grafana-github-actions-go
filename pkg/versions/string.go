@@ -3,7 +3,6 @@ package versions
 import (
 	"errors"
 	"fmt"
-	"log"
 	"strconv"
 )
 
@@ -39,10 +38,6 @@ func Parse(v string) (Version, error) {
 			groups[name] = matches[i]
 		}
 	}
-
-	log.Println(groups)
-	log.Println(groups)
-	log.Println(groups)
 
 	return Version{
 		Major:      groups["major"],
