@@ -53,6 +53,9 @@ func main() {
 	}
 
 	log.Println("created new branch:", branch)
+
+	// Write the new branch name to stdout so that it can be reused
+	fmt.Fprint(os.Stdout, branch)
 }
 
 type GitClient interface {
