@@ -21,6 +21,7 @@ func main() {
 		"auto-milestone",
 		"community-release",
 		"backport",
+		"bump-release",
 		"migrate-open-prs",
 	}
 
@@ -90,7 +91,7 @@ func main() {
 			ghc := github.NewTokenClient(ctx, os.Getenv("GITHUB_TOKEN"))
 			release, _, err := ghc.Repositories.GetReleaseByTag(ctx, targetOwner, targetRepo, targetTag)
 			if err != nil {
-				logger.Fatal().Msgf("No release with the tag `%s` found", targetTag)
+				logger.Fatal().Err(err).Msgf("No release with the tag `%s` found", targetTag)
 			}
 
 			for _, action := range actions {
