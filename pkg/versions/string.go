@@ -28,12 +28,12 @@ func (v Version) String() string {
 }
 
 func Parse(v string) (Version, error) {
-	matches := semverRegexp.FindStringSubmatch(v)
+	matches := SemverRegexp.FindStringSubmatch(v)
 	if len(matches) < 3 {
 		return Version{}, errors.New("version does not match a semver regex")
 	}
 	groups := make(map[string]string)
-	for i, name := range semverRegexp.SubexpNames() {
+	for i, name := range SemverRegexp.SubexpNames() {
 		if i > 0 && i <= len(matches) {
 			groups[name] = matches[i]
 		}

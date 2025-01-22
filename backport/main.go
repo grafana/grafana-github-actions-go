@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/google/go-github/v50/github"
+	"github.com/grafana/grafana-github-actions-go/pkg/ghutil"
 	"github.com/sethvargo/go-githubactions"
 )
 
@@ -68,7 +69,7 @@ func main() {
 	)
 
 	log = log.With("pull_request", payload.GetNumber())
-	branches, err := GetReleaseBranches(ctx, client.Repositories, owner, repo)
+	branches, err := ghutil.GetReleaseBranches(ctx, client.Repositories, owner, repo)
 	if err != nil {
 		log.Error("error getting branches", "error", err)
 		panic(err)
