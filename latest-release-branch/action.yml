@@ -16,10 +16,12 @@ inputs:
 outputs:
   branch:
     description: The latest release branch that matches the pattern
+    value: ${{ steps.get-latest-release-branch.outputs.branch }}
 runs:
   using: composite
   steps:
   - shell: bash
+    id: get-latest-release-branch
     env:
       GITHUB_TOKEN: ${{inputs.token}}
       INPUT_OWNERREPO: ${{inputs.ownerRepo}}
@@ -30,4 +32,4 @@ runs:
       curl --fail -L -o /tmp/latest-release-branch https://github.com/grafana/grafana-github-actions-go/releases/download/${{inputs.binary_release_tag}}/latest-release-branch
       chmod +x /tmp/latest-release-branch
       # Execute action
-      echo "branch=$(/tmp/latest-release-branch ${{inputs.pattern}})" >> "$GITHUB_OUTPUT" 
+      echo "branch=$(/tmp/latest-release-branch)" >> "$GITHUB_OUTPUT" 
