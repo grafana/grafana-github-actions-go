@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/google/go-github/v50/github"
@@ -52,8 +53,9 @@ func BackportTargetsFromPayload(branches []string, payload *github.PullRequestTa
 // that matches the pattern.
 func BackportTarget(label *github.Label, branches []string) (string, error) {
 	version := strings.TrimPrefix(label.GetName(), "backport")
-	labelString := strings.TrimSpace(version)
+	labelString := strings.ReplaceAll(strings.TrimSpace(version), "x", "0")
 	major, minor, _ := ghutil.MajorMinorPatch(labelString)
+	log.Println(labelString, "major", "minor", "patch", major, minor)
 
 	return ghutil.MostRecentBranch(major, minor, branches)
 }

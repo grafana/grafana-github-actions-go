@@ -20,6 +20,7 @@ func main() {
 		"update-changelog",
 		"auto-milestone",
 		"community-release",
+		"latest-release-branch",
 		"backport",
 		"bump-release",
 		"migrate-open-prs",

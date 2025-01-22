@@ -53,13 +53,13 @@ func main() {
 
 	branches, err := ghutil.GetReleaseBranches(ctx, client.Repositories, inputs.Owner, inputs.Repo)
 	if err != nil {
-		log.Error("error getting release branches", err)
+		log.Error("error getting release branches", "err", err)
 		panic(err)
 	}
 
 	branch, err := ghutil.MostRecentBranch(major, minor, branches)
 	if err != nil {
-		log.Error("error getting release branches", err)
+		log.Error("error getting release branches", "err", err)
 		panic(err)
 	}
 
