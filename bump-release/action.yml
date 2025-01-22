@@ -13,10 +13,15 @@ inputs:
   binary_release_tag:
     required: false
     default: "dev"
+outputs:
+  branch:
+    description: The latest release branch that matches the pattern
+    value: ${{ steps.bump-release.outputs.branch }}
 runs:
   using: composite
   steps:
   - shell: bash
+    id: bump-release
     env:
       GITHUB_TOKEN: ${{inputs.token}}
       INPUT_OWNERREPO: ${{inputs.ownerRepo}}
@@ -27,4 +32,4 @@ runs:
       curl --fail -L -o /tmp/bump-release https://github.com/grafana/grafana-github-actions-go/releases/download/${{inputs.binary_release_tag}}/bump-release
       chmod +x /tmp/bump-release
       # Execute action
-      /tmp/bump-release ${{inputs.source}}
+      echo "branch=$(/tmp/bump-release)" >> "$GITHUB_OUTPUT" 

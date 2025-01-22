@@ -3,7 +3,6 @@ package ghutil
 import (
 	"context"
 	"errors"
-	"log"
 	"slices"
 	"strconv"
 	"strings"
@@ -53,17 +52,11 @@ func SortBranches(a, b Branch) int {
 
 func MostRecentBranch(major, minor string, branches []string) (string, error) {
 	b := []Branch{}
-	log.Println(branches)
-	log.Println(branches)
-	log.Println(branches)
 
 	for _, v := range branches {
-		log.Println(v)
 		version := strings.TrimSpace(strings.TrimPrefix(v, "release-"))
 		branchMajor, branchMinor, branchPatch := MajorMinorPatch(version)
-		log.Println(branchMajor, branchMinor, branchPatch)
 		if major != branchMajor || minor != branchMinor {
-			log.Println("major", major, "!=", branchMajor, "or", "minor", minor, "!=", branchMinor)
 			continue
 		}
 		if strings.Contains(v, "+security") {

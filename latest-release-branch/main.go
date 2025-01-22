@@ -63,5 +63,6 @@ func main() {
 		panic(err)
 	}
 
+	log.Info("found branch", "branch", branch)
 	fmt.Fprint(os.Stdout, branch)
 }
