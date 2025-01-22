@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/google/go-github/v50/github"
+	"github.com/grafana/grafana-github-actions-go/pkg/ghutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -36,14 +37,14 @@ func RequireNotContainsLabel(t *testing.T, labels []*github.Label, label *github
 func TestMostRecentBranch(t *testing.T) {
 	assertError := func(t *testing.T, major, minor string, branches []string) {
 		t.Helper()
-		b, err := MostRecentBranch(major, minor, branches)
+		b, err := ghutil.MostRecentBranch(major, minor, branches)
 		assert.Error(t, err)
 		assert.Empty(t, b)
 	}
 
 	assertBranch := func(t *testing.T, major, minor string, branches []string, branch string) {
 		t.Helper()
-		b, err := MostRecentBranch(major, minor, branches)
+		b, err := ghutil.MostRecentBranch(major, minor, branches)
 		assert.NoError(t, err)
 		assert.Equal(t, branch, b)
 	}
