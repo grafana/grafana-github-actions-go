@@ -18,8 +18,8 @@ type Inputs struct {
 
 func GetInputs() Inputs {
 	var (
-		from      = githubactions.GetInput("to")
-		to        = githubactions.GetInput("from")
+		from      = githubactions.GetInput("from")
+		to        = githubactions.GetInput("to")
 		ownerRepo = githubactions.GetInput("ownerRepo")
 	)
 
