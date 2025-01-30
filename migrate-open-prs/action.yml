@@ -31,3 +31,4 @@ runs:
       # Download the action from the store
       curl --fail -L -o /tmp/migrate-open-prs https://github.com/grafana/grafana-github-actions-go/releases/download/${{inputs.binary_release_tag}}/migrate-open-prs
       chmod +x /tmp/migrate-open-prs
+      /tmp/migrate-open-prs

@@ -23,6 +23,16 @@ func GetInputs() Inputs {
 		ownerRepo = githubactions.GetInput("ownerRepo")
 	)
 
+	if from == "" {
+		panic("from is empty")
+	}
+	if to == "" {
+		panic("to is empty")
+	}
+	if ownerRepo == "" {
+		panic("ownerRepo is empty")
+	}
+
 	r := strings.Split(ownerRepo, "/")
 	owner := r[0]
 	repo := r[1]
@@ -36,15 +46,6 @@ func GetInputs() Inputs {
 }
 
 func main() {
-	// retrieve and validate inputs
-	from := githubactions.GetInput("from")
-	if from == "" {
-		githubactions.Fatalf("to input is undefined (value: '%s')", from)
-	}
-	to := githubactions.GetInput("to")
-	if to == "" {
-		githubactions.Fatalf("to input is undefined")
-	}
 	token := os.Getenv("GITHUB_TOKEN")
 	if token == "" {
 		githubactions.Fatalf("GITHUB_TOKEN is undefined")
@@ -55,6 +56,8 @@ func main() {
 		ctx    = context.Background()
 		client = github.NewTokenClient(ctx, token)
 		inputs = GetInputs()
+		from   = inputs.From
+		to     = inputs.To
 		owner  = inputs.Owner
 		repo   = inputs.Repo
 	)
@@ -96,6 +99,7 @@ func main() {
 		githubactions.Noticef("successfully updated PR %d to target %s", openPr.Number, to)
 	}
 
+	githubactions.Noticef("Completed without error")
 }
 
 func findOpenPRs(ctx context.Context, client *github.Client, owner, repo, branch string) ([]PullRequestInfo, error) {
