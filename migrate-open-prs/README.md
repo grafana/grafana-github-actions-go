@@ -12,8 +12,8 @@ The action performs several key tasks:
 
 | Input        | Description                                                           | Required |
 | ------------ | --------------------------------------------------------------------- | -------- |
-| `prevBranch` | The superseded release branch to check for open PRs (e.g., `v10.0.x`) | Yes      |
-| `nextBranch` | The current release branch to migrate open PRs to (e.g., `v10.1.x`)   | Yes      |
+| `from` | The superseded release branch to check for open PRs (e.g., `v10.0.x`) | Yes      |
+| `to` | The current release branch to migrate open PRs to (e.g., `v10.1.x`)   | Yes      |
 
 ## Environment Variables
 
@@ -28,37 +28,26 @@ name: Migrate Open Pull Requests
 on:
   workflow_dispatch:
     inputs:
-      prevBranch:
+      from:
         description: "The superseded release branch to check for open PRs"
         required: true
         type: string
-      nextBranch:
+      to:
         description: "The current release branch to migrate open PRs"
         required: true
         type: string
 
 jobs:
-  migrate:
+  main:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout actions repository
-        uses: actions/checkout@v4
-        with:
-          repository: grafana/grafana-github-actions-go
-          ref: main
-          path: actions-go
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: ./actions-go/go.mod
-          cache: true
-
-      - name: Run migration
+      - name: Migrate PRs
         uses: grafana/grafana-github-actions-go/migrate-open-prs@main
-        with:
-          prevBranch: ${{ inputs.prevBranch }}
-          nextBranch: ${{ inputs.nextBranch }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          ownerRepo: 'grafana/grafana'
+          from: ${{ inputs.from }}
+          to: ${{ inputs.to }}
+          binary_release_tag: 'dev'
 ```

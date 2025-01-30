@@ -1,0 +1,33 @@
+name: Migrate PRs
+description: Migrates PRs from one base branch to another
+inputs:
+  token:
+    description: GitHub token
+    required: true
+  ownerRepo:
+    description: Owner / repo to migrate PRs in. (e.g. 'grafana/grafana')
+    required: true
+  from:
+    description: The base branch to check for open PRs
+    required: true
+  to:
+    description: The base branch to migrate open PRs to
+    required: true
+  binary_release_tag:
+    required: false
+    default: "dev"
+runs:
+  using: composite
+  steps:
+  - shell: bash
+    id: migrate-open-prs
+    env:
+      GITHUB_TOKEN: ${{inputs.token}}
+      INPUT_OWNERREPO: ${{inputs.ownerRepo}}
+      INPUT_FROM: ${{inputs.from}}
+      INPUT_TO: ${{inputs.to}}
+    run: |
+      set -e
+      curl --fail -L -o /tmp/migrate-open-prs https://github.com/grafana/grafana-github-actions-go/releases/download/${{inputs.binary_release_tag}}/migrate-open-prs
+      chmod +x /tmp/migrate-open-prs
+      /tmp/migrate-open-prs
