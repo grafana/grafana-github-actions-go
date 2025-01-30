@@ -13,6 +13,9 @@ inputs:
   to:
     description: The base branch to migrate open PRs to
     required: true
+  binary_release_tag:
+    required: false
+    default: "dev"
 runs:
   using: composite
   steps:
