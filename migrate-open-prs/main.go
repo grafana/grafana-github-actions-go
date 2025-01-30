@@ -3,20 +3,47 @@ package main
 import (
 	"context"
 	"os"
+	"strings"
 
 	"github.com/google/go-github/v50/github"
 	"github.com/sethvargo/go-githubactions"
 )
 
+type Inputs struct {
+	From  string
+	To    string
+	Owner string
+	Repo  string
+}
+
+func GetInputs() Inputs {
+	var (
+		from      = githubactions.GetInput("to")
+		to        = githubactions.GetInput("from")
+		ownerRepo = githubactions.GetInput("ownerRepo")
+	)
+
+	r := strings.Split(ownerRepo, "/")
+	owner := r[0]
+	repo := r[1]
+
+	return Inputs{
+		From:  from,
+		To:    to,
+		Owner: owner,
+		Repo:  repo,
+	}
+}
+
 func main() {
 	// retrieve and validate inputs
-	prevBranch := githubactions.GetInput("prevBranch")
-	if prevBranch == "" {
-		githubactions.Fatalf("prevBranch input is undefined (value: '%s')", prevBranch)
+	from := githubactions.GetInput("from")
+	if from == "" {
+		githubactions.Fatalf("to input is undefined (value: '%s')", from)
 	}
-	nextBranch := githubactions.GetInput("nextBranch")
-	if nextBranch == "" {
-		githubactions.Fatalf("nextBranch input is undefined")
+	to := githubactions.GetInput("to")
+	if to == "" {
+		githubactions.Fatalf("to input is undefined")
 	}
 	token := os.Getenv("GITHUB_TOKEN")
 	if token == "" {
@@ -24,24 +51,22 @@ func main() {
 	}
 
 	// setup Go context and github client and context
-	ctx := context.Background()
-	client := github.NewTokenClient(ctx, token)
-	ghctx, err := githubactions.Context()
-	if err != nil {
-		githubactions.Fatalf("failed to read github context: %v", err)
-	}
+	var (
+		ctx    = context.Background()
+		client = github.NewTokenClient(ctx, token)
+		inputs = GetInputs()
+		owner  = inputs.Owner
+		repo   = inputs.Repo
+	)
 
-	// retrieve owner and repo from github context
-	owner, repo := ghctx.Repo()
-
-	openPRs, err := findOpenPRs(ctx, client, owner, repo, prevBranch)
+	openPRs, err := findOpenPRs(ctx, client, owner, repo, from)
 	if err != nil {
 		githubactions.Fatalf("failed to find open PRs: %v", err)
 	}
 
 	// if no open PRs, exit Action successfully with a notification
 	if len(openPRs) == 0 {
-		githubactions.Noticef("no open PRs found for %s", prevBranch)
+		githubactions.Noticef("no open PRs found for %s", from)
 		os.Exit(0)
 	}
 
@@ -51,26 +76,24 @@ func main() {
 		Repo:   repo,
 	}
 
-	// iterate through all open PRs and update the base branch for each PR to `nextBranch`, then notify user of successful update
+	// iterate through all open PRs and update the base branch for each PR to `to`, then notify user of successful update
 	for _, openPr := range openPRs {
-		if err := UpdateBaseBranch(ctx, ghClient, openPr, nextBranch); err != nil {
+		if err := UpdateBaseBranch(ctx, ghClient, openPr, to); err != nil {
 			// log error and notify user to manually update their base branch
 			githubactions.Errorf("failed to update base branch for PR %d: %v", openPr.Number, err)
-			if err := NotifyUser(ctx, ghClient, openPr, prevBranch, nextBranch, false); err != nil {
+			if err := NotifyUser(ctx, ghClient, openPr, from, to, false); err != nil {
 				githubactions.Errorf("failed to notify user of update for PR %d: %v", openPr.Number, err)
 			}
 			continue
 		}
 
 		// notify user of successful update
-		if err := NotifyUser(ctx, ghClient, openPr, prevBranch, nextBranch, true); err != nil {
-			// log error and continue
+		if err := NotifyUser(ctx, ghClient, openPr, from, to, true); err != nil {
 			githubactions.Errorf("failed to notify user of update for PR %d: %v", openPr.Number, err)
 			continue
 		}
 
-		// log success
-		githubactions.Noticef("successfully updated PR %d to target %s", openPr.Number, nextBranch)
+		githubactions.Noticef("successfully updated PR %d to target %s", openPr.Number, to)
 	}
 
 }
