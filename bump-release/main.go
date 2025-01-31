@@ -44,12 +44,12 @@ func main() {
 	)
 
 	if token == "" {
-		panic("token can not be empty")
+		githubactions.Fatalf("token can not be empty")
 	}
 
 	branch, err := CreateNewReleaseBranch(ctx, client.Git, inputs.Owner, inputs.Repo, inputs.Source)
 	if err != nil {
-		panic(fmt.Errorf("error creating new release branch: %s", err))
+		githubactions.Fatalf("error creating new release branch: %s", err)
 	}
 
 	log.Println("created new branch:", branch)
