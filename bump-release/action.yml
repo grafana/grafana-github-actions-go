@@ -1,9 +1,6 @@
 name: Bump Release Branch
 description: Creates a new release branch from an existing release branch
 inputs:
-  token:
-    description: GitHub token with access to all necessary repositories
-    required: true
   ownerRepo:
     description: Owner/repo which contains the branch (eg `grafana/grafana`)
     required: true
@@ -13,6 +10,10 @@ inputs:
   binary_release_tag:
     required: false
     default: "dev"
+secrets:
+  token:
+    description: GitHub token with access to all necessary repositories
+    required: true
 outputs:
   branch:
     description: The latest release branch that matches the pattern
@@ -23,7 +24,7 @@ runs:
   - shell: bash
     id: bump-release
     env:
-      GITHUB_TOKEN: ${{inputs.token}}
+      GITHUB_TOKEN: ${{secrets.token}}
       INPUT_OWNERREPO: ${{inputs.ownerRepo}}
       INPUT_SOURCE: ${{inputs.source}}
     run: |
