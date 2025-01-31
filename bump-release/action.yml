@@ -10,7 +10,6 @@ inputs:
   binary_release_tag:
     required: false
     default: "dev"
-secrets:
   token:
     description: GitHub token with access to all necessary repositories
     required: true
@@ -24,7 +23,7 @@ runs:
   - shell: bash
     id: bump-release
     env:
-      GITHUB_TOKEN: ${{secrets.token}}
+      GITHUB_TOKEN: ${{inputs.token}}
       INPUT_OWNERREPO: ${{inputs.ownerRepo}}
       INPUT_SOURCE: ${{inputs.source}}
     run: |
