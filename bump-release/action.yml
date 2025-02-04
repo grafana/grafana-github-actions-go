@@ -1,9 +1,6 @@
 name: Bump Release Branch
 description: Creates a new release branch from an existing release branch
 inputs:
-  token:
-    description: GitHub token with access to all necessary repositories
-    required: true
   ownerRepo:
     description: Owner/repo which contains the branch (eg `grafana/grafana`)
     required: true
@@ -13,6 +10,9 @@ inputs:
   binary_release_tag:
     required: false
     default: "dev"
+  token:
+    description: GitHub token with access to all necessary repositories
+    required: true
 outputs:
   branch:
     description: The latest release branch that matches the pattern
@@ -32,4 +32,5 @@ runs:
       curl --fail -L -o /tmp/bump-release https://github.com/grafana/grafana-github-actions-go/releases/download/${{inputs.binary_release_tag}}/bump-release
       chmod +x /tmp/bump-release
       # Execute action
-      echo "branch=$(/tmp/bump-release)" >> "$GITHUB_OUTPUT" 
+      /tmp/bump-release > branch
+      echo "branch=$(cat branch)" >> "$GITHUB_OUTPUT"

@@ -46,8 +46,8 @@ func GetInputs() Inputs {
 }
 
 func main() {
-	token := os.Getenv("GITHUB_TOKEN")
-	if token == "" {
+	token, ok := os.LookupEnv("GITHUB_TOKEN")
+	if token == "" || !ok {
 		githubactions.Fatalf("GITHUB_TOKEN is undefined")
 	}
 
@@ -64,7 +64,7 @@ func main() {
 
 	openPRs, err := findOpenPRs(ctx, client, owner, repo, from)
 	if err != nil {
-		githubactions.Fatalf("failed to find open PRs: %v", err)
+		githubactions.Fatalf("error searching for open PRs: %v", err)
 	}
 
 	// if no open PRs, exit Action successfully with a notification

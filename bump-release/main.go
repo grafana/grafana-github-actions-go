@@ -36,20 +36,20 @@ func GetInputs() Inputs {
 }
 
 func main() {
+	token, ok := os.LookupEnv("GITHUB_TOKEN")
+	if !ok || token == "" {
+		githubactions.Fatalf("token can not be empty")
+	}
+
 	var (
 		ctx    = context.Background()
-		token  = os.Getenv("GITHUB_TOKEN")
 		inputs = GetInputs()
 		client = github.NewTokenClient(ctx, token)
 	)
 
-	if token == "" {
-		panic("token can not be empty")
-	}
-
 	branch, err := CreateNewReleaseBranch(ctx, client.Git, inputs.Owner, inputs.Repo, inputs.Source)
 	if err != nil {
-		panic(fmt.Errorf("error creating new release branch: %s", err))
+		githubactions.Fatalf("error creating new release branch: %s", err)
 	}
 
 	log.Println("created new branch:", branch)
