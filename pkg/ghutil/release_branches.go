@@ -91,11 +91,30 @@ func MajorMinorPatch(v string) (string, string, string) {
 }
 
 func GetReleaseBranches(ctx context.Context, client BranchClient, owner, repo string) ([]string, error) {
-	branches, _, err := client.ListBranches(ctx, owner, repo, &github.BranchListOptions{
-		Protected: github.Bool(true),
-	})
-	if err != nil {
-		return nil, err
+	var (
+		page     int
+		count    = 50
+		branches = []*github.Branch{}
+	)
+
+	for {
+		b, r, err := client.ListBranches(ctx, owner, repo, &github.BranchListOptions{
+			Protected: github.Bool(true),
+			ListOptions: github.ListOptions{
+				Page:    page,
+				PerPage: count,
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		branches = append(branches, b...)
+
+		if r.NextPage == 0 {
+			break
+		}
+		page = r.NextPage
 	}
 
 	str := make([]string, len(branches))
