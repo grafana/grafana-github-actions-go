@@ -54,6 +54,7 @@ func TestCreateCherryPickBranch(t *testing.T) {
 			"git checkout -b example --track origin/release-1.0.0",
 			"git cherry-pick -x asdf1234",
 			"git diff -s --exit-code .betterer.results",
+			"git cherry-pick --abort",
 		}
 
 		require.Error(t, CreateCherryPickBranch(context.Background(), runner, branch, opts))
