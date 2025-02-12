@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/google/go-github/v50/github"
 )
@@ -99,6 +100,20 @@ func BackportBranch(number int, target string) string {
 	return fmt.Sprintf("backport-%d-to-%s", number, target)
 }
 
+func retry(fn func() error, count int, d time.Duration) error {
+	c := time.NewTicker(d)
+	var err error
+	for i := 0; i < count; i++ {
+		<-c.C
+		err = fn()
+		if err == nil {
+			return nil
+		}
+	}
+
+	return err
+}
+
 func backport(ctx context.Context, client BackportClient, issueClient IssueClient, runner CommandRunner, opts BackportOpts) (*github.PullRequest, error) {
 	// 1. Run CLI commands to create a branch and cherry-pick
 	//   * If the cherry-pick fails, write a comment in the source PR with instructions on manual backporting
@@ -113,11 +128,24 @@ func backport(ctx context.Context, client BackportClient, issueClient IssueClien
 		return nil, fmt.Errorf("error pushing: %w", err)
 	}
 
-	pr, err := CreatePullRequest(ctx, client, issueClient, branch, opts)
-	if err != nil {
-		return nil, fmt.Errorf("error creating pull request: %w", err)
-	}
+	var (
+		pr *github.PullRequest
+	)
 
+	// This will attempt to open the pull request once every second 10 times until it succeeds
+	err := retry(func() error {
+		p, err := CreatePullRequest(ctx, client, issueClient, branch, opts)
+		if err != nil {
+			return fmt.Errorf("error creating pull request: %w", err)
+		}
+
+		pr = p
+		return nil
+	}, 10, time.Second)
+
+	if err != nil {
+		return nil, err
+	}
 	return pr, nil
 }
 
