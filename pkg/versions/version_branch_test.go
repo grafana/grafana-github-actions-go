@@ -43,3 +43,39 @@ func TestVersionBranch(t *testing.T) {
 		assert.Equal(t, v.VersionBranch, res)
 	}
 }
+
+type releaseBranchCase struct {
+	Version       string
+	ReleaseBranch string
+}
+
+func TestReleaseBranch(t *testing.T) {
+	cases := []releaseBranchCase{
+		{
+			Version:       "8.2.1",
+			ReleaseBranch: "release-8.2.1",
+		},
+		{
+			Version:       "v9.4.0-preview",
+			ReleaseBranch: "release-9.4.0-preview",
+		},
+		{
+			Version:       "v11.0.0",
+			ReleaseBranch: "release-11.0.0",
+		},
+		{
+			Version:       "200.200.200",
+			ReleaseBranch: "release-200.200.200",
+		},
+		{
+			Version:       "v1.2.3-preview.patch-01",
+			ReleaseBranch: "release-1.2.3-preview.patch-01",
+		},
+	}
+
+	for _, v := range cases {
+		res, err := versions.ReleaseBranch(v.Version)
+		require.NoError(t, err)
+		assert.Equal(t, v.ReleaseBranch, res)
+	}
+}

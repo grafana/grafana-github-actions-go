@@ -50,7 +50,7 @@ func (l *Loader) LoadContent(ctx context.Context, repoOwner string, repoName str
 		fmt.Sprintf(".changelog-archive/CHANGELOG.%s.md", majorVersion),
 	}
 
-	versionBranch, err := versions.VersionBranch(version)
+	versionBranch, err := versions.ReleaseBranch(version)
 	if err != nil {
 		return "", err
 	}
