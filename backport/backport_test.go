@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"testing"
@@ -185,7 +186,7 @@ func TestBackport(t *testing.T) {
 			EditFunc:          editFn,
 		}
 
-		pr, err := Backport(context.Background(), client, client, client, runner, BackportOpts{
+		pr, err := Backport(context.Background(), slog.Default(), client, client, client, runner, BackportOpts{
 			PullRequestNumber: 100,
 			SourceSHA:         "asdf1234",
 			SourceTitle:       "Example Bug Fix",
@@ -280,7 +281,7 @@ func TestBackport(t *testing.T) {
 			EditFunc:          editFn,
 		}
 
-		_, err := Backport(context.Background(), client, client, client, runner, BackportOpts{
+		_, err := Backport(context.Background(), slog.Default(), client, client, client, runner, BackportOpts{
 			PullRequestNumber: 100,
 			SourceSHA:         "asdf1234",
 			SourceTitle:       "Example Bug Fix",
