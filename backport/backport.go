@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"strings"
 	"time"
@@ -114,7 +115,7 @@ func retry(fn func() error, count int, d time.Duration) error {
 	return err
 }
 
-func backport(ctx context.Context, client BackportClient, issueClient IssueClient, runner CommandRunner, opts BackportOpts) (*github.PullRequest, error) {
+func backport(ctx context.Context, log *slog.Logger, client BackportClient, issueClient IssueClient, runner CommandRunner, opts BackportOpts) (*github.PullRequest, error) {
 	// 1. Run CLI commands to create a branch and cherry-pick
 	//   * If the cherry-pick fails, write a comment in the source PR with instructions on manual backporting
 	// 2. git push
@@ -134,6 +135,7 @@ func backport(ctx context.Context, client BackportClient, issueClient IssueClien
 
 	// This will attempt to open the pull request once every second 10 times until it succeeds
 	err := retry(func() error {
+		log.Info("Attempting to create pull request", "head", branch)
 		p, err := CreatePullRequest(ctx, client, issueClient, branch, opts)
 		if err != nil {
 			return fmt.Errorf("error creating pull request: %w", err)
@@ -149,7 +151,7 @@ func backport(ctx context.Context, client BackportClient, issueClient IssueClien
 	return pr, nil
 }
 
-func Backport(ctx context.Context, backportClient BackportClient, commentClient CommentClient, issueClient IssueClient, execClient CommandRunner, opts BackportOpts) (*github.PullRequest, error) {
+func Backport(ctx context.Context, log *slog.Logger, backportClient BackportClient, commentClient CommentClient, issueClient IssueClient, execClient CommandRunner, opts BackportOpts) (*github.PullRequest, error) {
 	// Remove any `backport` related labels from the original PR, and mark this PR as a "backport"
 	labels := []*github.Label{
 		&github.Label{
@@ -166,7 +168,7 @@ func Backport(ctx context.Context, backportClient BackportClient, commentClient 
 	}
 
 	opts.Labels = labels
-	pr, err := backport(ctx, backportClient, issueClient, execClient, opts)
+	pr, err := backport(ctx, log, backportClient, issueClient, execClient, opts)
 	if err != nil {
 		if err := CommentFailure(ctx, commentClient, FailureOpts{
 			BackportOpts: opts,
