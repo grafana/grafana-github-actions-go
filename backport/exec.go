@@ -67,7 +67,7 @@ func (r *ShellCommandRunner) Run(ctx context.Context, command string, args ...st
 	log.Debug(stderr.String(), "stream", "stderr", "exit_code", cmd.ProcessState.ExitCode())
 
 	if err != nil {
-		fmt.Errorf("error running command '%s': %w", cmdstr, err)
+		return "", fmt.Errorf("error running command '%s': %w", cmdstr, err)
 	}
 
 	return strings.TrimSpace(stderr.String()), nil
