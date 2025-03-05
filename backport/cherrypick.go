@@ -28,9 +28,7 @@ func ResolveBettererConflict(ctx context.Context, runner CommandRunner) error {
 }
 
 func CreateCherryPickBranch(ctx context.Context, runner CommandRunner, branch string, opts BackportOpts) error {
-	if _, err := runner.Run(ctx, "git", "fetch", "--unshallow"); err != nil {
-		return fmt.Errorf("error fetching: %w", err)
-	}
+	runner.Run(ctx, "git", "fetch", "--unshallow")
 
 	if _, err := runner.Run(ctx, "git", "checkout", "-b", branch, "--track", "origin/"+opts.Target); err != nil {
 		return fmt.Errorf("error creating branch: %w", err)
