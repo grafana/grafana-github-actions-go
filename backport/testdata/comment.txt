@@ -22,7 +22,7 @@ If you have the [GitHub CLI](https://cli.github.com/) installed:
 
 ```bash
 git push --set-upstream origin backport-100-to-release-12.0.0
-PR_BODY=$(gh pr view 100 --json body --template 'Backport asdf1234 from #100{{ "\\n\\n---\\n\\n" }}{{ index . "body" }}')
+PR_BODY=$(gh pr view 100 --json body --template 'Backport asdf1234 from #100{{ "\n\n---\n\n" }}{{ index . "body" }}')
 echo "${PR_BODY}" | gh pr create --title '[release-12.0.0] Example Bug Fix' --body-file - --label 'backport' --label 'type/bug' --label 'type/example' --label 'add-to-changelog' --base release-12.0.0 --web
 ```
 
