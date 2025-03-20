@@ -52,8 +52,11 @@ type CommentClient interface {
 }
 
 func Push(ctx context.Context, runner CommandRunner, branch string) error {
-	_, err := runner.Run(ctx, "git", "push", "origin", branch)
-	return err
+	// Retry pushing every 5 seconds for a full minute
+	return retry(func() error {
+		_, err := runner.Run(ctx, "git", "push", "origin", branch)
+		return err
+	}, 12, time.Second*5)
 }
 
 func CreatePullRequest(ctx context.Context, client BackportClient, issueClient IssueClient, branch string, opts BackportOpts) (*github.PullRequest, error) {
