@@ -36,9 +36,10 @@ func GetInputs() Inputs {
 }
 
 func main() {
+	log.Println("Getting token...")
 	token, ok := os.LookupEnv("GITHUB_TOKEN")
 	if !ok || token == "" {
-		githubactions.Fatalf("token can not be empty")
+		log.Fatalf("token can not be empty")
 	}
 
 	var (
@@ -47,9 +48,10 @@ func main() {
 		client = github.NewTokenClient(ctx, token)
 	)
 
+	log.Println("Creating new release branch...")
 	branch, err := CreateNewReleaseBranch(ctx, client.Git, inputs.Owner, inputs.Repo, inputs.Source)
 	if err != nil {
-		githubactions.Fatalf("error creating new release branch: %s", err)
+		log.Fatalf("error creating new release branch: %s", err)
 	}
 
 	log.Println("created new branch:", branch)
@@ -66,12 +68,12 @@ type GitClient interface {
 func CreateNewReleaseBranch(ctx context.Context, client GitClient, owner, repo, source string) (string, error) {
 	target, err := versions.BumpReleaseBranch(source)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error bumping release branch: %w", err)
 	}
 
 	ref, _, err := client.GetRef(ctx, owner, repo, "heads/"+source)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error getting ref: %w", err)
 	}
 
 	if _, _, err := client.GetRef(ctx, owner, repo, "heads/"+target); err == nil {
@@ -82,7 +84,7 @@ func CreateNewReleaseBranch(ctx context.Context, client GitClient, owner, repo, 
 		Ref:    github.String("heads/" + target),
 		Object: ref.Object,
 	}); err != nil {
-		return "", err
+		return "", fmt.Errorf("error creating ref: %w", err)
 	}
 
 	return target, nil
