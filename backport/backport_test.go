@@ -242,7 +242,7 @@ func TestBackport(t *testing.T) {
 			"git fetch --unshallow",
 			"git checkout -b backport-100-to-release-12.0.0 --track origin/release-12.0.0",
 			"git cherry-pick -x asdf1234",
-			"git push origin backport-100-to-release-12.0.0",
+			"git push --set-upstream origin backport-100-to-release-12.0.0",
 		}, runner.Commands)
 	})
 
