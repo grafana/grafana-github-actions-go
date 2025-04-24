@@ -26,6 +26,9 @@ type BackportOpts struct {
 	// SourceBody is the body of the source PR which will be reused in the backport PRs
 	SourceBody string
 
+	// SourceCommitDate is the datetime when the cherry-picked commit was committed
+	SourceCommitDate time.Time
+
 	// Target is the base branch of the backport pull request
 	Target string
 

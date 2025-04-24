@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -11,10 +12,12 @@ import (
 func TestCreateCherryPickBranch(t *testing.T) {
 	t.Run("It should handle betterer conflicts", func(t *testing.T) {
 		var (
-			branch = "example"
-			opts   = BackportOpts{
-				Target:    "release-1.0.0",
-				SourceSHA: "asdf1234",
+			testCommitDate, _ = time.Parse(time.RFC3339, "2020-01-02T00:00:00Z")
+			branch            = "example"
+			opts              = BackportOpts{
+				Target:           "release-1.0.0",
+				SourceSHA:        "asdf1234",
+				SourceCommitDate: testCommitDate,
 			}
 			runner = NewErrorRunner(map[string]error{
 				"git cherry-pick -x asdf1234":               errors.New("cherry-pick error"),
@@ -23,7 +26,8 @@ func TestCreateCherryPickBranch(t *testing.T) {
 		)
 
 		expect := []string{
-			"git fetch --unshallow",
+			"git fetch origin release-1.0.0",
+			"git fetch --shallow-since=\"2020-01-02\"",
 			"git checkout -b example --track origin/release-1.0.0",
 			"git cherry-pick -x asdf1234",
 			"git diff -s --exit-code .betterer.results",
@@ -39,10 +43,12 @@ func TestCreateCherryPickBranch(t *testing.T) {
 
 	t.Run("It should return an error if there was a non-betterer conflict", func(t *testing.T) {
 		var (
-			branch = "example"
-			opts   = BackportOpts{
-				Target:    "release-1.0.0",
-				SourceSHA: "asdf1234",
+			testCommitDate, _ = time.Parse(time.RFC3339, "2020-01-02T00:00:00Z")
+			branch            = "example"
+			opts              = BackportOpts{
+				Target:           "release-1.0.0",
+				SourceSHA:        "asdf1234",
+				SourceCommitDate: testCommitDate,
 			}
 			runner = NewErrorRunner(map[string]error{
 				"git cherry-pick -x asdf1234": errors.New("cherry-pick error"),
@@ -50,7 +56,8 @@ func TestCreateCherryPickBranch(t *testing.T) {
 		)
 
 		expect := []string{
-			"git fetch --unshallow",
+			"git fetch origin release-1.0.0",
+			"git fetch --shallow-since=\"2020-01-02\"",
 			"git checkout -b example --track origin/release-1.0.0",
 			"git cherry-pick -x asdf1234",
 			"git diff -s --exit-code .betterer.results",

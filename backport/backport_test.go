@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/google/go-github/v50/github"
 	"github.com/grafana/grafana-github-actions-go/pkg/ghutil"
@@ -186,11 +187,13 @@ func TestBackport(t *testing.T) {
 			EditFunc:          editFn,
 		}
 
+		commitDate, _ := time.Parse(time.RFC3339, "2020-01-02T00:00:00Z")
 		pr, err := Backport(context.Background(), slog.Default(), client, client, client, runner, BackportOpts{
 			PullRequestNumber: 100,
 			SourceSHA:         "asdf1234",
 			SourceTitle:       "Example Bug Fix",
 			SourceBody:        "Example bug fix body",
+			SourceCommitDate:  commitDate,
 			Target:            "release-12.0.0",
 			Labels: []*github.Label{
 				{
@@ -239,7 +242,8 @@ func TestBackport(t *testing.T) {
 
 		// Ensure that the cherry-pick commands fetch, create a new branch, cherry-pick the pr commit, and push
 		require.Equal(t, []string{
-			"git fetch --unshallow",
+			"git fetch origin release-12.0.0",
+			"git fetch --shallow-since=\"2020-01-02\"",
 			"git checkout -b backport-100-to-release-12.0.0 --track origin/release-12.0.0",
 			"git cherry-pick -x asdf1234",
 			"git push origin backport-100-to-release-12.0.0",
@@ -281,11 +285,14 @@ func TestBackport(t *testing.T) {
 			EditFunc:          editFn,
 		}
 
+		commitDate, _ := time.Parse(time.RFC3339, "2020-01-02T00:00:00Z")
+
 		_, err := Backport(context.Background(), slog.Default(), client, client, client, runner, BackportOpts{
 			PullRequestNumber: 100,
 			SourceSHA:         "asdf1234",
 			SourceTitle:       "Example Bug Fix",
 			SourceBody:        "body",
+			SourceCommitDate:  commitDate,
 			Target:            "release-12.0.0",
 			Labels: []*github.Label{
 				{
