@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/grafana/grafana-github-actions-go/pkg/ghutil"
 	"github.com/stretchr/testify/require"
 )
 
@@ -15,7 +16,10 @@ func TestCreateCherryPickBranch(t *testing.T) {
 			testCommitDate, _ = time.Parse(time.RFC3339, "2020-01-02T00:00:00Z")
 			branch            = "example"
 			opts              = BackportOpts{
-				Target:           "release-1.0.0",
+				Target: ghutil.Branch{
+					Name: "release-1.0.0",
+					SHA:  "fdsa4321",
+				},
 				SourceSHA:        "asdf1234",
 				SourceCommitDate: testCommitDate,
 			}
@@ -26,8 +30,9 @@ func TestCreateCherryPickBranch(t *testing.T) {
 		)
 
 		expect := []string{
-			"git fetch origin release-1.0.0",
 			"git fetch --shallow-since=\"2020-01-02\"",
+			"git fetch --deepen=1000",
+			"git rev-parse --verify fdsa4321",
 			"git checkout -b example --track origin/release-1.0.0",
 			"git cherry-pick -x asdf1234",
 			"git diff -s --exit-code .betterer.results",
@@ -46,7 +51,10 @@ func TestCreateCherryPickBranch(t *testing.T) {
 			testCommitDate, _ = time.Parse(time.RFC3339, "2020-01-02T00:00:00Z")
 			branch            = "example"
 			opts              = BackportOpts{
-				Target:           "release-1.0.0",
+				Target: ghutil.Branch{
+					Name: "release-1.0.0",
+					SHA:  "fdsa4321",
+				},
 				SourceSHA:        "asdf1234",
 				SourceCommitDate: testCommitDate,
 			}
@@ -56,8 +64,9 @@ func TestCreateCherryPickBranch(t *testing.T) {
 		)
 
 		expect := []string{
-			"git fetch origin release-1.0.0",
 			"git fetch --shallow-since=\"2020-01-02\"",
+			"git fetch --deepen=1000",
+			"git rev-parse --verify fdsa4321",
 			"git checkout -b example --track origin/release-1.0.0",
 			"git cherry-pick -x asdf1234",
 			"git diff -s --exit-code .betterer.results",

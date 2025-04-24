@@ -37,32 +37,32 @@ func RequireNotContainsLabel(t *testing.T, labels []*github.Label, label *github
 }
 
 func TestMostRecentBranch(t *testing.T) {
-	assertError := func(t *testing.T, major, minor string, branches []string) {
+	assertError := func(t *testing.T, major, minor string, branches []*github.Branch) {
 		t.Helper()
 		b, err := ghutil.MostRecentBranch(major, minor, branches)
 		assert.Error(t, err)
-		assert.Empty(t, b)
+		assert.Empty(t, b.Name)
 	}
 
-	assertBranch := func(t *testing.T, major, minor string, branches []string, branch string) {
+	assertBranch := func(t *testing.T, major, minor string, branches []*github.Branch, branch string) {
 		t.Helper()
 		b, err := ghutil.MostRecentBranch(major, minor, branches)
 		assert.NoError(t, err)
-		assert.Equal(t, branch, b)
+		assert.Equal(t, branch, b.Name)
 	}
-	branches := []string{
-		"release-11.0.1",
-		"release-1.2.3",
-		"release-11.0.1+security-01",
-		"release-10.0.0",
-		"release-10.2.3",
-		"release-10.2.4",
-		"release-10.2.4+security-01",
-		"release-12.0.3",
-		"release-12.1.3",
-		"release-12.0.15",
-		"release-12.1.15",
-		"release-12.2.12",
+	branches := []*github.Branch{
+		{Name: github.String("release-11.0.1")},
+		{Name: github.String("release-1.2.3")},
+		{Name: github.String("release-11.0.1+security-01")},
+		{Name: github.String("release-10.0.0")},
+		{Name: github.String("release-10.2.3")},
+		{Name: github.String("release-10.2.4")},
+		{Name: github.String("release-10.2.4+security-01")},
+		{Name: github.String("release-12.0.3")},
+		{Name: github.String("release-12.1.3")},
+		{Name: github.String("release-12.0.15")},
+		{Name: github.String("release-12.1.15")},
+		{Name: github.String("release-12.2.12")},
 	}
 
 	assertError(t, "3", "2", branches)
@@ -78,33 +78,33 @@ func TestMostRecentBranch(t *testing.T) {
 }
 
 func TestBackportTarget(t *testing.T) {
-	assertError := func(t *testing.T, label *github.Label, branches []string) {
+	assertError := func(t *testing.T, label *github.Label, branches []*github.Branch) {
 		t.Helper()
 		b, err := BackportTarget(label, branches)
 		assert.Error(t, err)
 		assert.Empty(t, b)
 	}
 
-	assertBranch := func(t *testing.T, label *github.Label, branches []string, branch string) {
+	assertBranch := func(t *testing.T, label *github.Label, branches []*github.Branch, branch string) {
 		t.Helper()
 		b, err := BackportTarget(label, branches)
 		assert.NoError(t, err)
-		assert.Equal(t, branch, b)
+		assert.Equal(t, branch, b.Name)
 	}
 
-	branches := []string{
-		"release-11.0.1",
-		"release-1.2.3",
-		"release-11.0.1+security-01",
-		"release-10.0.0",
-		"release-10.2.3",
-		"release-10.2.4",
-		"release-10.2.4+security-01",
-		"release-12.0.3",
-		"release-12.1.3",
-		"release-12.0.15",
-		"release-12.1.15",
-		"release-12.2.12",
+	branches := []*github.Branch{
+		{Name: github.String("release-11.0.1")},
+		{Name: github.String("release-1.2.3")},
+		{Name: github.String("release-11.0.1+security-01")},
+		{Name: github.String("release-10.0.0")},
+		{Name: github.String("release-10.2.3")},
+		{Name: github.String("release-10.2.4")},
+		{Name: github.String("release-10.2.4+security-01")},
+		{Name: github.String("release-12.0.3")},
+		{Name: github.String("release-12.1.3")},
+		{Name: github.String("release-12.0.15")},
+		{Name: github.String("release-12.1.15")},
+		{Name: github.String("release-12.2.12")},
 	}
 
 	assertError(t, &github.Label{
@@ -194,7 +194,10 @@ func TestBackport(t *testing.T) {
 			SourceTitle:       "Example Bug Fix",
 			SourceBody:        "Example bug fix body",
 			SourceCommitDate:  commitDate,
-			Target:            "release-12.0.0",
+			Target: ghutil.Branch{
+				Name: "release-12.0.0",
+				SHA:  "fdsa4321",
+			},
 			Labels: []*github.Label{
 				{
 					Name: github.String(" "),
@@ -242,8 +245,9 @@ func TestBackport(t *testing.T) {
 
 		// Ensure that the cherry-pick commands fetch, create a new branch, cherry-pick the pr commit, and push
 		require.Equal(t, []string{
-			"git fetch origin release-12.0.0",
 			"git fetch --shallow-since=\"2020-01-02\"",
+			"git fetch --deepen=1000",
+			"git rev-parse --verify fdsa4321",
 			"git checkout -b backport-100-to-release-12.0.0 --track origin/release-12.0.0",
 			"git cherry-pick -x asdf1234",
 			"git push origin backport-100-to-release-12.0.0",
@@ -293,7 +297,10 @@ func TestBackport(t *testing.T) {
 			SourceTitle:       "Example Bug Fix",
 			SourceBody:        "body",
 			SourceCommitDate:  commitDate,
-			Target:            "release-12.0.0",
+			Target: ghutil.Branch{
+				Name: "release-12.0.0",
+				SHA:  "fdsa4321",
+			},
 			Labels: []*github.Label{
 				{
 					Name: github.String("type/bug"),

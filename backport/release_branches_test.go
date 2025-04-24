@@ -4,23 +4,24 @@ import (
 	"testing"
 
 	"github.com/google/go-github/v50/github"
+	"github.com/grafana/grafana-github-actions-go/pkg/ghutil"
 	"github.com/stretchr/testify/require"
 )
 
 func TestBackportTargets(t *testing.T) {
-	branches := []string{
-		"release-11.0.1",
-		"release-1.2.3",
-		"release-11.0.1+security-01",
-		"release-10.0.0",
-		"release-10.2.3",
-		"release-10.2.4",
-		"release-10.2.4+security-01",
-		"release-12.0.3",
-		"release-12.1.3",
-		"release-12.0.15",
-		"release-12.1.15",
-		"release-12.2.12",
+	branches := []*github.Branch{
+		&github.Branch{Name: github.String("release-11.0.1")},
+		&github.Branch{Name: github.String("release-1.2.3")},
+		&github.Branch{Name: github.String("release-11.0.1+security-01")},
+		&github.Branch{Name: github.String("release-10.0.0")},
+		&github.Branch{Name: github.String("release-10.2.3")},
+		&github.Branch{Name: github.String("release-10.2.4")},
+		&github.Branch{Name: github.String("release-10.2.4+security-01")},
+		&github.Branch{Name: github.String("release-12.0.3")},
+		&github.Branch{Name: github.String("release-12.1.3")},
+		&github.Branch{Name: github.String("release-12.0.15")},
+		&github.Branch{Name: github.String("release-12.1.15")},
+		&github.Branch{Name: github.String("release-12.2.12")},
 	}
 
 	t.Run("with backport labels", func(t *testing.T) {
@@ -42,7 +43,7 @@ func TestBackportTargets(t *testing.T) {
 			"release-12.2.12",
 			"release-12.0.15",
 			"release-11.0.1",
-		}, targets)
+		}, toStringList(targets))
 	})
 
 	t.Run("with non-backport labels", func(t *testing.T) {
@@ -76,7 +77,17 @@ func TestBackportTargets(t *testing.T) {
 			"release-12.2.12",
 			"release-12.0.15",
 			"release-11.0.1",
-		}, targets)
+		}, toStringList(targets))
 	})
 
+}
+
+func toStringList(branches []ghutil.Branch) []string {
+	r := make([]string, len(branches))
+
+	for i, v := range branches {
+		r[i] = v.Name
+	}
+
+	return r
 }

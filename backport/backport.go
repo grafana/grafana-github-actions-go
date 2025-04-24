@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/go-github/v50/github"
+	"github.com/grafana/grafana-github-actions-go/pkg/ghutil"
 )
 
 var semverRegex = regexp.MustCompile(`^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>x|0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`)
@@ -30,7 +31,7 @@ type BackportOpts struct {
 	SourceCommitDate time.Time
 
 	// Target is the base branch of the backport pull request
-	Target string
+	Target ghutil.Branch
 
 	// Labels are labels that will be added to the backport pull request
 	Labels []*github.Label
@@ -63,14 +64,14 @@ func Push(ctx context.Context, runner CommandRunner, branch string) error {
 }
 
 func CreatePullRequest(ctx context.Context, client BackportClient, issueClient IssueClient, branch string, opts BackportOpts) (*github.PullRequest, error) {
-	title := fmt.Sprintf("[%s] %s", opts.Target, opts.SourceTitle)
+	title := fmt.Sprintf("[%s] %s", opts.Target.Name, opts.SourceTitle)
 
 	body := fmt.Sprintf("Backport %s from #%d\n\n---\n\n%s", opts.SourceSHA, opts.PullRequestNumber, opts.SourceBody)
 
 	pr, _, err := client.Create(ctx, opts.Owner, opts.Repository, &github.NewPullRequest{
 		Title: github.String(title),
 		Head:  github.String(branch),
-		Base:  github.String(opts.Target),
+		Base:  github.String(opts.Target.Name),
 		Issue: opts.IssueNumber,
 		Body:  github.String(body),
 		Draft: github.Bool(false),
@@ -126,7 +127,7 @@ func backport(ctx context.Context, log *slog.Logger, client BackportClient, issu
 	//   * If the cherry-pick fails, write a comment in the source PR with instructions on manual backporting
 	// 2. git push
 	// 3. Open the pull request against the appropriate release branch
-	branch := BackportBranch(opts.PullRequestNumber, opts.Target)
+	branch := BackportBranch(opts.PullRequestNumber, opts.Target.Name)
 	if err := CreateCherryPickBranch(ctx, runner, branch, opts); err != nil {
 		return nil, fmt.Errorf("error cherry-picking: %w", err)
 	}

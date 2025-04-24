@@ -28,10 +28,13 @@ func ResolveBettererConflict(ctx context.Context, runner CommandRunner) error {
 }
 
 func CreateCherryPickBranch(ctx context.Context, runner CommandRunner, branch string, opts BackportOpts) error {
-	runner.Run(ctx, "git", "fetch", "origin", opts.Target)
 	runner.Run(ctx, "git", "fetch", fmt.Sprintf("--shallow-since=\"%s\"", opts.SourceCommitDate.Format("2006-01-02")))
 
-	if _, err := runner.Run(ctx, "git", "checkout", "-b", branch, "--track", "origin/"+opts.Target); err != nil {
+	if err := DeepenUntil(ctx, runner, opts.Target.SHA, 1000, 20); err != nil {
+		return fmt.Errorf("could not find commit for backport; error: %w", err)
+	}
+
+	if _, err := runner.Run(ctx, "git", "checkout", "-b", branch, "--track", "origin/"+opts.Target.Name); err != nil {
 		return fmt.Errorf("error creating branch: %w", err)
 	}
 
