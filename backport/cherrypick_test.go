@@ -30,9 +30,8 @@ func TestCreateCherryPickBranch(t *testing.T) {
 		)
 
 		expect := []string{
-			"git fetch --shallow-since=\"2020-01-02\"",
-			"git fetch --deepen=1000",
-			"git rev-parse --verify fdsa4321",
+			"git fetch --shallow-since=\"2020-01-01\"",
+			"git fetch origin release-1.0.0:refs/remotes/origin/release-1.0.0",
 			"git checkout -b example --track origin/release-1.0.0",
 			"git cherry-pick -x asdf1234",
 			"git diff -s --exit-code .betterer.results",
@@ -64,9 +63,8 @@ func TestCreateCherryPickBranch(t *testing.T) {
 		)
 
 		expect := []string{
-			"git fetch --shallow-since=\"2020-01-02\"",
-			"git fetch --deepen=1000",
-			"git rev-parse --verify fdsa4321",
+			"git fetch --shallow-since=\"2020-01-01\"",
+			"git fetch origin release-1.0.0:refs/remotes/origin/release-1.0.0",
 			"git checkout -b example --track origin/release-1.0.0",
 			"git cherry-pick -x asdf1234",
 			"git diff -s --exit-code .betterer.results",
