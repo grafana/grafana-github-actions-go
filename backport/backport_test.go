@@ -246,7 +246,7 @@ func TestBackport(t *testing.T) {
 		// Ensure that the cherry-pick commands fetch, create a new branch, cherry-pick the pr commit, and push
 		require.Equal(t, []string{
 			"git fetch --shallow-since=\"2020-01-01\"",
-			"git fetch origin release-1.0.0:refs/remotes/origin/release-1.0.0",
+			"git fetch origin release-12.0.0:refs/remotes/origin/release-12.0.0",
 			"git checkout -b backport-100-to-release-12.0.0 --track origin/release-12.0.0",
 			"git cherry-pick -x asdf1234",
 			"git push origin backport-100-to-release-12.0.0",
