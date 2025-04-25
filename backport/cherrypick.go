@@ -28,9 +28,17 @@ func ResolveBettererConflict(ctx context.Context, runner CommandRunner) error {
 }
 
 func CreateCherryPickBranch(ctx context.Context, runner CommandRunner, branch string, opts BackportOpts) error {
-	runner.Run(ctx, "git", "fetch", "--unshallow")
+	// 1. Ensure that we have the commit in the local history to cherry-pick
+	if _, err := runner.Run(ctx, "git", "fetch", "origin", opts.SourceSHA); err != nil {
+		return fmt.Errorf("error fetching source commit: %w", err)
+	}
 
-	if _, err := runner.Run(ctx, "git", "checkout", "-b", branch, "--track", "origin/"+opts.Target); err != nil {
+	// 2. Ensure that the backport branch is in the local history.
+	if _, err := runner.Run(ctx, "git", "fetch", "origin", fmt.Sprintf("%[1]s:refs/remotes/origin/%[1]s", opts.Target.Name)); err != nil {
+		return fmt.Errorf("error fetching target branch: %w", err)
+	}
+
+	if _, err := runner.Run(ctx, "git", "checkout", "-b", branch, "origin/"+opts.Target.Name); err != nil {
 		return fmt.Errorf("error creating branch: %w", err)
 	}
 

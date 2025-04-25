@@ -9,8 +9,8 @@ import (
 	"github.com/grafana/grafana-github-actions-go/pkg/ghutil"
 )
 
-func BackportTargets(branches []string, labels []*github.Label) ([]string, error) {
-	targets := []string{}
+func BackportTargets(branches []*github.Branch, labels []*github.Label) ([]ghutil.Branch, error) {
+	targets := []ghutil.Branch{}
 	for _, label := range labels {
 		if !strings.HasPrefix(label.GetName(), "backport ") {
 			continue
@@ -32,7 +32,7 @@ var (
 	ErrorBadAction = errors.New("unrecognized action")
 )
 
-func BackportTargetsFromPayload(branches []string, payload *github.PullRequestTargetEvent) ([]string, error) {
+func BackportTargetsFromPayload(branches []*github.Branch, payload *github.PullRequestTargetEvent) ([]ghutil.Branch, error) {
 	if !payload.PullRequest.GetMerged() {
 		return nil, ErrorNotMerged
 	}
@@ -50,7 +50,7 @@ func BackportTargetsFromPayload(branches []string, payload *github.PullRequestTa
 // BackportTarget finds the most appropriate base branch (target) given the backport label 'label'
 // This function takes the label, like `backport v11.2.x`, and finds the most recent `release-` branch
 // that matches the pattern.
-func BackportTarget(label *github.Label, branches []string) (string, error) {
+func BackportTarget(label *github.Label, branches []*github.Branch) (ghutil.Branch, error) {
 	version := strings.TrimPrefix(label.GetName(), "backport")
 	labelString := strings.ReplaceAll(strings.TrimSpace(version), "x", "0")
 	major, minor, _ := ghutil.MajorMinorPatch(labelString)

@@ -91,6 +91,7 @@ func main() {
 		opts := BackportOpts{
 			PullRequestNumber: payload.GetPullRequest().GetNumber(),
 			SourceSHA:         payload.GetPullRequest().GetMergeCommitSHA(),
+			SourceCommitDate:  payload.GetPullRequest().MergedAt.Time,
 			SourceTitle:       payload.GetPullRequest().GetTitle(),
 			SourceBody:        payload.GetPullRequest().GetBody(),
 			Target:            target,

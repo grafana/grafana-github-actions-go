@@ -27,7 +27,7 @@ type FailureOpts struct {
 
 func CommentFailure(ctx context.Context, client CommentClient, opts FailureOpts) error {
 	var (
-		branch   = BackportBranch(opts.PullRequestNumber, opts.Target)
+		branch   = BackportBranch(opts.PullRequestNumber, opts.Target.Name)
 		bodyText = opts.SourceBody
 	)
 
@@ -41,8 +41,8 @@ func CommentFailure(ctx context.Context, client CommentClient, opts FailureOpts)
 	}
 
 	data := CommentData{
-		BackportTitle:           fmt.Sprintf("[%s] %s", opts.Target, opts.SourceTitle),
-		Target:                  opts.Target,
+		BackportTitle:           fmt.Sprintf("[%s] %s", opts.Target.Name, opts.SourceTitle),
+		Target:                  opts.Target.Name,
 		Error:                   opts.Error.Error(),
 		BackportBranch:          branch,
 		SourceSHA:               opts.SourceSHA,

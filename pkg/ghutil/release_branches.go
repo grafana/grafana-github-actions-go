@@ -17,6 +17,7 @@ type BranchClient interface {
 
 type Branch struct {
 	Name  string
+	SHA   string
 	Major string
 	Minor string
 	Patch string
@@ -50,20 +51,21 @@ func SortBranches(a, b Branch) int {
 	return 1
 }
 
-func MostRecentBranch(major, minor string, branches []string) (string, error) {
+func MostRecentBranch(major, minor string, branches []*github.Branch) (Branch, error) {
 	b := []Branch{}
 
 	for _, v := range branches {
-		version := strings.TrimSpace(strings.TrimPrefix(v, "release-"))
+		version := strings.TrimSpace(strings.TrimPrefix(v.GetName(), "release-"))
 		branchMajor, branchMinor, branchPatch := MajorMinorPatch(version)
 		if major != branchMajor || minor != branchMinor {
 			continue
 		}
-		if strings.Contains(v, "+security") {
+		if strings.Contains(v.GetName(), "+security") {
 			continue
 		}
 		b = append(b, Branch{
-			Name:  v,
+			Name:  v.GetName(),
+			SHA:   v.GetCommit().GetSHA(),
 			Major: branchMajor,
 			Minor: branchMinor,
 			Patch: branchPatch,
@@ -71,11 +73,11 @@ func MostRecentBranch(major, minor string, branches []string) (string, error) {
 	}
 
 	if len(b) == 0 {
-		return "", errors.New("no release branch matches pattern")
+		return Branch{}, errors.New("no release branch matches pattern")
 	}
 
 	slices.SortFunc(b, SortBranches)
-	return b[len(b)-1].Name, nil
+	return b[len(b)-1], nil
 }
 
 func MajorMinorPatch(v string) (string, string, string) {
@@ -90,7 +92,7 @@ func MajorMinorPatch(v string) (string, string, string) {
 	return groups["major"], groups["minor"], groups["patch"]
 }
 
-func GetReleaseBranches(ctx context.Context, client BranchClient, owner, repo string) ([]string, error) {
+func GetReleaseBranches(ctx context.Context, client BranchClient, owner, repo string) ([]*github.Branch, error) {
 	var (
 		page     int
 		count    = 50
@@ -117,10 +119,5 @@ func GetReleaseBranches(ctx context.Context, client BranchClient, owner, repo st
 		page = r.NextPage
 	}
 
-	str := make([]string, len(branches))
-	for i, v := range branches {
-		str[i] = v.GetName()
-	}
-
-	return str, nil
+	return branches, nil
 }
