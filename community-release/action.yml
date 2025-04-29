@@ -37,10 +37,10 @@ runs:
   - run: |
       set -e
       # Download the action from the store
-      curl --fail -L -o /tmp/community-release https://github.com/grafana/grafana-github-actions-go/releases/download/${{inputs.binary_release_tag}}/community-release
+      curl --fail -L -o /tmp/community-release https://github.com/grafana/grafana-github-actions-go/releases/download/${RELEASE_TAG}/community-release
       chmod +x /tmp/community-release
       # Execute action
-      /tmp/community-release --preview=${{inputs.dry_run}}
+      /tmp/community-release --preview=${dry_run}
     shell: bash
     env:
       GITHUB_TOKEN: ${{inputs.token}}
@@ -52,3 +52,5 @@ runs:
       INPUT_COMMUNITY_API_KEY: ${{inputs.community_api_key}}
       INPUT_COMMUNITY_BASE_URL: ${{inputs.community_base_url}}
       INPUT_COMMUNITY_CATEGORY_ID: ${{inputs.community_category_id}}
+      DRY_RUN: ${{inputs.dry_run}}
+      RELESE_TAG: ${{inputs.binary_release_tag}}

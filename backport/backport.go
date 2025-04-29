@@ -41,6 +41,9 @@ type BackportOpts struct {
 
 	Owner      string
 	Repository string
+
+	// MergeBase is used to determine how deep in the history to fetch for the cherry-pick to work
+	MergeBase *github.Commit
 }
 
 type BackportClient interface {

@@ -26,10 +26,11 @@ runs:
       GITHUB_TOKEN: ${{inputs.token}}
       INPUT_OWNERREPO: ${{inputs.ownerRepo}}
       INPUT_PATTERN: ${{inputs.pattern}}
+      RELESE_TAG: ${{inputs.binary_release_tag}}
     run: |
       set -e
       # Download the action from the store
-      curl --fail -L -o /tmp/latest-release-branch https://github.com/grafana/grafana-github-actions-go/releases/download/${{inputs.binary_release_tag}}/latest-release-branch
+      curl --fail -L -o /tmp/latest-release-branch https://github.com/grafana/grafana-github-actions-go/releases/download/${RELEASE_TAG}/latest-release-branch
       chmod +x /tmp/latest-release-branch
       # Execute action
       echo "branch=$(/tmp/latest-release-branch)" >> "$GITHUB_OUTPUT" 
