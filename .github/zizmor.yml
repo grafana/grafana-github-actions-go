@@ -14,18 +14,3 @@ rules:
         # https://nvd.nist.gov/vuln/detail/cve-2025-30066
         # https://nvd.nist.gov/vuln/detail/cve-2025-30154
         - reviewdog/*
-  cache-poisoning:
-    ignore:
-      - backend-unit-tests.yml
-      - frontend-lint.yml
-      - pr-frontend-unit-tests.yml
-      - pr-test-integration.yml
-      - publish-kinds-release.yml
-  dangerous-triggers:
-    ignore:
-      - auto-milestone.yml
-      - backport.yml
-      - pr-checks.yml
-      - pr-commands.yml
-      - pr-patch-check-event.yml
-      - run-dashboard-search-e2e.yml
