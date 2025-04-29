@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -56,4 +57,13 @@ func BackportTarget(label *github.Label, branches []*github.Branch) (ghutil.Bran
 	major, minor, _ := ghutil.MajorMinorPatch(labelString)
 
 	return ghutil.MostRecentBranch(major, minor, branches)
+}
+
+func MergeBase(ctx context.Context, client *github.RepositoriesService, owner, repo, base, head string) (*github.Commit, error) {
+	comp, _, err := client.CompareCommits(ctx, owner, repo, base, head, &github.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	return comp.MergeBaseCommit.Commit, nil
 }

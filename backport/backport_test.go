@@ -194,6 +194,13 @@ func TestBackport(t *testing.T) {
 			SourceTitle:       "Example Bug Fix",
 			SourceBody:        "Example bug fix body",
 			SourceCommitDate:  commitDate,
+			MergeBase: &github.Commit{
+				Committer: &github.CommitAuthor{
+					Date: &github.Timestamp{
+						Time: commitDate,
+					},
+				},
+			},
 			Target: ghutil.Branch{
 				Name: "release-12.0.0",
 				SHA:  "fdsa4321",
@@ -247,6 +254,7 @@ func TestBackport(t *testing.T) {
 		require.Equal(t, []string{
 			"git fetch origin asdf1234",
 			"git fetch origin release-12.0.0:refs/remotes/origin/release-12.0.0",
+			"git fetch --shallow-since=2020-01-02",
 			"git checkout -b backport-100-to-release-12.0.0 origin/release-12.0.0",
 			"git cherry-pick -x asdf1234",
 			"git push origin backport-100-to-release-12.0.0",
@@ -296,6 +304,13 @@ func TestBackport(t *testing.T) {
 			SourceTitle:       "Example Bug Fix",
 			SourceBody:        "body",
 			SourceCommitDate:  commitDate,
+			MergeBase: &github.Commit{
+				Committer: &github.CommitAuthor{
+					Date: &github.Timestamp{
+						Time: commitDate,
+					},
+				},
+			},
 			Target: ghutil.Branch{
 				Name: "release-12.0.0",
 				SHA:  "fdsa4321",

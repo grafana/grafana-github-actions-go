@@ -88,6 +88,11 @@ func main() {
 
 	for _, target := range targets {
 		log := log.With("target", target)
+		mergeBase, err := MergeBase(ctx, client.Repositories, owner, repo, target.Name, *payload.GetPullRequest().Base.Ref)
+		if err != nil {
+			log.Error("error finding merge-base", "error", err)
+		}
+
 		opts := BackportOpts{
 			PullRequestNumber: payload.GetPullRequest().GetNumber(),
 			SourceSHA:         payload.GetPullRequest().GetMergeCommitSHA(),
@@ -98,6 +103,7 @@ func main() {
 			Labels:            append(inputs.Labels, payload.GetPullRequest().Labels...),
 			Owner:             owner,
 			Repository:        repo,
+			MergeBase:         mergeBase,
 		}
 		pr, err := Backport(ctx, log, client.PullRequests, client.Issues, client.Issues, NewShellCommandRunner(log), opts)
 		if err != nil {

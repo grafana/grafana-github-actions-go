@@ -10,29 +10,29 @@ import (
 
 func TestBackportTargets(t *testing.T) {
 	branches := []*github.Branch{
-		&github.Branch{Name: github.String("release-11.0.1")},
-		&github.Branch{Name: github.String("release-1.2.3")},
-		&github.Branch{Name: github.String("release-11.0.1+security-01")},
-		&github.Branch{Name: github.String("release-10.0.0")},
-		&github.Branch{Name: github.String("release-10.2.3")},
-		&github.Branch{Name: github.String("release-10.2.4")},
-		&github.Branch{Name: github.String("release-10.2.4+security-01")},
-		&github.Branch{Name: github.String("release-12.0.3")},
-		&github.Branch{Name: github.String("release-12.1.3")},
-		&github.Branch{Name: github.String("release-12.0.15")},
-		&github.Branch{Name: github.String("release-12.1.15")},
-		&github.Branch{Name: github.String("release-12.2.12")},
+		{Name: github.String("release-11.0.1")},
+		{Name: github.String("release-1.2.3")},
+		{Name: github.String("release-11.0.1+security-01")},
+		{Name: github.String("release-10.0.0")},
+		{Name: github.String("release-10.2.3")},
+		{Name: github.String("release-10.2.4")},
+		{Name: github.String("release-10.2.4+security-01")},
+		{Name: github.String("release-12.0.3")},
+		{Name: github.String("release-12.1.3")},
+		{Name: github.String("release-12.0.15")},
+		{Name: github.String("release-12.1.15")},
+		{Name: github.String("release-12.2.12")},
 	}
 
 	t.Run("with backport labels", func(t *testing.T) {
 		labels := []*github.Label{
-			&github.Label{
+			{
 				Name: github.String("backport v12.2.x"),
 			},
-			&github.Label{
+			{
 				Name: github.String("backport v12.0.x"),
 			},
-			&github.Label{
+			{
 				Name: github.String("backport v11.0.x"),
 			},
 		}
@@ -48,25 +48,25 @@ func TestBackportTargets(t *testing.T) {
 
 	t.Run("with non-backport labels", func(t *testing.T) {
 		labels := []*github.Label{
-			&github.Label{
+			{
 				Name: github.String("type/bug"),
 			},
-			&github.Label{
+			{
 				Name: github.String("backport v12.2.x"),
 			},
-			&github.Label{
+			{
 				Name: github.String("release/latest"),
 			},
-			&github.Label{
+			{
 				Name: github.String("backport v12.0.x"),
 			},
-			&github.Label{
+			{
 				Name: github.String("type/ci"),
 			},
-			&github.Label{
+			{
 				Name: github.String("backport v11.0.x"),
 			},
-			&github.Label{
+			{
 				Name: github.String("add-to-changelog"),
 			},
 		}

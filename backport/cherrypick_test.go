@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-github/v50/github"
 	"github.com/grafana/grafana-github-actions-go/pkg/ghutil"
 	"github.com/stretchr/testify/require"
 )
@@ -22,6 +23,13 @@ func TestCreateCherryPickBranch(t *testing.T) {
 				},
 				SourceSHA:        "asdf1234",
 				SourceCommitDate: testCommitDate,
+				MergeBase: &github.Commit{
+					Committer: &github.CommitAuthor{
+						Date: &github.Timestamp{
+							Time: testCommitDate,
+						},
+					},
+				},
 			}
 			runner = NewErrorRunner(map[string]error{
 				"git cherry-pick -x asdf1234":               errors.New("cherry-pick error"),
@@ -32,6 +40,7 @@ func TestCreateCherryPickBranch(t *testing.T) {
 		expect := []string{
 			"git fetch origin asdf1234",
 			"git fetch origin release-1.0.0:refs/remotes/origin/release-1.0.0",
+			"git fetch --shallow-since=2020-01-02",
 			"git checkout -b example origin/release-1.0.0",
 			"git cherry-pick -x asdf1234",
 			"git diff -s --exit-code .betterer.results",
@@ -56,6 +65,13 @@ func TestCreateCherryPickBranch(t *testing.T) {
 				},
 				SourceSHA:        "asdf1234",
 				SourceCommitDate: testCommitDate,
+				MergeBase: &github.Commit{
+					Committer: &github.CommitAuthor{
+						Date: &github.Timestamp{
+							Time: testCommitDate,
+						},
+					},
+				},
 			}
 			runner = NewErrorRunner(map[string]error{
 				"git cherry-pick -x asdf1234": errors.New("cherry-pick error"),
@@ -65,6 +81,7 @@ func TestCreateCherryPickBranch(t *testing.T) {
 		expect := []string{
 			"git fetch origin asdf1234",
 			"git fetch origin release-1.0.0:refs/remotes/origin/release-1.0.0",
+			"git fetch --shallow-since=2020-01-02",
 			"git checkout -b example origin/release-1.0.0",
 			"git cherry-pick -x asdf1234",
 			"git diff -s --exit-code .betterer.results",
