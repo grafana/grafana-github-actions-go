@@ -26,10 +26,11 @@ runs:
       GITHUB_TOKEN: ${{inputs.token}}
       INPUT_OWNERREPO: ${{inputs.ownerRepo}}
       INPUT_SOURCE: ${{inputs.source}}
+      RELEASE_TAG: ${{inputs.binary_release_tag}}
     run: |
       set -e
       # Download the action from the store
-      curl --fail -L -o /tmp/bump-release https://github.com/grafana/grafana-github-actions-go/releases/download/${{inputs.binary_release_tag}}/bump-release
+      curl --fail -L -o /tmp/bump-release https://github.com/grafana/grafana-github-actions-go/releases/download/${RELEASE_TAG}/bump-release
       chmod +x /tmp/bump-release
       # Execute action
       /tmp/bump-release > branch

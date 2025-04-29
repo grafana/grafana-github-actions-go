@@ -28,10 +28,10 @@ runs:
   - run: |
       set -e
       # Download the action from the store
-      curl --fail -L -o /tmp/auto-milestone https://github.com/grafana/grafana-github-actions-go/releases/download/${{inputs.binary_release_tag}}/auto-milestone
+      curl --fail -L -o /tmp/auto-milestone https://github.com/grafana/grafana-github-actions-go/releases/download/${RELESE_TAG}/auto-milestone
       chmod +x /tmp/auto-milestone
       # Execute action
-      /tmp/auto-milestone ${{inputs.pr}}
+      /tmp/auto-milestone ${PR}
     shell: bash
     env:
       GITHUB_TOKEN: ${{inputs.token}}
@@ -39,3 +39,5 @@ runs:
       INPUT_METRICS_API_KEY: ${{inputs.metrics_api_key}}
       INPUT_METRICS_API_ENDPOINT: ${{inputs.metrics_api_endpoint}}
       INPUT_VERSION_SOURCE_REPOSITORY: ${{inputs.version_source_repository}}
+      RELEASE_TAG: ${{inputs.binary_release_tag}}
+      PR: ${{inputs.pr}}

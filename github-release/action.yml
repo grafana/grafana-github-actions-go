@@ -31,10 +31,10 @@ runs:
   - run: |
       set -e
       # Download the action from the store
-      curl --fail -L -o /tmp/github-release https://github.com/grafana/grafana-github-actions-go/releases/download/${{inputs.binary_release_tag}}/github-release
+      curl --fail -L -o /tmp/github-release https://github.com/grafana/grafana-github-actions-go/releases/download/${RELEASE_TAG}/github-release
       chmod +x /tmp/github-release
       # Execute action
-      /tmp/github-release --preview=${{inputs.dry_run}} ${{inputs.version}}
+      /tmp/github-release --preview=${DRY_RUN} ${VERSION}
     shell: bash
     env:
       GITHUB_TOKEN: ${{inputs.token}}
@@ -42,3 +42,6 @@ runs:
       INPUT_METRICS_API_KEY: ${{inputs.metrics_api_key}}
       INPUT_METRICS_API_ENDPOINT: ${{inputs.metrics_api_endpoint}}
       INPUT_LATEST: ${{inputs.latest}}
+      RELESE_TAG: ${{inputs.binary_release_tag}}
+      DRY_RUN: ${{inputs.dry_run}}
+      VERSION: ${{inputs.version}}
