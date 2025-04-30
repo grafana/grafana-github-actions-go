@@ -26,7 +26,7 @@ runs:
       INPUT_OWNERREPO: ${{inputs.ownerRepo}}
       INPUT_FROM: ${{inputs.from}}
       INPUT_TO: ${{inputs.to}}
-      RELESE_TAG: ${{inputs.binary_release_tag}}
+      RELEASE_TAG: ${{inputs.binary_release_tag}}
     run: |
       set -e
       curl --fail -L -o /tmp/migrate-open-prs https://github.com/grafana/grafana-github-actions-go/releases/download/${RELEASE_TAG}/migrate-open-prs

@@ -42,6 +42,6 @@ runs:
       INPUT_METRICS_API_KEY: ${{inputs.metrics_api_key}}
       INPUT_METRICS_API_ENDPOINT: ${{inputs.metrics_api_endpoint}}
       INPUT_LATEST: ${{inputs.latest}}
-      RELESE_TAG: ${{inputs.binary_release_tag}}
+      RELEASE_TAG: ${{inputs.binary_release_tag}}
       DRY_RUN: ${{inputs.dry_run}}
       VERSION: ${{inputs.version}}

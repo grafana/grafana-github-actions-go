@@ -28,7 +28,7 @@ runs:
   - run: |
       set -e
       # Download the action from the store
-      curl --fail -L -o /tmp/auto-milestone https://github.com/grafana/grafana-github-actions-go/releases/download/${RELESE_TAG}/auto-milestone
+      curl --fail -L -o /tmp/auto-milestone https://github.com/grafana/grafana-github-actions-go/releases/download/${RELEASE_TAG}/auto-milestone
       chmod +x /tmp/auto-milestone
       # Execute action
       /tmp/auto-milestone ${PR}
