@@ -22,12 +22,12 @@ runs:
       RELEASE_TAG: ${{inputs.binary_release_tag}}
       INPUT_LABELS_TO_ADD: ${{inputs.labels_to_add}}
       PR: ${{inputs.pr}}
-      PATH: ${{ inputs.path }}
+      DIR: ${{ inputs.path }}
     run: |
       set -e
       # Download the action from the store
       curl --fail -L -o /tmp/backport https://github.com/grafana/grafana-github-actions-go/releases/download/${RELEASE_TAG}/backport
       chmod +x /tmp/backport
-      cd $PATH
+      cd $DIR
       # Execute action
       /tmp/backport ${PR}
