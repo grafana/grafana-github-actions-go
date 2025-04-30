@@ -58,4 +58,4 @@ runs:
       INPUT_COMMUNITY_CATEGORY_ID: ${{inputs.community_category_id}}
       INPUT_SKIP_PR: ${{inputs.skip_pr}}
       INPUT_SKIP_COMMUNITY_POST: ${{inputs.skip_community_post}}
-      RELESE_TAG: ${{inputs.binary_release_tag}}
+      RELEASE_TAG: ${{inputs.binary_release_tag}}

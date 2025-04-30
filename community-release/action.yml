@@ -53,4 +53,4 @@ runs:
       INPUT_COMMUNITY_BASE_URL: ${{inputs.community_base_url}}
       INPUT_COMMUNITY_CATEGORY_ID: ${{inputs.community_category_id}}
       DRY_RUN: ${{inputs.dry_run}}
-      RELESE_TAG: ${{inputs.binary_release_tag}}
+      RELEASE_TAG: ${{inputs.binary_release_tag}}
