@@ -75,6 +75,7 @@ func main() {
 		panic(err)
 	}
 
+	log.Debug("got branches", "branches", branches)
 	targets, err := BackportTargetsFromPayload(branches, payload)
 	if err != nil {
 		if errors.Is(err, ErrorNotMerged) {
@@ -86,8 +87,9 @@ func main() {
 		panic(err)
 	}
 
+	log.Debug("got backport targets", "targets", targets)
 	for _, target := range targets {
-		log := log.With("target", target)
+		log := log.With("target", target.Name)
 		mergeBase, err := MergeBase(ctx, client.Repositories, owner, repo, target.Name, *payload.GetPullRequest().Base.Ref)
 		if err != nil {
 			log.Error("error finding merge-base", "error", err)

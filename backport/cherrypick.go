@@ -28,8 +28,11 @@ func ResolveBettererConflict(ctx context.Context, runner CommandRunner) error {
 }
 
 func CreateCherryPickBranch(ctx context.Context, runner CommandRunner, branch string, opts BackportOpts) error {
-	if _, err := runner.Run(ctx, "git", "checkout", "-b", branch, "origin/"+opts.Target.Name); err != nil {
-		return fmt.Errorf("error creating branch: %w", err)
+	if _, err := runner.Run(ctx, "git", "switch", opts.Target.Name); err != nil {
+		return err
+	}
+	if _, err := runner.Run(ctx, "git", "switch", "--create", branch); err != nil {
+		return err
 	}
 
 	_, err := runner.Run(ctx, "git", "cherry-pick", "-x", opts.SourceSHA)

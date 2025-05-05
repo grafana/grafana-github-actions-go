@@ -61,7 +61,7 @@ type CommentClient interface {
 func Push(ctx context.Context, runner CommandRunner, branch string) error {
 	// Retry pushing every 5 seconds for a full minute
 	return retry(func() error {
-		_, err := runner.Run(ctx, "git", "push", "origin", branch)
+		_, err := runner.Run(ctx, "git", "push", "--set-upstream", "origin", branch)
 		return err
 	}, 12, time.Second*5)
 }
