@@ -12,19 +12,19 @@ import (
 )
 
 type Inputs struct {
-	Version           string
+	Source            string
 	SecurityBranchNum string
 	Owner             string
 	Repo              string
 }
 
 func GetInputs() (Inputs, error) {
-	version := githubactions.GetInput("version")
+	source := githubactions.GetInput("source")
 	secNum := githubactions.GetInput("security_branch_number")
 	ownerRepo := githubactions.GetInput("repository")
 
-	if version == "" || secNum == "" || ownerRepo == "" {
-		return Inputs{}, fmt.Errorf("all inputs (version, security_branch_number, repository) are required")
+	if source == "" || secNum == "" || ownerRepo == "" {
+		return Inputs{}, fmt.Errorf("all inputs (source, security_branch_number, repository) are required")
 	}
 
 	r := strings.Split(ownerRepo, "/")
@@ -33,7 +33,7 @@ func GetInputs() (Inputs, error) {
 	}
 
 	return Inputs{
-		Version:           version,
+		Source:            source,
 		SecurityBranchNum: secNum,
 		Owner:             r[0],
 		Repo:              r[1],
@@ -68,15 +68,15 @@ type GitClient interface {
 }
 
 func CreateSecurityBranch(ctx context.Context, client GitClient, inputs Inputs) (string, error) {
-	securityBranch := fmt.Sprintf("%s+security-%s", inputs.Version, inputs.SecurityBranchNum)
+	securityBranch := fmt.Sprintf("%s+security-%s", inputs.Source, inputs.SecurityBranchNum)
 
 	// Check if branch already exists
 	if _, _, err := client.GetRef(ctx, inputs.Owner, inputs.Repo, "heads/"+securityBranch); err == nil {
 		return "", fmt.Errorf("security branch %s already exists", securityBranch)
 	}
 
-	// Get the base branch (release branch)
-	baseRef, _, err := client.GetRef(ctx, inputs.Owner, inputs.Repo, "heads/release-"+inputs.Version)
+	// Get the base branch
+	baseRef, _, err := client.GetRef(ctx, inputs.Owner, inputs.Repo, "heads/"+inputs.Source)
 	if err != nil {
 		return "", fmt.Errorf("error getting base ref: %w", err)
 	}
