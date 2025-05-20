@@ -63,18 +63,18 @@ func TestGetInputs(t *testing.T) {
 			ownerRepo:   "",
 			expected:    Inputs{},
 			expectError: true,
-			errorMsg:    "all inputs (source, security_branch_number, repository) are required",
+			errorMsg:    "all inputs (release_branch, security_branch_number, repository) are required",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Set environment variables for the test
-			os.Setenv("INPUT_SOURCE", tt.source)
+			os.Setenv("INPUT_RELEASE_BRANCH", tt.source)
 			os.Setenv("INPUT_SECURITY_BRANCH_NUMBER", tt.secNum)
 			os.Setenv("INPUT_REPOSITORY", tt.ownerRepo)
 			defer func() {
-				os.Unsetenv("INPUT_SOURCE")
+				os.Unsetenv("INPUT_RELEASE_BRANCH")
 				os.Unsetenv("INPUT_SECURITY_BRANCH_NUMBER")
 				os.Unsetenv("INPUT_REPOSITORY")
 			}()

@@ -24,7 +24,7 @@ runs:
     id: create-security-branch
     env:
       GITHUB_TOKEN: ${{inputs.token}}
-      INPUT_SOURCE: ${{inputs.release_branch}}
+      INPUT_RELEASE_BRANCH: ${{inputs.release_branch}}
       INPUT_SECURITY_BRANCH_NUMBER: ${{inputs.security_branch_number}}
       INPUT_REPOSITORY: ${{inputs.repository}}
     run: |

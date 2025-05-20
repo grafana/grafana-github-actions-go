@@ -19,12 +19,12 @@ type Inputs struct {
 }
 
 func GetInputs() (Inputs, error) {
-	source := githubactions.GetInput("source")
+	source := githubactions.GetInput("release_branch")
 	secNum := githubactions.GetInput("security_branch_number")
 	ownerRepo := githubactions.GetInput("repository")
 
 	if source == "" || secNum == "" || ownerRepo == "" {
-		return Inputs{}, fmt.Errorf("all inputs (source, security_branch_number, repository) are required")
+		return Inputs{}, fmt.Errorf("all inputs (release_branch, security_branch_number, repository) are required")
 	}
 
 	r := strings.Split(ownerRepo, "/")
