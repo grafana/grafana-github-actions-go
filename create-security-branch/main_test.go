@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"testing"
 
@@ -68,10 +69,12 @@ func TestGetInputs(t *testing.T) {
 				os.Unsetenv("INPUT_REPOSITORY")
 			}()
 
+			inputs, err := GetInputs()
 			if tt.expectError {
-				require.Panics(t, func() { GetInputs() })
+				require.Error(t, err)
+				require.Equal(t, fmt.Sprintf("invalid repository format: %s, expected owner/repo", tt.ownerRepo), err.Error())
 			} else {
-				inputs := GetInputs()
+				require.NoError(t, err)
 				require.Equal(t, tt.expected, inputs)
 			}
 		})
