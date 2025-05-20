@@ -30,7 +30,7 @@ runs:
     run: |
       set -e
       # Download the action from the store
-      curl --fail -L -o /tmp/create-security-branch https://github.com/grafana/grafana-github-actions-go/releases/download/${RELEASE_TAG}/create-security-branch
+      curl --fail -L -o /tmp/create-security-branch https://github.com/grafana/grafana-github-actions-go/releases/latest/download/create-security-branch
       chmod +x /tmp/create-security-branch
       # Execute action
       /tmp/create-security-branch > branch
