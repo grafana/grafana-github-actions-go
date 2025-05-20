@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"regexp"
 	"strings"
 
 	"github.com/google/go-github/v50/github"
@@ -19,23 +18,13 @@ type Inputs struct {
 	Repo              string
 }
 
-var versionRegex = regexp.MustCompile(`^\d+\.\d+\.\d+$`)
-
 func GetInputs() (Inputs, error) {
-	var (
-		version   = githubactions.GetInput("version")
-		secNum    = githubactions.GetInput("security_branch_number")
-		ownerRepo = githubactions.GetInput("repository")
-	)
+	version := githubactions.GetInput("version")
+	secNum := githubactions.GetInput("security_branch_number")
+	ownerRepo := githubactions.GetInput("repository")
 
-	if version == "" {
-		return Inputs{}, fmt.Errorf("version is required")
-	}
-	if secNum == "" {
-		return Inputs{}, fmt.Errorf("security_branch_number is required")
-	}
-	if ownerRepo == "" {
-		return Inputs{}, fmt.Errorf("repository is required")
+	if version == "" || secNum == "" || ownerRepo == "" {
+		return Inputs{}, fmt.Errorf("all inputs (version, security_branch_number, repository) are required")
 	}
 
 	r := strings.Split(ownerRepo, "/")
@@ -52,31 +41,24 @@ func GetInputs() (Inputs, error) {
 }
 
 func main() {
-	log.Println("Getting token...")
-	token, ok := os.LookupEnv("GITHUB_TOKEN")
-	if !ok || token == "" {
-		log.Fatalf("token cannot be empty")
+	token := os.Getenv("GITHUB_TOKEN")
+	if token == "" {
+		log.Fatalf("GITHUB_TOKEN is required")
 	}
 
-	var (
-		ctx    = context.Background()
-		client = github.NewTokenClient(ctx, token)
-	)
+	ctx := context.Background()
+	client := github.NewTokenClient(ctx, token)
 
 	inputs, err := GetInputs()
 	if err != nil {
 		log.Fatalf("error getting inputs: %s", err)
 	}
 
-	log.Println("Creating new security branch...")
 	branch, err := CreateSecurityBranch(ctx, client.Git, inputs)
 	if err != nil {
 		log.Fatalf("error creating security branch: %s", err)
 	}
 
-	log.Println("created new security branch:", branch)
-
-	// Write the new branch name to stdout so that it can be reused
 	fmt.Fprint(os.Stdout, branch)
 }
 
@@ -86,16 +68,6 @@ type GitClient interface {
 }
 
 func CreateSecurityBranch(ctx context.Context, client GitClient, inputs Inputs) (string, error) {
-	// Validate version format
-	if !versionRegex.MatchString(inputs.Version) {
-		return "", fmt.Errorf("invalid version format: %s, expected x.y.z where x, y, and z are numbers", inputs.Version)
-	}
-
-	// Validate security branch number format
-	if !regexp.MustCompile(`^\d{2}$`).MatchString(inputs.SecurityBranchNum) {
-		return "", fmt.Errorf("invalid security branch number format: %s, expected two digits (e.g., 01)", inputs.SecurityBranchNum)
-	}
-
 	securityBranch := fmt.Sprintf("%s+security-%s", inputs.Version, inputs.SecurityBranchNum)
 
 	// Check if branch already exists
