@@ -3,26 +3,33 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 	"testing"
 
 	"github.com/google/go-github/v50/github"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 // MockGitClient is a mock implementation of the GitClient interface
 type MockGitClient struct {
-	GetRefFunc    func(ctx context.Context, owner string, repo string, ref string) (*github.Reference, *github.Response, error)
-	CreateRefFunc func(ctx context.Context, owner string, repo string, ref *github.Reference) (*github.Reference, *github.Response, error)
+	mock.Mock
 }
 
 func (m *MockGitClient) GetRef(ctx context.Context, owner string, repo string, ref string) (*github.Reference, *github.Response, error) {
-	return m.GetRefFunc(ctx, owner, repo, ref)
+	args := m.Called(ctx, owner, repo, ref)
+	if args.Get(0) == nil {
+		return nil, args.Get(1).(*github.Response), args.Error(2)
+	}
+	return args.Get(0).(*github.Reference), args.Get(1).(*github.Response), args.Error(2)
 }
 
 func (m *MockGitClient) CreateRef(ctx context.Context, owner string, repo string, ref *github.Reference) (*github.Reference, *github.Response, error) {
-	return m.CreateRefFunc(ctx, owner, repo, ref)
+	args := m.Called(ctx, owner, repo, ref)
+	if args.Get(0) == nil {
+		return nil, args.Get(1).(*github.Response), args.Error(2)
+	}
+	return args.Get(0).(*github.Reference), args.Get(1).(*github.Response), args.Error(2)
 }
 
 func TestGetInputs(t *testing.T) {
@@ -33,6 +40,7 @@ func TestGetInputs(t *testing.T) {
 		ownerRepo   string
 		expected    Inputs
 		expectError bool
+		errorMsg    string
 	}{
 		{
 			name:      "valid inputs",
@@ -54,6 +62,34 @@ func TestGetInputs(t *testing.T) {
 			ownerRepo:   "invalid-repo",
 			expected:    Inputs{},
 			expectError: true,
+			errorMsg:    "invalid repository format: invalid-repo, expected owner/repo",
+		},
+		{
+			name:        "missing version",
+			version:     "",
+			secNum:      "01",
+			ownerRepo:   "grafana/grafana-security-mirror",
+			expected:    Inputs{},
+			expectError: true,
+			errorMsg:    "version is required",
+		},
+		{
+			name:        "missing security branch number",
+			version:     "12.0.1",
+			secNum:      "",
+			ownerRepo:   "grafana/grafana-security-mirror",
+			expected:    Inputs{},
+			expectError: true,
+			errorMsg:    "security_branch_number is required",
+		},
+		{
+			name:        "missing repository",
+			version:     "12.0.1",
+			secNum:      "01",
+			ownerRepo:   "",
+			expected:    Inputs{},
+			expectError: true,
+			errorMsg:    "repository is required",
 		},
 	}
 
@@ -71,11 +107,12 @@ func TestGetInputs(t *testing.T) {
 
 			inputs, err := GetInputs()
 			if tt.expectError {
-				require.Error(t, err)
-				require.Equal(t, fmt.Sprintf("invalid repository format: %s, expected owner/repo", tt.ownerRepo), err.Error())
+				assert.Error(t, err)
+				assert.Equal(t, tt.errorMsg, err.Error())
+				assert.Empty(t, inputs)
 			} else {
-				require.NoError(t, err)
-				require.Equal(t, tt.expected, inputs)
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, inputs)
 			}
 		})
 	}
@@ -99,20 +136,29 @@ func TestCreateSecurityBranch(t *testing.T) {
 				Repo:              "grafana-security-mirror",
 			},
 			mockSetup: func(m *MockGitClient) {
-				m.GetRefFunc = func(ctx context.Context, owner string, repo string, ref string) (*github.Reference, *github.Response, error) {
-					if ref == "heads/12.0.1+security-01" {
-						return nil, &github.Response{}, errors.New("branch not found")
-					}
-					return &github.Reference{
-						Ref: github.String("heads/release-12.0.1"),
-						Object: &github.GitObject{
-							SHA: github.String("abc123"),
-						},
-					}, &github.Response{}, nil
+				// Mock GetRef for checking existing branch
+				m.On("GetRef", mock.Anything, "grafana", "grafana-security-mirror", "heads/12.0.1+security-01").
+					Return(nil, &github.Response{}, errors.New("branch not found"))
+
+				// Mock GetRef for getting base branch
+				baseRef := &github.Reference{
+					Ref: github.String("heads/release-12.0.1"),
+					Object: &github.GitObject{
+						SHA: github.String("abc123"),
+					},
 				}
-				m.CreateRefFunc = func(ctx context.Context, owner string, repo string, ref *github.Reference) (*github.Reference, *github.Response, error) {
-					return ref, &github.Response{}, nil
+				m.On("GetRef", mock.Anything, "grafana", "grafana-security-mirror", "heads/release-12.0.1").
+					Return(baseRef, &github.Response{}, nil)
+
+				// Mock CreateRef for creating new branch
+				newRef := &github.Reference{
+					Ref: github.String("heads/12.0.1+security-01"),
+					Object: &github.GitObject{
+						SHA: github.String("abc123"),
+					},
 				}
+				m.On("CreateRef", mock.Anything, "grafana", "grafana-security-mirror", mock.Anything).
+					Return(newRef, &github.Response{}, nil)
 			},
 			expectedBranch: "12.0.1+security-01",
 			expectError:    false,
@@ -128,7 +174,7 @@ func TestCreateSecurityBranch(t *testing.T) {
 			mockSetup:      func(m *MockGitClient) {},
 			expectedBranch: "",
 			expectError:    true,
-			errorMessage:   "invalid version format: invalid, expected x.y.z",
+			errorMessage:   "invalid version format: invalid, expected x.y.z where x, y, and z are numbers",
 		},
 		{
 			name: "invalid security branch number",
@@ -152,11 +198,11 @@ func TestCreateSecurityBranch(t *testing.T) {
 				Repo:              "grafana-security-mirror",
 			},
 			mockSetup: func(m *MockGitClient) {
-				m.GetRefFunc = func(ctx context.Context, owner string, repo string, ref string) (*github.Reference, *github.Response, error) {
-					return &github.Reference{
-						Ref: github.String("heads/12.0.1+security-01"),
-					}, &github.Response{}, nil
+				existingRef := &github.Reference{
+					Ref: github.String("heads/12.0.1+security-01"),
 				}
+				m.On("GetRef", mock.Anything, "grafana", "grafana-security-mirror", "heads/12.0.1+security-01").
+					Return(existingRef, &github.Response{}, nil)
 			},
 			expectedBranch: "",
 			expectError:    true,
@@ -171,12 +217,10 @@ func TestCreateSecurityBranch(t *testing.T) {
 				Repo:              "grafana-security-mirror",
 			},
 			mockSetup: func(m *MockGitClient) {
-				m.GetRefFunc = func(ctx context.Context, owner string, repo string, ref string) (*github.Reference, *github.Response, error) {
-					if ref == "heads/12.0.1+security-01" {
-						return nil, &github.Response{}, errors.New("branch not found")
-					}
-					return nil, &github.Response{}, errors.New("base branch not found")
-				}
+				m.On("GetRef", mock.Anything, "grafana", "grafana-security-mirror", "heads/12.0.1+security-01").
+					Return(nil, &github.Response{}, errors.New("branch not found"))
+				m.On("GetRef", mock.Anything, "grafana", "grafana-security-mirror", "heads/release-12.0.1").
+					Return(nil, &github.Response{}, errors.New("base branch not found"))
 			},
 			expectedBranch: "",
 			expectError:    true,
@@ -186,19 +230,21 @@ func TestCreateSecurityBranch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockClient := &MockGitClient{}
+			mockClient := new(MockGitClient)
 			tt.mockSetup(mockClient)
 
 			branch, err := CreateSecurityBranch(context.Background(), mockClient, tt.inputs)
 
 			if tt.expectError {
-				require.Error(t, err)
-				require.Equal(t, tt.errorMessage, err.Error())
-				require.Empty(t, branch)
+				assert.Error(t, err)
+				assert.Equal(t, tt.errorMessage, err.Error())
+				assert.Empty(t, branch)
 			} else {
-				require.NoError(t, err)
-				require.Equal(t, tt.expectedBranch, branch)
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedBranch, branch)
 			}
+
+			mockClient.AssertExpectations(t)
 		})
 	}
 }
