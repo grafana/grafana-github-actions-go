@@ -8,7 +8,7 @@ This GitHub Action creates a new security branch in a private repository for han
 - name: Create security branch
   uses: grafana/grafana-github-actions-go/create-security-branch@main
   with:
-    version: '12.0.1'  # The version to create a security branch for
+    release_branch: 'release-12.0.1'  # The release branch to create a security branch from
     security_branch_number: '01'  # The security branch number (two digits)
     repository: 'grafana/grafana-security-mirror'  # The target repository
     token: ${{ secrets.GITHUB_TOKEN }}  # GitHub token with repository access
@@ -18,7 +18,7 @@ This GitHub Action creates a new security branch in a private repository for han
 
 | Name | Description | Required | Default |
 |------|-------------|----------|---------|
-| `version` | The version to create a security branch for (e.g., 12.0.1) | Yes | - |
+| `release_branch` | The release branch to create a security branch from (e.g., release-12.0.1) | Yes | - |
 | `security_branch_number` | The security branch number (e.g., 01) | Yes | - |
 | `repository` | The repository to create the security branch in (e.g., grafana/grafana-security-mirror) | Yes | - |
 | `token` | GitHub token with access to the target repository | Yes | - |
@@ -31,7 +31,7 @@ This GitHub Action creates a new security branch in a private repository for han
 
 ## Example
 
-When creating a security branch for version 12.0.1 with security branch number 01, the action will:
-1. Create a branch named `12.0.1+security-01`
+When creating a security branch from release-12.0.1 with security branch number 01, the action will:
+1. Create a branch named `release-12.0.1+security-01`
 2. Base it on the `release-12.0.1` branch
-3. Push it to the specified repository
+3. The branch will be immediately available in the repository
