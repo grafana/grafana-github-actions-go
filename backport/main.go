@@ -47,35 +47,30 @@ func main() {
 	}
 
 	var (
-		ctx     = context.Background()
-		token   = os.Getenv("GITHUB_TOKEN")
-		client  = github.NewTokenClient(ctx, token)
-		inputs  = GetInputs()
-		payload = &github.PullRequestTargetEvent{}
+		ctx    = context.Background()
+		token  = os.Getenv("GITHUB_TOKEN")
+		client = github.NewTokenClient(ctx, token)
+		inputs = GetInputs()
 	)
 
 	if token == "" {
 		panic("token can not be empty")
 	}
 
-	if err := UnmarshalEventData(ghctx, &payload); err != nil {
-		log.Error("error reading github payload", "error", err)
+	prInfo, err := GetBackportPrInfo(ctx, client, ghctx)
+	if err != nil {
+		log.Error("error getting PR info", "error", err)
 		panic(err)
 	}
 
-	var (
-		owner = payload.GetRepo().GetOwner().GetLogin()
-		repo  = payload.GetRepo().GetName()
-	)
-
-	log = log.With("pull_request", payload.GetNumber())
-	branches, err := ghutil.GetReleaseBranches(ctx, client.Repositories, owner, repo)
+	log = log.With("pull_request", prInfo.Pr.Number)
+	branches, err := ghutil.GetReleaseBranches(ctx, client.Repositories, prInfo.RepoOwner, prInfo.RepoName)
 	if err != nil {
 		log.Error("error getting branches", "error", err)
 		panic(err)
 	}
 
-	targets, err := BackportTargetsFromPayload(branches, payload)
+	targets, err := BackportTargetsFromPayload(branches, prInfo)
 	if err != nil {
 		if errors.Is(err, ErrorNotMerged) {
 			log.Warn("pull request is not merged; nothing to do")
@@ -88,28 +83,30 @@ func main() {
 
 	for _, target := range targets {
 		log := log.With("target", target)
-		mergeBase, err := MergeBase(ctx, client.Repositories, owner, repo, target.Name, *payload.GetPullRequest().Base.Ref)
+		mergeBase, err := MergeBase(ctx, client.Repositories, prInfo.RepoOwner, prInfo.RepoName, target.Name, prInfo.Pr.GetBase().GetRef())
 		if err != nil {
 			log.Error("error finding merge-base", "error", err)
 		}
 
 		opts := BackportOpts{
-			PullRequestNumber: payload.GetPullRequest().GetNumber(),
-			SourceSHA:         payload.GetPullRequest().GetMergeCommitSHA(),
-			SourceCommitDate:  payload.GetPullRequest().MergedAt.Time,
-			SourceTitle:       payload.GetPullRequest().GetTitle(),
-			SourceBody:        payload.GetPullRequest().GetBody(),
+			PullRequestNumber: prInfo.Pr.GetNumber(),
+			SourceSHA:         prInfo.Pr.GetMergeCommitSHA(),
+			SourceCommitDate:  prInfo.Pr.GetMergedAt().Time,
+			SourceTitle:       prInfo.Pr.GetTitle(),
+			SourceBody:        prInfo.Pr.GetBody(),
 			Target:            target,
-			Labels:            append(inputs.Labels, payload.GetPullRequest().Labels...),
-			Owner:             owner,
-			Repository:        repo,
+			Labels:            append(inputs.Labels, prInfo.Pr.Labels...),
+			Owner:             prInfo.RepoOwner,
+			Repository:        prInfo.RepoName,
 			MergeBase:         mergeBase,
 		}
-		pr, err := Backport(ctx, log, client.PullRequests, client.Issues, client.Issues, NewShellCommandRunner(log), opts)
+
+		prOut, err := Backport(ctx, log, client.PullRequests, client.Issues, client.Issues, NewShellCommandRunner(log), opts)
 		if err != nil {
 			log.Error("backport failed", "error", err)
 			continue
 		}
-		log.Info("backport successful", "url", pr.GetURL())
+
+		log.Info("backport successful", "url", prOut.GetURL())
 	}
 }

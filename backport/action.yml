@@ -13,21 +13,38 @@ inputs:
   path:
     required: false
     default: "."
+  pr_label:
+    description: If specified, the backport will only be created for this label
+    required: false
+  pr_number:
+    description: The number of the PR to backport
+    required: false
+  repo_owner:
+    description: The owner of the repository the PR is in
+    required: false
+  repo_name:
+    description: The name of the repository the PR is in
+    required: false
+
 runs:
   using: composite
   steps:
-  - shell: bash
-    env:
-      GITHUB_TOKEN: ${{inputs.token}}
-      RELEASE_TAG: ${{inputs.binary_release_tag}}
-      INPUT_LABELS_TO_ADD: ${{inputs.labels_to_add}}
-      PR: ${{inputs.pr}}
-      DIR: ${{ inputs.path }}
-    run: |
-      set -e
-      # Download the action from the store
-      curl --fail -L -o /tmp/backport https://github.com/grafana/grafana-github-actions-go/releases/download/${RELEASE_TAG}/backport
-      chmod +x /tmp/backport
-      cd $DIR
-      # Execute action
-      /tmp/backport ${PR}
+    - shell: bash
+      env:
+        GITHUB_TOKEN: ${{inputs.token}}
+        RELEASE_TAG: ${{inputs.binary_release_tag}}
+        INPUT_LABELS_TO_ADD: ${{inputs.labels_to_add}}
+        PR: ${{inputs.pr}}
+        DIR: ${{ inputs.path }}
+        PR_LABEL: ${{ inputs.pr_label }}
+        PR_NUMBER: ${{ inputs.pr_number }}
+        REPO_OWNER: ${{ inputs.repo_owner }}
+        REPO_NAME: ${{ inputs.repo_name }}
+      run: |
+        set -e
+        # Download the action from the store
+        curl --fail -L -o /tmp/backport https://github.com/grafana/grafana-github-actions-go/releases/download/${RELEASE_TAG}/backport
+        chmod +x /tmp/backport
+        cd $DIR
+        # Execute action
+        /tmp/backport ${PR}
