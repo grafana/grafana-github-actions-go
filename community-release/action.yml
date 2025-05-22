@@ -40,7 +40,7 @@ runs:
       curl --fail -L -o /tmp/community-release https://github.com/grafana/grafana-github-actions-go/releases/download/${RELEASE_TAG}/community-release
       chmod +x /tmp/community-release
       # Execute action
-      /tmp/community-release --preview=${dry_run}
+      /tmp/community-release --preview=${DRY_RUN}
     shell: bash
     env:
       GITHUB_TOKEN: ${{inputs.token}}
