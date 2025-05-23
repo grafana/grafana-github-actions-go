@@ -4,15 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"regexp"
 	"strings"
 	"time"
 
 	"github.com/google/go-github/v50/github"
 	"github.com/grafana/grafana-github-actions-go/pkg/ghutil"
 )
-
-var semverRegex = regexp.MustCompile(`^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>x|0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`)
 
 type BackportOpts struct {
 	// PullRequestNumber is the integer ID of the pull request being backported
@@ -164,9 +161,7 @@ func backport(ctx context.Context, log *slog.Logger, client BackportClient, issu
 func Backport(ctx context.Context, log *slog.Logger, backportClient BackportClient, commentClient CommentClient, issueClient IssueClient, execClient CommandRunner, opts BackportOpts) (*github.PullRequest, error) {
 	// Remove any `backport` related labels from the original PR, and mark this PR as a "backport"
 	labels := []*github.Label{
-		&github.Label{
-			Name: github.String("backport"),
-		},
+		{Name: github.String("backport")},
 	}
 
 	for _, v := range opts.Labels {

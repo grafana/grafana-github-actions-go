@@ -10,10 +10,10 @@ import (
 	"github.com/grafana/grafana-github-actions-go/pkg/ghutil"
 )
 
-func BackportTargets(branches []*github.Branch, labels []*github.Label) ([]ghutil.Branch, error) {
+func BackportTargets(branches []*github.Branch, labels []string) ([]ghutil.Branch, error) {
 	targets := []ghutil.Branch{}
 	for _, label := range labels {
-		if !strings.HasPrefix(label.GetName(), "backport ") {
+		if !strings.HasPrefix(label, "backport ") {
 			continue
 		}
 
@@ -31,28 +31,26 @@ func BackportTargets(branches []*github.Branch, labels []*github.Label) ([]ghuti
 var (
 	ErrorNotMerged = errors.New("pull request is not merged; nothing to do")
 	ErrorBadAction = errors.New("unrecognized action")
+	ErrorNoLabels  = errors.New("no labels found")
 )
 
-func BackportTargetsFromPayload(branches []*github.Branch, payload *github.PullRequestTargetEvent) ([]ghutil.Branch, error) {
-	if !payload.PullRequest.GetMerged() {
+func BackportTargetsFromPayload(branches []*github.Branch, prInfo PrInfo) ([]ghutil.Branch, error) {
+	if !prInfo.Pr.GetMerged() {
 		return nil, ErrorNotMerged
 	}
 
-	switch payload.GetAction() {
-	case "labeled":
-		return BackportTargets(branches, []*github.Label{payload.GetLabel()})
-	case "closed":
-		return BackportTargets(branches, payload.GetPullRequest().Labels)
+	if len(prInfo.Labels) == 0 {
+		return nil, ErrorNoLabels
 	}
 
-	return nil, ErrorBadAction
+	return BackportTargets(branches, prInfo.Labels)
 }
 
 // BackportTarget finds the most appropriate base branch (target) given the backport label 'label'
 // This function takes the label, like `backport v11.2.x`, and finds the most recent `release-` branch
 // that matches the pattern.
-func BackportTarget(label *github.Label, branches []*github.Branch) (ghutil.Branch, error) {
-	version := strings.TrimPrefix(label.GetName(), "backport")
+func BackportTarget(label string, branches []*github.Branch) (ghutil.Branch, error) {
+	version := strings.TrimPrefix(label, "backport")
 	labelString := strings.ReplaceAll(strings.TrimSpace(version), "x", "0")
 	major, minor, _ := ghutil.MajorMinorPatch(labelString)
 
