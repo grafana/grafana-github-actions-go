@@ -34,7 +34,6 @@ runs:
         GITHUB_TOKEN: ${{inputs.token}}
         RELEASE_TAG: ${{inputs.binary_release_tag}}
         INPUT_LABELS_TO_ADD: ${{inputs.labels_to_add}}
-        PR: ${{inputs.pr}}
         DIR: ${{ inputs.path }}
         PR_LABEL: ${{ inputs.pr_label }}
         PR_NUMBER: ${{ inputs.pr_number }}
@@ -47,4 +46,4 @@ runs:
         chmod +x /tmp/backport
         cd $DIR
         # Execute action
-        /tmp/backport ${PR}
+        /tmp/backport
