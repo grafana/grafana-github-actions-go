@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/google/go-github/v50/github"
@@ -52,13 +53,19 @@ func main() {
 		token  = os.Getenv("GITHUB_TOKEN")
 		client = github.NewTokenClient(ctx, token)
 		inputs = GetInputs()
+
+		// If specified, takes precedence over event data
+		repoOwner   = os.Getenv("REPO_OWNER")
+		repoName    = os.Getenv("REPO_NAME")
+		prNumber, _ = strconv.Atoi(os.Getenv("PR_NUMBER"))
+		prLabel     = os.Getenv("PR_LABEL")
 	)
 
 	if token == "" {
 		panic("token can not be empty")
 	}
 
-	prInfo, err := GetBackportPrInfo(ctx, log, client, ghctx)
+	prInfo, err := GetBackportPrInfo(ctx, log, client, ghctx, repoOwner, repoName, prNumber, prLabel)
 	if err != nil {
 		log.Error("error getting PR info", "error", err)
 		panic(err)

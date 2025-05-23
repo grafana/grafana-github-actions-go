@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"os"
-	"strconv"
 
 	"github.com/google/go-github/v50/github"
 	"github.com/sethvargo/go-githubactions"
@@ -23,21 +21,16 @@ type PrInfo struct {
 	RepoName  string
 }
 
-func GetBackportPrInfo(ctx context.Context, log *slog.Logger, client *github.Client, ghctx *githubactions.GitHubContext) (PrInfo, error) {
-	prLabel := os.Getenv("PR_LABEL")
-	prNumber, _ := strconv.Atoi(os.Getenv("PR_NUMBER"))
-	repoOwner := os.Getenv("REPO_OWNER")
-	repoName := os.Getenv("REPO_NAME")
-
+func GetBackportPrInfo(ctx context.Context, log *slog.Logger, client *github.Client, ghctx *githubactions.GitHubContext, repoOwner string, repoName string, prNumber int, prLabel string) (PrInfo, error) {
 	log.Debug("getting PR info", "event_path", ghctx.EventPath, "env_pr_label", prLabel, "env_pr_number", prNumber, "env_repo_owner", repoOwner, "env_repo_name", repoName)
 
-	// First, try to use the API to get the PR info
+	// Prefer using the env vars and API if they are set
 	if prNumber != 0 && repoOwner != "" && repoName != "" {
 		log.Debug("getting PR info from API")
 		return getFromApi(ctx, client, prLabel, repoOwner, repoName, prNumber)
 	}
 
-	// Try to use event data if present
+	// Fall back to event data if present
 	if ghctx.EventPath != "" {
 		log.Debug("getting PR info from event")
 		return getFromEvent(ghctx)
