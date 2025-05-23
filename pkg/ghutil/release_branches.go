@@ -3,6 +3,7 @@ package ghutil
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"slices"
 	"strconv"
 	"strings"
@@ -92,7 +93,7 @@ func MajorMinorPatch(v string) (string, string, string) {
 	return groups["major"], groups["minor"], groups["patch"]
 }
 
-func GetReleaseBranches(ctx context.Context, client BranchClient, owner, repo string) ([]*github.Branch, error) {
+func GetReleaseBranches(ctx context.Context, log *slog.Logger, client BranchClient, owner, repo string) ([]*github.Branch, error) {
 	var (
 		page     int
 		count    = 50
@@ -100,6 +101,7 @@ func GetReleaseBranches(ctx context.Context, client BranchClient, owner, repo st
 	)
 
 	for {
+		log.Debug("listing branches", "page", page, "count", count)
 		b, r, err := client.ListBranches(ctx, owner, repo, &github.BranchListOptions{
 			Protected: github.Bool(true),
 			ListOptions: github.ListOptions{

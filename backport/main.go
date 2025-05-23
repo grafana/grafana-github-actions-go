@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"os"
 	"strings"
@@ -57,14 +58,15 @@ func main() {
 		panic("token can not be empty")
 	}
 
-	prInfo, err := GetBackportPrInfo(ctx, client, ghctx)
+	prInfo, err := GetBackportPrInfo(ctx, log, client, ghctx)
 	if err != nil {
 		log.Error("error getting PR info", "error", err)
 		panic(err)
 	}
 
-	log = log.With("pull_request", prInfo.Pr.Number)
-	branches, err := ghutil.GetReleaseBranches(ctx, client.Repositories, prInfo.RepoOwner, prInfo.RepoName)
+	log = log.With("repo", fmt.Sprintf("%s/%s", prInfo.RepoOwner, prInfo.RepoName), "pull_request", prInfo.Pr.GetNumber())
+
+	branches, err := ghutil.GetReleaseBranches(ctx, log, client.Repositories, prInfo.RepoOwner, prInfo.RepoName)
 	if err != nil {
 		log.Error("error getting branches", "error", err)
 		panic(err)
@@ -101,7 +103,8 @@ func main() {
 			MergeBase:         mergeBase,
 		}
 
-		prOut, err := Backport(ctx, log, client.PullRequests, client.Issues, client.Issues, NewShellCommandRunner(log), opts)
+		commandRunner := NewShellCommandRunner(log)
+		prOut, err := Backport(ctx, log, client.PullRequests, client.Issues, client.Issues, commandRunner, opts)
 		if err != nil {
 			log.Error("backport failed", "error", err)
 			continue

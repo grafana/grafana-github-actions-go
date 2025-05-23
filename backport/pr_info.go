@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"strconv"
 
@@ -22,20 +23,23 @@ type PrInfo struct {
 	RepoName  string
 }
 
-func GetBackportPrInfo(ctx context.Context, client *github.Client, ghctx *githubactions.GitHubContext) (PrInfo, error) {
+func GetBackportPrInfo(ctx context.Context, log *slog.Logger, client *github.Client, ghctx *githubactions.GitHubContext) (PrInfo, error) {
 	prLabel := os.Getenv("PR_LABEL")
 	prNumber, _ := strconv.Atoi(os.Getenv("PR_NUMBER"))
 	repoOwner := os.Getenv("REPO_OWNER")
 	repoName := os.Getenv("REPO_NAME")
 
+	log.Debug("getting PR info", "event_path", ghctx.EventPath, "env_pr_label", prLabel, "env_pr_number", prNumber, "env_repo_owner", repoOwner, "env_repo_name", repoName)
+
 	// First, try to use the API to get the PR info
 	if prNumber != 0 && repoOwner != "" && repoName != "" {
+		log.Debug("getting PR info from API")
 		return getFromApi(ctx, client, prLabel, repoOwner, repoName, prNumber)
 	}
 
 	// Try to use event data if present
-	eventPath := ghctx.EventPath
-	if eventPath != "" {
+	if ghctx.EventPath != "" {
+		log.Debug("getting PR info from event")
 		return getFromEvent(ghctx)
 	}
 
