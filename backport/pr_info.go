@@ -36,13 +36,13 @@ func GetBackportPrInfo(ctx context.Context, client *github.Client, ghctx *github
 	// Try to use event data if present
 	eventPath := ghctx.EventPath
 	if eventPath != "" {
-		return getFromEvent(ctx, client, ghctx)
+		return getFromEvent(ghctx)
 	}
 
 	return PrInfo{}, fmt.Errorf("no PR info found")
 }
 
-func getFromEvent(ctx context.Context, client *github.Client, ghctx *githubactions.GitHubContext) (PrInfo, error) {
+func getFromEvent(ghctx *githubactions.GitHubContext) (PrInfo, error) {
 	payload := &github.PullRequestTargetEvent{}
 
 	if err := UnmarshalEventData(ghctx, &payload); err != nil {

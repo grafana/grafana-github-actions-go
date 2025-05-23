@@ -164,9 +164,7 @@ func backport(ctx context.Context, log *slog.Logger, client BackportClient, issu
 func Backport(ctx context.Context, log *slog.Logger, backportClient BackportClient, commentClient CommentClient, issueClient IssueClient, execClient CommandRunner, opts BackportOpts) (*github.PullRequest, error) {
 	// Remove any `backport` related labels from the original PR, and mark this PR as a "backport"
 	labels := []*github.Label{
-		&github.Label{
-			Name: github.String("backport"),
-		},
+		{Name: github.String("backport")},
 	}
 
 	for _, v := range opts.Labels {

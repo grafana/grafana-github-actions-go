@@ -25,16 +25,10 @@ func TestBackportTargets(t *testing.T) {
 	}
 
 	t.Run("with backport labels", func(t *testing.T) {
-		labels := []*github.Label{
-			{
-				Name: github.String("backport v12.2.x"),
-			},
-			{
-				Name: github.String("backport v12.0.x"),
-			},
-			{
-				Name: github.String("backport v11.0.x"),
-			},
+		labels := []string{
+			"backport v12.2.x",
+			"backport v12.0.x",
+			"backport v11.0.x",
 		}
 
 		targets, err := BackportTargets(branches, labels)
@@ -47,28 +41,14 @@ func TestBackportTargets(t *testing.T) {
 	})
 
 	t.Run("with non-backport labels", func(t *testing.T) {
-		labels := []*github.Label{
-			{
-				Name: github.String("type/bug"),
-			},
-			{
-				Name: github.String("backport v12.2.x"),
-			},
-			{
-				Name: github.String("release/latest"),
-			},
-			{
-				Name: github.String("backport v12.0.x"),
-			},
-			{
-				Name: github.String("type/ci"),
-			},
-			{
-				Name: github.String("backport v11.0.x"),
-			},
-			{
-				Name: github.String("add-to-changelog"),
-			},
+		labels := []string{
+			"type/bug",
+			"backport v12.2.x",
+			"release/latest",
+			"backport v12.0.x",
+			"type/ci",
+			"backport v11.0.x",
+			"add-to-changelog",
 		}
 
 		targets, err := BackportTargets(branches, labels)
