@@ -78,14 +78,14 @@ func TestMostRecentBranch(t *testing.T) {
 }
 
 func TestBackportTarget(t *testing.T) {
-	assertError := func(t *testing.T, label *github.Label, branches []*github.Branch) {
+	assertError := func(t *testing.T, label string, branches []*github.Branch) {
 		t.Helper()
 		b, err := BackportTarget(label, branches)
 		assert.Error(t, err)
 		assert.Empty(t, b)
 	}
 
-	assertBranch := func(t *testing.T, label *github.Label, branches []*github.Branch, branch string) {
+	assertBranch := func(t *testing.T, label string, branches []*github.Branch, branch string) {
 		t.Helper()
 		b, err := BackportTarget(label, branches)
 		assert.NoError(t, err)
@@ -107,36 +107,16 @@ func TestBackportTarget(t *testing.T) {
 		{Name: github.String("release-12.2.12")},
 	}
 
-	assertError(t, &github.Label{
-		Name: github.String("backport v3.2.x"),
-	}, branches)
-	assertError(t, &github.Label{
-		Name: github.String("backport v4.0.x"),
-	}, branches)
-	assertError(t, &github.Label{
-		Name: github.String("backport v13.0.x"),
-	}, branches)
-	assertError(t, &github.Label{
-		Name: github.String("backport v10.5.x"),
-	}, branches)
-	assertError(t, &github.Label{
-		Name: github.String("backport v11.8.x"),
-	}, branches)
-	assertBranch(t, &github.Label{
-		Name: github.String("backport v11.0.x"),
-	}, branches, "release-11.0.1")
-	assertBranch(t, &github.Label{
-		Name: github.String("backport v12.1.x"),
-	}, branches, "release-12.1.15")
-	assertBranch(t, &github.Label{
-		Name: github.String("backport v12.0.x"),
-	}, branches, "release-12.0.15")
-	assertBranch(t, &github.Label{
-		Name: github.String("backport v1.2.x"),
-	}, branches, "release-1.2.3")
-	assertBranch(t, &github.Label{
-		Name: github.String("backport v10.2.x"),
-	}, branches, "release-10.2.4")
+	assertError(t, "backport v3.2.x", branches)
+	assertError(t, "backport v4.0.x", branches)
+	assertError(t, "backport v13.0.x", branches)
+	assertError(t, "backport v10.5.x", branches)
+	assertError(t, "backport v11.8.x", branches)
+	assertBranch(t, "backport v11.0.x", branches, "release-11.0.1")
+	assertBranch(t, "backport v12.1.x", branches, "release-12.1.15")
+	assertBranch(t, "backport v12.0.x", branches, "release-12.0.15")
+	assertBranch(t, "backport v1.2.x", branches, "release-1.2.3")
+	assertBranch(t, "backport v10.2.x", branches, "release-10.2.4")
 }
 
 type TestBackportClient struct {

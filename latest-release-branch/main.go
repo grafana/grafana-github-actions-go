@@ -51,7 +51,7 @@ func main() {
 	}
 	major, minor, _ := ghutil.MajorMinorPatch(strings.TrimPrefix(strings.ReplaceAll(inputs.Pattern, "x", "0"), "v"))
 
-	branches, err := ghutil.GetReleaseBranches(ctx, client.Repositories, inputs.Owner, inputs.Repo)
+	branches, err := ghutil.GetReleaseBranches(ctx, log, client.Repositories, inputs.Owner, inputs.Repo)
 	if err != nil {
 		log.Error("error getting release branches", "err", err)
 		panic(err)
