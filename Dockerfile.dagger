@@ -1,3 +1,3 @@
 # This file is used to keep the Docker images used in the CI pipeline by Dagger
 # up-to-update:
-FROM golang:1.21.6
+FROM golang:1.22.4
