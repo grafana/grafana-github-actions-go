@@ -74,7 +74,7 @@ jobs:
           repository: "grafana/grafana-github-actions"
           path: ./actions
           ref: main
-      - uses: actions/setup-node@v4.0.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '16'
       - name: Install Actions
