@@ -2,7 +2,7 @@ module github.com/grafana/grafana-github-actions-go
 
 go 1.21
 
-toolchain go1.21.5
+toolchain go1.25.10
 
 require (
 	dagger.io/dagger v0.9.7
