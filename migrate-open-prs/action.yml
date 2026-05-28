@@ -16,10 +16,45 @@ inputs:
 runs:
   using: composite
   steps:
-    - id: build
-      uses: ./build-go-binary
+    # Build the Go binary from source. Building from source ties the binary
+    # 1:1 to the action's pinned commit SHA (a downloaded release asset is
+    # mutable). Inlined here rather than extracted into a shared composite
+    # because `uses: ./shared` would resolve relative to the consumer's
+    # workspace, not this action's directory.
+    - id: source-hash
+      shell: bash
+      run: |
+        set -euo pipefail
+        cd "${GITHUB_ACTION_PATH}/.."
+        files=$(find . -type f \( -name '*.go' -o -name 'go.mod' -o -name 'go.sum' \) -print0 \
+          | sort -z \
+          | xargs -0 sha256sum)
+        if [ -z "${files}" ]; then
+          echo "source-hash: no Go source files found under $(pwd)" >&2
+          exit 1
+        fi
+        hash=$(printf '%s\n' "${files}" | sha256sum | cut -d' ' -f1)
+        echo "hash=${hash}" >> "${GITHUB_OUTPUT}"
+
+    - id: cache
+      uses: actions/cache@v4
       with:
-        binary_name: migrate-open-prs
+        path: /tmp/migrate-open-prs
+        key: migrate-open-prs-${{ runner.os }}-${{ runner.arch }}-${{ steps.source-hash.outputs.hash }}
+
+    - if: steps.cache.outputs.cache-hit != 'true'
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: ${{ github.action_path }}/../go.mod
+        cache: false
+
+    - if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        set -euo pipefail
+        cd "${GITHUB_ACTION_PATH}/.."
+        CGO_ENABLED=0 go build -trimpath -o /tmp/migrate-open-prs ./migrate-open-prs
+        chmod +x /tmp/migrate-open-prs
 
     - id: migrate-open-prs
       shell: bash
@@ -28,7 +63,7 @@ runs:
         INPUT_OWNERREPO: ${{ inputs.ownerRepo }}
         INPUT_FROM: ${{ inputs.from }}
         INPUT_TO: ${{ inputs.to }}
-        BINARY: ${{ steps.build.outputs.path }}
+        BINARY: /tmp/migrate-open-prs
       run: |
         set -euo pipefail
         "${BINARY}"
