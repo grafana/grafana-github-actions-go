@@ -87,11 +87,14 @@ func main() {
 		panic(err)
 	}
 
+	failed := false
 	for _, target := range targets {
 		log := log.With("target", target)
 		mergeBase, err := MergeBase(ctx, client.Repositories, prInfo.RepoOwner, prInfo.RepoName, target.Name, prInfo.Pr.GetBase().GetRef())
 		if err != nil {
 			log.Error("error finding merge-base", "error", err)
+			failed = true
+			continue
 		}
 
 		opts := BackportOpts{
@@ -113,9 +116,14 @@ func main() {
 		prOut, err := Backport(ctx, log, client.PullRequests, client.Issues, client.Issues, client.Git, gqlClient, commandRunner, opts)
 		if err != nil {
 			log.Error("backport failed", "error", err)
+			failed = true
 			continue
 		}
 
 		log.Info("backport successful", "url", prOut.GetURL())
+	}
+
+	if failed {
+		os.Exit(1)
 	}
 }
