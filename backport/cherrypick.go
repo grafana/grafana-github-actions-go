@@ -47,7 +47,16 @@ func CreateCherryPickBranch(ctx context.Context, runner CommandRunner, branch st
 		return fmt.Errorf("error creating branch: %w", err)
 	}
 
-	_, err := runner.Run(ctx, "git", "cherry-pick", "-x", opts.SourceSHA)
+	// `git cherry-pick` refuses to create the local commit without a committer identity, so
+	// pass one inline via `-c`. The local commit's committer is overwritten by GitHub's
+	// web-flow key when the commit is published via createCommitOnBranch, so the value is
+	// purely a placeholder — but it must be non-empty. Using `-c` keeps `.git/config`
+	// untouched. The identity matches the one set by pkg/toolkit/toolkit.go.
+	_, err := runner.Run(ctx, "git",
+		"-c", "user.name=grafanabot",
+		"-c", "user.email=bot@grafana.com",
+		"cherry-pick", "-x", opts.SourceSHA,
+	)
 	if err != nil {
 		if err := ResolveBettererConflict(ctx, runner); err == nil {
 			return nil

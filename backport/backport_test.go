@@ -234,7 +234,7 @@ func TestBackport(t *testing.T) {
 			"git fetch origin release-12.0.0:refs/remotes/origin/release-12.0.0",
 			"git fetch --shallow-since=1577923200",
 			"git checkout -b backport-100-to-release-12.0.0 origin/release-12.0.0",
-			"git cherry-pick -x asdf1234",
+			"git -c user.name=grafanabot -c user.email=bot@grafana.com cherry-pick -x asdf1234",
 			"git rev-parse origin/release-12.0.0",
 			"git diff --no-renames --name-status -z fdsa4321 HEAD",
 			"git log -1 --format=%B HEAD",
@@ -251,7 +251,7 @@ func TestBackport(t *testing.T) {
 	t.Run("Backport comments", func(t *testing.T) {
 		// Simulate an error being returned from the 'git cherry-pick command'
 		runner := newErrorRunner(map[string]error{
-			"git cherry-pick -x asdf1234": errors.New("The process '/usr/bin/git' failed with exit code 1"),
+			"git -c user.name=grafanabot -c user.email=bot@grafana.com cherry-pick -x asdf1234": errors.New("The process '/usr/bin/git' failed with exit code 1"),
 		})
 
 		var comment *github.IssueComment
