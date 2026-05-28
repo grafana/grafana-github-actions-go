@@ -28,11 +28,14 @@ runs:
       run: |
         set -euo pipefail
         cd "${GITHUB_ACTION_PATH}/.."
-        hash=$(find . -type f \( -name '*.go' -o -name 'go.mod' -o -name 'go.sum' \) \
-          | sort \
-          | xargs sha256sum \
-          | sha256sum \
-          | cut -d' ' -f1)
+        files=$(find . -type f \( -name '*.go' -o -name 'go.mod' -o -name 'go.sum' \) -print0 \
+          | sort -z \
+          | xargs -0 sha256sum)
+        if [ -z "${files}" ]; then
+          echo "source-hash: no Go source files found under $(pwd)" >&2
+          exit 1
+        fi
+        hash=$(printf '%s\n' "${files}" | sha256sum | cut -d' ' -f1)
         echo "hash=${hash}" >> "${GITHUB_OUTPUT}"
 
     - id: cache

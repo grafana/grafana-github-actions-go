@@ -31,4 +31,5 @@ runs:
         BINARY: ${{ steps.build.outputs.path }}
       run: |
         set -euo pipefail
-        echo "branch=$("${BINARY}")" >> "$GITHUB_OUTPUT"
+        branch=$("${BINARY}")
+        echo "branch=${branch}" >> "$GITHUB_OUTPUT"
