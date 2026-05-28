@@ -16,9 +16,6 @@ inputs:
   metrics_api_endpoint:
     description: Full URL of a Graphite HTTP endpoint
     required: false
-  binary_release_tag:
-    required: false
-    default: "dev"
   latest:
     description: Mark the release as latest (1 for latest, 0 for not)
     required: false
@@ -28,20 +25,21 @@ inputs:
 runs:
   using: composite
   steps:
-  - run: |
-      set -e
-      # Download the action from the store
-      curl --fail -L -o /tmp/github-release https://github.com/grafana/grafana-github-actions-go/releases/download/${RELEASE_TAG}/github-release
-      chmod +x /tmp/github-release
-      # Execute action
-      /tmp/github-release --preview=${DRY_RUN} ${VERSION}
-    shell: bash
-    env:
-      GITHUB_TOKEN: ${{inputs.token}}
-      INPUT_METRICS_API_USERNAME: ${{inputs.metrics_api_username}}
-      INPUT_METRICS_API_KEY: ${{inputs.metrics_api_key}}
-      INPUT_METRICS_API_ENDPOINT: ${{inputs.metrics_api_endpoint}}
-      INPUT_LATEST: ${{inputs.latest}}
-      RELEASE_TAG: ${{inputs.binary_release_tag}}
-      DRY_RUN: ${{inputs.dry_run}}
-      VERSION: ${{inputs.version}}
+    - id: build
+      uses: ./build-go-binary
+      with:
+        binary_name: github-release
+
+    - shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.token }}
+        INPUT_METRICS_API_USERNAME: ${{ inputs.metrics_api_username }}
+        INPUT_METRICS_API_KEY: ${{ inputs.metrics_api_key }}
+        INPUT_METRICS_API_ENDPOINT: ${{ inputs.metrics_api_endpoint }}
+        INPUT_LATEST: ${{ inputs.latest }}
+        DRY_RUN: ${{ inputs.dry_run }}
+        VERSION: ${{ inputs.version }}
+        BINARY: ${{ steps.build.outputs.path }}
+      run: |
+        set -euo pipefail
+        "${BINARY}" --preview="${DRY_RUN}" "${VERSION}"
