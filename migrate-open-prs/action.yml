@@ -13,22 +13,22 @@ inputs:
   to:
     description: The base branch to migrate open PRs to
     required: true
-  binary_release_tag:
-    required: false
-    default: "dev"
 runs:
   using: composite
   steps:
-  - shell: bash
-    id: migrate-open-prs
-    env:
-      GITHUB_TOKEN: ${{inputs.token}}
-      INPUT_OWNERREPO: ${{inputs.ownerRepo}}
-      INPUT_FROM: ${{inputs.from}}
-      INPUT_TO: ${{inputs.to}}
-      RELEASE_TAG: ${{inputs.binary_release_tag}}
-    run: |
-      set -e
-      curl --fail -L -o /tmp/migrate-open-prs https://github.com/grafana/grafana-github-actions-go/releases/download/${RELEASE_TAG}/migrate-open-prs
-      chmod +x /tmp/migrate-open-prs
-      /tmp/migrate-open-prs
+    - id: build
+      uses: ./build-go-binary
+      with:
+        binary_name: migrate-open-prs
+
+    - id: migrate-open-prs
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.token }}
+        INPUT_OWNERREPO: ${{ inputs.ownerRepo }}
+        INPUT_FROM: ${{ inputs.from }}
+        INPUT_TO: ${{ inputs.to }}
+        BINARY: ${{ steps.build.outputs.path }}
+      run: |
+        set -euo pipefail
+        "${BINARY}"

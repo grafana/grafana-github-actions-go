@@ -23,45 +23,10 @@ inputs:
 runs:
   using: composite
   steps:
-    # We build from source instead of downloading a prebuilt release binary.
-    # Pinning this action to a commit SHA only protects what runs if the SHA
-    # determines the code; release assets are mutable, so a SHA-pinned action
-    # that fetches one isn't actually pinning the binary version.
-    #
-    # The build is cached by runner OS/arch + hash of Go sources, so it only
-    # reruns when the source changes.
-
-    - id: source-hash
-      shell: bash
-      run: |
-        set -euo pipefail
-        cd "${GITHUB_ACTION_PATH}/.."
-        hash=$(find . -type f \( -name '*.go' -o -name 'go.mod' -o -name 'go.sum' \) \
-          | sort \
-          | xargs sha256sum \
-          | sha256sum \
-          | cut -d' ' -f1)
-        echo "hash=${hash}" >> "${GITHUB_OUTPUT}"
-
-    - id: cache
-      uses: actions/cache@v4
+    - id: build
+      uses: ./build-go-binary
       with:
-        path: /tmp/backport
-        key: backport-${{ runner.os }}-${{ runner.arch }}-${{ steps.source-hash.outputs.hash }}
-
-    - if: steps.cache.outputs.cache-hit != 'true'
-      uses: actions/setup-go@v5
-      with:
-        go-version-file: ${{ github.action_path }}/../go.mod
-        cache: false
-
-    - if: steps.cache.outputs.cache-hit != 'true'
-      shell: bash
-      run: |
-        set -euo pipefail
-        cd "${GITHUB_ACTION_PATH}/.."
-        CGO_ENABLED=0 go build -trimpath -o /tmp/backport ./backport
-        chmod +x /tmp/backport
+        binary_name: backport
 
     - shell: bash
       env:
@@ -71,7 +36,8 @@ runs:
         PR_NUMBER: ${{ inputs.pr_number }}
         REPO_OWNER: ${{ inputs.repo_owner }}
         REPO_NAME: ${{ inputs.repo_name }}
+        BINARY: ${{ steps.build.outputs.path }}
       run: |
         set -euo pipefail
         cd "${DIR}"
-        /tmp/backport
+        "${BINARY}"

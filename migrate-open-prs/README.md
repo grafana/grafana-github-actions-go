@@ -49,5 +49,4 @@ jobs:
           ownerRepo: 'grafana/grafana'
           from: ${{ inputs.from }}
           to: ${{ inputs.to }}
-          binary_release_tag: 'dev'
 ```
