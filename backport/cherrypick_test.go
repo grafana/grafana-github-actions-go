@@ -32,7 +32,7 @@ func TestCreateCherryPickBranch(t *testing.T) {
 				},
 			}
 			runner = newErrorRunner(map[string]error{
-				"git cherry-pick -x asdf1234":               errors.New("cherry-pick error"),
+				"git -c user.name=grafanabot -c user.email=bot@grafana.com cherry-pick -x asdf1234":               errors.New("cherry-pick error"),
 				"git diff -s --exit-code .betterer.results": errors.New("command returned 1"),
 			})
 		)
@@ -42,7 +42,7 @@ func TestCreateCherryPickBranch(t *testing.T) {
 			"git fetch origin release-1.0.0:refs/remotes/origin/release-1.0.0",
 			"git fetch --shallow-since=1577923200",
 			"git checkout -b example origin/release-1.0.0",
-			"git cherry-pick -x asdf1234",
+			"git -c user.name=grafanabot -c user.email=bot@grafana.com cherry-pick -x asdf1234",
 			"git diff -s --exit-code .betterer.results",
 			"yarn run betterer",
 			"git add .betterer.results",
@@ -74,7 +74,7 @@ func TestCreateCherryPickBranch(t *testing.T) {
 				},
 			}
 			runner = newErrorRunner(map[string]error{
-				"git cherry-pick -x asdf1234": errors.New("cherry-pick error"),
+				"git -c user.name=grafanabot -c user.email=bot@grafana.com cherry-pick -x asdf1234": errors.New("cherry-pick error"),
 			})
 		)
 
@@ -83,7 +83,7 @@ func TestCreateCherryPickBranch(t *testing.T) {
 			"git fetch origin release-1.0.0:refs/remotes/origin/release-1.0.0",
 			"git fetch --shallow-since=1577923200",
 			"git checkout -b example origin/release-1.0.0",
-			"git cherry-pick -x asdf1234",
+			"git -c user.name=grafanabot -c user.email=bot@grafana.com cherry-pick -x asdf1234",
 			"git diff -s --exit-code .betterer.results",
 			"git cherry-pick --abort",
 		}
