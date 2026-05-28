@@ -12,12 +12,14 @@ jobs:
     permissions:
       actions: read
       contents: read
+      # required by the reusable workflow's nested jobs (job-workflow-ref, grafana-bench)
+      id-token: write
       # required to comment on pull requests with the results of the check
       pull-requests: write
       # required to upload the results to GitHub's code scanning service
       security-events: write
 
-    uses: grafana/shared-workflows/.github/workflows/reusable-zizmor.yml@main  # zizmor: ignore[unpinned-uses]
+    uses: grafana/shared-workflows/.github/workflows/reusable-zizmor.yml@24a81c0925981b54312bcfc5d670d85fb96d994c # main
     with:
       fail-severity: high
       min-severity: high
