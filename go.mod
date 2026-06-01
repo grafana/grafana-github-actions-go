@@ -8,7 +8,7 @@ require (
 	github.com/coreos/go-semver v0.3.1
 	github.com/google/go-github/v50 v50.2.0
 	github.com/rs/zerolog v1.32.0
-	github.com/sethvargo/go-githubactions v1.3.0
+	github.com/sethvargo/go-githubactions v1.3.2
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.9.0
 )
