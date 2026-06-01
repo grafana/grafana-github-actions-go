@@ -43,7 +43,7 @@ runs:
         key: migrate-open-prs-${{ runner.os }}-${{ runner.arch }}-${{ steps.source-hash.outputs.hash }}
 
     - if: steps.cache.outputs.cache-hit != 'true'
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
       with:
         go-version-file: ${{ github.action_path }}/../go.mod
         cache: false
