@@ -228,7 +228,7 @@ type packageJSON struct {
 	Version string `json:"version"`
 }
 
-var versionPattern = regexp.MustCompile(`^(\d+)\.(\d+).(\d+)`)
+var versionPattern = regexp.MustCompile(`^(\d+)\.(\d+)\.(\d+)`)
 
 func versionFromPackage(content string) (string, error) {
 	pjson := packageJSON{}
