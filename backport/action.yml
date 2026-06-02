@@ -65,6 +65,11 @@ runs:
 
     - shell: bash
       env:
+        TOKEN: ${{ inputs.token }}
+      run: git config --global url."https://x-access-token:${TOKEN}@github.com/".insteadOf "https://github.com/"
+
+    - shell: bash
+      env:
         GITHUB_TOKEN: ${{ inputs.token }}
         DIR: ${{ inputs.path }}
         PR_LABEL: ${{ inputs.pr_label }}
@@ -76,3 +81,9 @@ runs:
         set -euo pipefail
         cd "${DIR}"
         "${BINARY}"
+
+    - if: always()
+      shell: bash
+      env:
+        TOKEN: ${{ inputs.token }}
+      run: git config --global --unset-all url."https://x-access-token:${TOKEN}@github.com/".insteadOf || true
