@@ -4,6 +4,8 @@ on:
     paths:
       - ".github/**"
   push:
+    branches:
+      - main
     paths:
       - ".github/**"
 
@@ -32,4 +34,5 @@ jobs:
     uses: grafana/shared-workflows/.github/workflows/reusable-zizmor.yml@952ec381447a2002ff76103395d37bf8b4c7c3f5 # main
     with:
       fail-severity: any
+      auto-delete-dangerous-branches: true
       extra-args: "--offline"

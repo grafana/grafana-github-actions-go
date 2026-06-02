@@ -14,8 +14,13 @@ on:
     secrets:
       token:
         required: true
+
+permissions: {}
+
 jobs:
   main:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Actions
@@ -23,6 +28,7 @@ jobs:
         with:
           repository: "grafana/grafana-github-actions-go"
           ref: closemilestone
+          persist-credentials: false
       - name: Close milestone from open issues (manually invoked)
         if: ${{ github.event.inputs.version != '' }}
         uses: ./closemilestone
