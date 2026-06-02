@@ -1,9 +1,9 @@
 module github.com/grafana/grafana-github-actions-go
 
-go 1.26
+go 1.26.1
 
 require (
-	dagger.io/dagger v0.21.0
+	dagger.io/dagger v0.21.3
 	github.com/Khan/genqlient v0.8.1
 	github.com/coreos/go-semver v0.3.1
 	github.com/google/go-github/v50 v50.2.0
@@ -23,6 +23,7 @@ require (
 	github.com/bmatcuk/doublestar/v4 v4.6.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cloudflare/circl v1.6.3 // indirect
+	github.com/dagger/querybuilder v0.0.0-20260402040506-574a5e81cb59 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
