@@ -84,7 +84,7 @@ func TestCreateCherryPickBranch(t *testing.T) {
 
 		expect := []string{
 			"git remote get-url origin",
-			"git remote set-url origin https://x-access-token:test-token@github.com/test-owner/test-repo.git",
+			"git remote set-url origin https://x-access-token:test-token@github.com/test-owner/test-repo.git", // trufflehog:ignore
 			"git fetch origin asdf1234",
 			"git fetch origin release-1.0.0:refs/remotes/origin/release-1.0.0",
 			"git fetch --shallow-since=1577923200",
@@ -127,7 +127,7 @@ func TestCreateCherryPickBranch(t *testing.T) {
 
 		expect := []string{
 			"git remote get-url origin",
-			"git remote set-url origin https://x-access-token:test-token@github.com/test-owner/test-repo.git",
+			"git remote set-url origin https://x-access-token:test-token@github.com/test-owner/test-repo.git", // trufflehog:ignore
 			"git fetch origin asdf1234",
 			"git fetch origin release-1.0.0:refs/remotes/origin/release-1.0.0",
 			"git fetch --shallow-since=1577923200",
