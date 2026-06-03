@@ -42,9 +42,9 @@ func newErrorRunner(errors map[string]error) *errorRunner {
 
 func (r *errorRunner) Run(ctx context.Context, command string, args ...string) (string, error) {
 	cmd := strings.Join(append([]string{command}, args...), " ")
-	_, _ = r.History.Run(ctx, command, args...)
+	out, _ := r.History.Run(ctx, command, args...)
 	if err, ok := r.Errors[cmd]; ok {
 		return "", err
 	}
-	return "", nil
+	return out, nil
 }

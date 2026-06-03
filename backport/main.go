@@ -109,6 +109,7 @@ func main() {
 			Repository:        prInfo.RepoName,
 			MergeBase:         mergeBase,
 			RunID:             runID,
+			GitToken:          token,
 		}
 
 		commandRunner := NewShellCommandRunner(log)
