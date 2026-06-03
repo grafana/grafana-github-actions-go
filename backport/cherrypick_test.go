@@ -54,6 +54,94 @@ func TestCreateCherryPickBranch(t *testing.T) {
 		require.Equal(t, expect, runner.History.Commands)
 	})
 
+	t.Run("It should configure and restore origin URL when GitToken is set", func(t *testing.T) {
+		var (
+			testCommitDate, _ = time.Parse(time.RFC3339, "2020-01-02T00:00:00Z")
+			branch            = "example"
+			opts              = BackportOpts{
+				GitToken: "test-token",
+				Target: ghutil.Branch{
+					Name: "release-1.0.0",
+					SHA:  "fdsa4321",
+				},
+				SourceSHA:        "asdf1234",
+				SourceCommitDate: testCommitDate,
+				MergeBase: &github.Commit{
+					Committer: &github.CommitAuthor{
+						Date: &github.Timestamp{
+							Time: testCommitDate,
+						},
+					},
+				},
+			}
+			runner = &mockRunner{
+				Commands: []string{},
+				Outputs: map[string]string{
+					"git remote get-url origin": "https://github.com/test-owner/test-repo.git",
+				},
+			}
+		)
+
+		expect := []string{
+			"git remote get-url origin",
+			"git remote set-url origin https://x-access-token:test-token@github.com/test-owner/test-repo.git",
+			"git fetch origin asdf1234",
+			"git fetch origin release-1.0.0:refs/remotes/origin/release-1.0.0",
+			"git fetch --shallow-since=1577923200",
+			"git checkout -b example origin/release-1.0.0",
+			"git -c user.name=grafanabot -c user.email=bot@grafana.com cherry-pick -x asdf1234",
+			"git remote set-url origin https://github.com/test-owner/test-repo.git",
+		}
+
+		require.NoError(t, CreateCherryPickBranch(context.Background(), runner, branch, opts))
+		require.Equal(t, expect, runner.Commands)
+	})
+
+	t.Run("It should restore origin URL even if cherry-pick fails", func(t *testing.T) {
+		var (
+			testCommitDate, _ = time.Parse(time.RFC3339, "2020-01-02T00:00:00Z")
+			branch            = "example"
+			opts              = BackportOpts{
+				GitToken: "test-token",
+				Target: ghutil.Branch{
+					Name: "release-1.0.0",
+					SHA:  "fdsa4321",
+				},
+				SourceSHA:        "asdf1234",
+				SourceCommitDate: testCommitDate,
+				MergeBase: &github.Commit{
+					Committer: &github.CommitAuthor{
+						Date: &github.Timestamp{
+							Time: testCommitDate,
+						},
+					},
+				},
+			}
+			runner = newErrorRunner(map[string]error{
+				"git -c user.name=grafanabot -c user.email=bot@grafana.com cherry-pick -x asdf1234": errors.New("cherry-pick error"),
+			})
+		)
+		runner.History.Outputs = map[string]string{
+			"git remote get-url origin": "https://github.com/test-owner/test-repo.git",
+		}
+
+		expect := []string{
+			"git remote get-url origin",
+			"git remote set-url origin https://x-access-token:test-token@github.com/test-owner/test-repo.git",
+			"git fetch origin asdf1234",
+			"git fetch origin release-1.0.0:refs/remotes/origin/release-1.0.0",
+			"git fetch --shallow-since=1577923200",
+			"git checkout -b example origin/release-1.0.0",
+			"git -c user.name=grafanabot -c user.email=bot@grafana.com cherry-pick -x asdf1234",
+			"git diff -s --exit-code .betterer.results",
+			"git cherry-pick --abort",
+			"git remote set-url origin https://github.com/test-owner/test-repo.git",
+		}
+
+		require.Error(t, CreateCherryPickBranch(context.Background(), runner, branch, opts))
+		require.Equal(t, expect, runner.History.Commands)
+	})
+
 	t.Run("It should return an error if there was a non-betterer conflict", func(t *testing.T) {
 		var (
 			testCommitDate, _ = time.Parse(time.RFC3339, "2020-01-02T00:00:00Z")
