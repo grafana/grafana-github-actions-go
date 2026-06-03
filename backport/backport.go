@@ -44,6 +44,11 @@ type BackportOpts struct {
 
 	// RunID is the ID of the run of the GitHub action that is running this.
 	RunID string
+
+	// GitToken is used to authenticate git fetch operations over HTTPS.
+	// When set, CreateCherryPickBranch temporarily rewrites the origin remote
+	// URL to embed the token, then restores it afterwards.
+	GitToken string
 }
 
 type BackportClient interface {

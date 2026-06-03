@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 )
 
 func ResolveBettererConflict(ctx context.Context, runner CommandRunner) error {
@@ -28,6 +29,18 @@ func ResolveBettererConflict(ctx context.Context, runner CommandRunner) error {
 }
 
 func CreateCherryPickBranch(ctx context.Context, runner CommandRunner, branch string, opts BackportOpts) error {
+	if opts.GitToken != "" {
+		origURL, err := runner.Run(ctx, "git", "remote", "get-url", "origin")
+		if err != nil {
+			return fmt.Errorf("error getting origin URL: %w", err)
+		}
+		authURL := strings.Replace(origURL, "https://github.com/", "https://x-access-token:"+opts.GitToken+"@github.com/", 1)
+		if _, err := runner.Run(ctx, "git", "remote", "set-url", "origin", authURL); err != nil {
+			return fmt.Errorf("error setting origin URL: %w", err)
+		}
+		defer runner.Run(ctx, "git", "remote", "set-url", "origin", origURL) //nolint:errcheck
+	}
+
 	// 1. Ensure that we have the commit in the local history to cherry-pick
 	if _, err := runner.Run(ctx, "git", "fetch", "origin", opts.SourceSHA); err != nil {
 		return fmt.Errorf("error fetching source commit: %w", err)
