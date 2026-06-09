@@ -42,6 +42,18 @@ func TestBackportTargetsFromLabels(t *testing.T) {
 			"v11.0.x",
 		}, targets)
 	})
+
+	t.Run("with no labels", func(t *testing.T) {
+		targets := BackportTargetsFromLabels(nil, "backport ")
+		require.Empty(t, targets)
+	})
+
+	t.Run("with only non-backport labels", func(t *testing.T) {
+		labels := []string{"type/bug", "release/latest", "add-to-changelog"}
+
+		targets := BackportTargetsFromLabels(labels, "backport ")
+		require.Empty(t, targets)
+	})
 }
 
 func TestBackportTarget(t *testing.T) {
