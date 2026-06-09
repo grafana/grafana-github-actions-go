@@ -75,13 +75,13 @@ func main() {
 		panic("PR hasn't been merged yet")
 	}
 
-	if len(prInfo.Labels) == 0 {
-		panic("PR has no labels")
-	}
-
 	log = log.With("repo", fmt.Sprintf("%s/%s", prInfo.RepoOwner, prInfo.RepoName), "pull_request", prInfo.Pr.GetNumber())
 
 	targetNames := BackportTargetsFromLabels(prInfo.Labels, "backport ")
+	if len(targetNames) == 0 {
+		log.Info("no backport labels found, nothing to do")
+		return
+	}
 	targets, err := BackportTargets(ctx, log, client.Repositories, prInfo.RepoOwner, prInfo.RepoName, targetNames)
 	if err != nil {
 		panic(err)
