@@ -3,7 +3,7 @@ module github.com/grafana/grafana-github-actions-go
 go 1.26.1
 
 require (
-	dagger.io/dagger v0.21.4
+	dagger.io/dagger v0.21.6
 	github.com/Khan/genqlient v0.8.1
 	github.com/coreos/go-semver v0.3.1
 	github.com/google/go-github/v50 v50.2.0
