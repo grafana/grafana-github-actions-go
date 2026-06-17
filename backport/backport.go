@@ -21,6 +21,9 @@ type BackportOpts struct {
 	// SourceTitle is the title of the source PR which will be reused in the backport PRs
 	SourceTitle string
 
+	// TitleTemplate controls backport PR title formatting via {{branch}} and {{title}} placeholders.
+	TitleTemplate string
+
 	// SourceBody is the body of the source PR which will be reused in the backport PRs
 	SourceBody string
 
@@ -64,7 +67,7 @@ type CommentClient interface {
 }
 
 func CreatePullRequest(ctx context.Context, client BackportClient, issueClient IssueClient, branch string, opts BackportOpts) (*github.PullRequest, error) {
-	title := fmt.Sprintf("[%s] %s", opts.Target.Name, opts.SourceTitle)
+	title := FormatBackportTitle(opts.TitleTemplate, opts.Target.Name, opts.SourceTitle)
 
 	body := fmt.Sprintf("Backport %s from #%d <sup>[job run](https://github.com/%s/%s/actions/runs/%s)</sup>\n\n---\n\n%s", opts.SourceSHA, opts.PullRequestNumber, opts.Owner, opts.Repository, opts.RunID, opts.SourceBody)
 

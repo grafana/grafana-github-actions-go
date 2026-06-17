@@ -41,7 +41,7 @@ func CommentFailure(ctx context.Context, client CommentClient, opts FailureOpts)
 	}
 
 	data := CommentData{
-		BackportTitle:           fmt.Sprintf("[%s] %s", opts.Target.Name, opts.SourceTitle),
+		BackportTitle:           FormatBackportTitle(opts.TitleTemplate, opts.Target.Name, opts.SourceTitle),
 		Target:                  opts.Target.Name,
 		Error:                   opts.Error.Error(),
 		BackportBranch:          branch,

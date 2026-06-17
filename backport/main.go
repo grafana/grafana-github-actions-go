@@ -14,14 +14,19 @@ import (
 )
 
 type Inputs struct {
-	Title  string
-	Labels []*github.Label
+	TitleTemplate string
+	Labels        []*github.Label
 }
 
 func GetInputs() Inputs {
 	var (
-		labelsStr = githubactions.GetInput("labels_to_add")
+		labelsStr     = githubactions.GetInput("labels_to_add")
+		titleTemplate = os.Getenv("PR_TITLE_TEMPLATE")
 	)
+
+	if titleTemplate == "" {
+		titleTemplate = githubactions.GetInput("pr_title_template")
+	}
 
 	labelStrings := strings.Split(labelsStr, ",")
 	labels := make([]*github.Label, len(labelStrings))
@@ -32,7 +37,8 @@ func GetInputs() Inputs {
 	}
 
 	return Inputs{
-		Labels: labels,
+		TitleTemplate: titleTemplate,
+		Labels:        labels,
 	}
 }
 
@@ -102,6 +108,7 @@ func main() {
 			SourceSHA:         prInfo.Pr.GetMergeCommitSHA(),
 			SourceCommitDate:  prInfo.Pr.GetMergedAt().Time,
 			SourceTitle:       prInfo.Pr.GetTitle(),
+			TitleTemplate:     inputs.TitleTemplate,
 			SourceBody:        prInfo.Pr.GetBody(),
 			Target:            target,
 			Labels:            append(inputs.Labels, prInfo.Pr.Labels...),
