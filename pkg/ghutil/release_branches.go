@@ -97,14 +97,13 @@ func MajorMinorPatch(v string) (string, string, string) {
 func GetReleaseBranches(ctx context.Context, log *slog.Logger, client BranchClient, owner, repo string) ([]*github.Branch, error) {
 	var (
 		page     int
-		count    = 50
+		count    = 100
 		branches = []*github.Branch{}
 	)
 
 	for {
 		log.Debug("listing branches", "page", page, "count", count)
 		b, r, err := client.ListBranches(ctx, owner, repo, &github.BranchListOptions{
-			Protected: github.Bool(true),
 			ListOptions: github.ListOptions{
 				Page:    page,
 				PerPage: count,
@@ -114,7 +113,13 @@ func GetReleaseBranches(ctx context.Context, log *slog.Logger, client BranchClie
 			return nil, err
 		}
 
-		branches = append(branches, b...)
+		for _, branch := range b {
+			// Filter here rather than sending the filtered request to the API,
+			// as it is slower and it times out with 504 on repos with thousands of branches.
+			if branch.Protected != nil && *branch.Protected {
+				branches = append(branches, branch)
+			}
+		}
 
 		if r.NextPage == 0 {
 			break
