@@ -2,8 +2,14 @@ name: Backport
 description: Backports a commit to the selected release branches
 inputs:
   token:
-    description: GitHub token with access to all necessary repositories
-    required: true
+    description: GitHub token with access to all necessary repositories. Required unless both git_push_token and pr_open_token are set.
+    required: false
+  git_push_token:
+    description: GitHub token used to push the backport commits. Needs contents:write (and workflows:write when a backport touches .github/workflows files). Must be set together with pr_open_token, and when set both take precedence over `token`.
+    required: false
+  pr_open_token:
+    description: GitHub token used to open the backport PR, set its labels and comment on failures. Needs pull-requests:write. Must be set together with git_push_token, and when set both take precedence over `token`.
+    required: false
   path:
     required: false
     default: "."
@@ -70,6 +76,8 @@ runs:
     - shell: bash
       env:
         GITHUB_TOKEN: ${{ inputs.token }}
+        GITHUB_GIT_PUSH_TOKEN: ${{ inputs.git_push_token }}
+        GITHUB_PR_OPEN_TOKEN: ${{ inputs.pr_open_token }}
         DIR: ${{ inputs.path }}
         PR_LABEL: ${{ inputs.pr_label }}
         PR_NUMBER: ${{ inputs.pr_number }}
