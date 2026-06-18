@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -36,6 +37,29 @@ func GetInputs() Inputs {
 	}
 }
 
+// resolveTokens decides which token authenticates the push operations (cherry-pick
+// fetch and the signed-commit publish) and which authenticates the PR operations
+// (opening the PR, editing labels, commenting on failure).
+//
+// The granular tokens let a caller use two separate GitHub Apps with different
+// permissions. They must be set together or not at all; when set they take
+// precedence over token. When they are absent, token is used for both.
+func resolveTokens(token, gitPushToken, prOpenToken string) (pushToken, prToken string, err error) {
+	if (gitPushToken == "") != (prOpenToken == "") {
+		return "", "", errors.New("GITHUB_GIT_PUSH_TOKEN and GITHUB_PR_OPEN_TOKEN must be set together")
+	}
+
+	if gitPushToken != "" {
+		return gitPushToken, prOpenToken, nil
+	}
+
+	if token == "" {
+		return "", "", errors.New("token can not be empty")
+	}
+
+	return token, token, nil
+}
+
 func main() {
 	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelDebug,
@@ -50,7 +74,6 @@ func main() {
 	var (
 		ctx    = context.Background()
 		token  = os.Getenv("GITHUB_TOKEN")
-		client = github.NewTokenClient(ctx, token)
 		inputs = GetInputs()
 
 		// If specified, takes precedence over event data
@@ -59,13 +82,28 @@ func main() {
 		prNumber, _ = strconv.Atoi(os.Getenv("PR_NUMBER"))
 		prLabel     = os.Getenv("PR_LABEL")
 		runID       = os.Getenv("GITHUB_RUN_ID")
+
+		// Granular tokens if you have more than one app that does backporting: one
+		// pushes the commits (contents), the other opens the PR (pull requests).
+		gitPushToken = os.Getenv("GITHUB_GIT_PUSH_TOKEN")
+		prOpenToken  = os.Getenv("GITHUB_PR_OPEN_TOKEN")
 	)
 
-	if token == "" {
-		panic("token can not be empty")
+	pushToken, prToken, err := resolveTokens(token, gitPushToken, prOpenToken)
+	if err != nil {
+		panic(err)
+	}
+	if gitPushToken != "" {
+		log.Info("Using GITHUB_GIT_PUSH_TOKEN and GITHUB_PR_OPEN_TOKEN instead of GITHUB_TOKEN")
 	}
 
-	prInfo, err := GetBackportPrInfo(ctx, log, client, ghctx, repoOwner, repoName, prNumber, prLabel)
+	// pushClient authenticates repository reads and commit pushes; prClient
+	// authenticates reading the source PR, opening the backport PR and commenting.
+	// When no granular tokens are set, both wrap the same token.
+	pushClient := github.NewTokenClient(ctx, pushToken)
+	prClient := github.NewTokenClient(ctx, prToken)
+
+	prInfo, err := GetBackportPrInfo(ctx, log, prClient, ghctx, repoOwner, repoName, prNumber, prLabel)
 	if err != nil {
 		log.Error("error getting PR info", "error", err)
 		panic(err)
@@ -82,7 +120,7 @@ func main() {
 		log.Info("no backport labels found, nothing to do")
 		return
 	}
-	targets, err := BackportTargets(ctx, log, client.Repositories, prInfo.RepoOwner, prInfo.RepoName, targetNames)
+	targets, err := BackportTargets(ctx, log, pushClient.Repositories, prInfo.RepoOwner, prInfo.RepoName, targetNames)
 	if err != nil {
 		panic(err)
 	}
@@ -90,7 +128,7 @@ func main() {
 	failed := false
 	for _, target := range targets {
 		log := log.With("target", target)
-		mergeBase, err := MergeBase(ctx, client.Repositories, prInfo.RepoOwner, prInfo.RepoName, target.Name, prInfo.Pr.GetBase().GetRef())
+		mergeBase, err := MergeBase(ctx, pushClient.Repositories, prInfo.RepoOwner, prInfo.RepoName, target.Name, prInfo.Pr.GetBase().GetRef())
 		if err != nil {
 			log.Error("error finding merge-base", "error", err)
 			failed = true
@@ -109,12 +147,12 @@ func main() {
 			Repository:        prInfo.RepoName,
 			MergeBase:         mergeBase,
 			RunID:             runID,
-			GitToken:          token,
+			GitToken:          pushToken,
 		}
 
 		commandRunner := NewShellCommandRunner(log)
-		gqlClient := ghgql.NewClient(token)
-		prOut, err := Backport(ctx, log, client.PullRequests, client.Issues, client.Issues, client.Git, gqlClient, commandRunner, opts)
+		gqlClient := ghgql.NewClient(pushToken)
+		prOut, err := Backport(ctx, log, prClient.PullRequests, prClient.Issues, prClient.Issues, pushClient.Git, gqlClient, commandRunner, opts)
 		if err != nil {
 			log.Error("backport failed", "error", err)
 			failed = true
