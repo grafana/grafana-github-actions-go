@@ -25,6 +25,10 @@ inputs:
   repo_name:
     description: The name of the repository the PR is in
     required: false
+  pr_title_template:
+    description: Template for backport PR titles. Use {{branch}} and {{title}} placeholders.
+    required: false
+    default: "[{{branch}}] {{title}}"
 
 runs:
   using: composite
@@ -79,6 +83,7 @@ runs:
         PR_NUMBER: ${{ inputs.pr_number }}
         REPO_OWNER: ${{ inputs.repo_owner }}
         REPO_NAME: ${{ inputs.repo_name }}
+        PR_TITLE_TEMPLATE: ${{ inputs.pr_title_template }}
         BINARY: /tmp/backport
       run: |
         set -euo pipefail

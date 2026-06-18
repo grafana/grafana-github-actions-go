@@ -248,6 +248,76 @@ func TestBackport(t *testing.T) {
 		require.Equal(t, []string{"Example Bug Fix"}, gqlClient.headlines)
 	})
 
+	t.Run("Successful backport with suffix title template", func(t *testing.T) {
+		createFn := func(ctx context.Context, owner string, repo string, pull *github.NewPullRequest) (*github.PullRequest, *github.Response, error) {
+			return &github.PullRequest{
+				Number: github.Int(101),
+				Body:   pull.Body,
+				Title:  pull.Title,
+			}, nil, nil
+		}
+		editFn := func(ctx context.Context, owner string, repo string, number int, issue *github.IssueRequest) (*github.Issue, *github.Response, error) {
+			labels := make([]*github.Label, len(issue.GetLabels()))
+			for i, v := range issue.GetLabels() {
+				labels[i] = &github.Label{
+					Name: github.String(v),
+				}
+			}
+			return &github.Issue{
+				Labels: labels,
+			}, nil, nil
+		}
+
+		tmpDir := t.TempDir()
+		oldwd, _ := os.Getwd()
+		require.NoError(t, os.Chdir(tmpDir))
+		t.Cleanup(func() { _ = os.Chdir(oldwd) })
+		require.NoError(t, os.WriteFile("backported-file.txt", []byte("hello\n"), 0o644))
+
+		runner := newMockRunner()
+		runner.Outputs = map[string]string{
+			"git rev-parse origin/release-12.0.0":                  "fdsa4321",
+			"git diff --no-renames --name-status -z fdsa4321 HEAD": "A\x00backported-file.txt\x00",
+			"git log -1 --format=%B HEAD":                          "Example Bug Fix\n\nBody paragraph",
+			"git log -1 --format=%an asdf1234":                     "Original Author",
+			"git log -1 --format=%ae asdf1234":                     "orig@example.com",
+		}
+
+		client := &TestBackportClient{
+			CreateFunc: createFn,
+			EditFunc:   editFn,
+		}
+
+		commitDate, _ := time.Parse(time.RFC3339, "2020-01-02T00:00:00Z")
+		pr, err := Backport(context.Background(), slog.Default(), client, client, client, &noopRefClient{}, &noopSignedCommitClient{}, runner, BackportOpts{
+			PullRequestNumber: 100,
+			SourceSHA:         "asdf1234",
+			SourceTitle:       "Example Bug Fix",
+			TitleTemplate:     "{{title}} [{{branch}}]",
+			SourceBody:        "Example bug fix body",
+			SourceCommitDate:  commitDate,
+			MergeBase: &github.Commit{
+				Committer: &github.CommitAuthor{
+					Date: &github.Timestamp{
+						Time: commitDate,
+					},
+				},
+			},
+			Target: ghutil.Branch{
+				Name: "release-12.0.0",
+				SHA:  "fdsa4321",
+			},
+			Labels: []*github.Label{
+				{Name: github.String("type/bug")},
+			},
+			Owner:      "grafana",
+			Repository: "grafana",
+		})
+
+		require.NoError(t, err)
+		require.Equal(t, *pr.Title, "Example Bug Fix [release-12.0.0]")
+	})
+
 	t.Run("Backport comments", func(t *testing.T) {
 		// Simulate an error being returned from the 'git cherry-pick command'
 		runner := newErrorRunner(map[string]error{
