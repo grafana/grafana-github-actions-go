@@ -33,6 +33,34 @@ func ResolveBettererConflict(ctx context.Context, runner CommandRunner) error {
 	return nil
 }
 
+func ResolveGoSumConflict(ctx context.Context, runner CommandRunner) error {
+	// Only attempt to fix the conflict automatically when go.sum is the single
+	// conflicting file. --diff-filter=U lists the paths still unmerged.
+	out, err := runner.Run(ctx, "git", "diff", "--name-only", "--diff-filter=U")
+	if err != nil {
+		return err
+	}
+
+	conflicts := strings.Fields(out)
+	if len(conflicts) != 1 || conflicts[0] != "go.sum" {
+		return errors.New("go.sum is not the only conflicting file")
+	}
+
+	if _, err := runner.Run(ctx, "go", "mod", "tidy"); err != nil {
+		return err
+	}
+
+	if _, err := runner.Run(ctx, "git", "add", "go.mod", "go.sum"); err != nil {
+		return err
+	}
+
+	if _, err := runner.Run(ctx, "git", "-c", "core.editor=true", "cherry-pick", "--continue"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func CreateCherryPickBranch(ctx context.Context, runner CommandRunner, branch string, opts BackportOpts) error {
 	if opts.GitToken != "" {
 		origURL, err := runner.Run(ctx, "git", "remote", "get-url", "origin")
@@ -77,6 +105,10 @@ func CreateCherryPickBranch(ctx context.Context, runner CommandRunner, branch st
 	)
 	if err != nil {
 		if err := ResolveBettererConflict(ctx, runner); err == nil {
+			return nil
+		}
+
+		if err := ResolveGoSumConflict(ctx, runner); err == nil {
 			return nil
 		}
 
