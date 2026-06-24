@@ -8,6 +8,11 @@ import (
 )
 
 func ResolveBettererConflict(ctx context.Context, runner CommandRunner) error {
+	// If .betterer.results isn't tracked, there's no betterer conflict to resolve.
+	if _, err := runner.Run(ctx, "git", "ls-files", "--error-unmatch", ".betterer.results"); err != nil {
+		return errors.New(".betterer.results does not exist")
+	}
+
 	// git diff -s --exit-code returns 1 if the file has changed
 	if _, err := runner.Run(ctx, "git", "diff", "-s", "--exit-code", ".betterer.results"); err == nil {
 		return errors.New(".better.results has not changed")

@@ -43,6 +43,7 @@ func TestCreateCherryPickBranch(t *testing.T) {
 			"git fetch --shallow-since=1577923200",
 			"git checkout -b example origin/release-1.0.0",
 			"git -c user.name=grafanabot -c user.email=bot@grafana.com cherry-pick -x asdf1234",
+			"git ls-files --error-unmatch .betterer.results",
 			"git diff -s --exit-code .betterer.results",
 			"yarn run betterer",
 			"git add .betterer.results",
@@ -133,6 +134,7 @@ func TestCreateCherryPickBranch(t *testing.T) {
 			"git fetch --shallow-since=1577923200",
 			"git checkout -b example origin/release-1.0.0",
 			"git -c user.name=grafanabot -c user.email=bot@grafana.com cherry-pick -x asdf1234",
+			"git ls-files --error-unmatch .betterer.results",
 			"git diff -s --exit-code .betterer.results",
 			"git cherry-pick --abort",
 			"git remote set-url origin https://github.com/test-owner/test-repo.git",
@@ -172,7 +174,47 @@ func TestCreateCherryPickBranch(t *testing.T) {
 			"git fetch --shallow-since=1577923200",
 			"git checkout -b example origin/release-1.0.0",
 			"git -c user.name=grafanabot -c user.email=bot@grafana.com cherry-pick -x asdf1234",
+			"git ls-files --error-unmatch .betterer.results",
 			"git diff -s --exit-code .betterer.results",
+			"git cherry-pick --abort",
+		}
+
+		require.Error(t, CreateCherryPickBranch(context.Background(), runner, branch, opts))
+		require.Equal(t, expect, runner.History.Commands)
+	})
+
+	t.Run("It should return an error if .betterer.results does not exist", func(t *testing.T) {
+		var (
+			testCommitDate, _ = time.Parse(time.RFC3339, "2020-01-02T00:00:00Z")
+			branch            = "example"
+			opts              = BackportOpts{
+				Target: ghutil.Branch{
+					Name: "release-1.0.0",
+					SHA:  "fdsa4321",
+				},
+				SourceSHA:        "asdf1234",
+				SourceCommitDate: testCommitDate,
+				MergeBase: &github.Commit{
+					Committer: &github.CommitAuthor{
+						Date: &github.Timestamp{
+							Time: testCommitDate,
+						},
+					},
+				},
+			}
+			runner = newErrorRunner(map[string]error{
+				"git -c user.name=grafanabot -c user.email=bot@grafana.com cherry-pick -x asdf1234": errors.New("cherry-pick error"),
+				"git ls-files --error-unmatch .betterer.results":                                    errors.New("command returned 1"),
+			})
+		)
+
+		expect := []string{
+			"git fetch origin asdf1234",
+			"git fetch origin release-1.0.0:refs/remotes/origin/release-1.0.0",
+			"git fetch --shallow-since=1577923200",
+			"git checkout -b example origin/release-1.0.0",
+			"git -c user.name=grafanabot -c user.email=bot@grafana.com cherry-pick -x asdf1234",
+			"git ls-files --error-unmatch .betterer.results",
 			"git cherry-pick --abort",
 		}
 
