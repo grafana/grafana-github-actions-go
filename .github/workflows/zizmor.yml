@@ -19,7 +19,7 @@ jobs:
       # required to upload the results to GitHub's code scanning service
       security-events: write
 
-    uses: grafana/shared-workflows/.github/workflows/reusable-zizmor.yml@952ec381447a2002ff76103395d37bf8b4c7c3f5 # main
+    uses: grafana/shared-workflows/.github/workflows/reusable-zizmor.yml@551bc8d50017d3e95d5da3f8a4826e733a208dc0 # main
     with:
       fail-severity: high
       min-severity: high
