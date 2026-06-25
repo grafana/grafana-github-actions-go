@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"testing"
 
-	"github.com/google/go-github/v50/github"
+	"github.com/google/go-github/v88/github"
 	"github.com/stretchr/testify/require"
 )
 

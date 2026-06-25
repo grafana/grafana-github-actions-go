@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/google/go-github/v50/github"
+	"github.com/google/go-github/v88/github"
 )
 
 type TestReleaseCreator struct {

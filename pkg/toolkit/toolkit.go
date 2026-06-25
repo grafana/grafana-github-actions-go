@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/google/go-github/v50/github"
+	"github.com/google/go-github/v88/github"
 	"github.com/grafana/grafana-github-actions-go/pkg/ghgql"
 	"github.com/rs/zerolog"
 )

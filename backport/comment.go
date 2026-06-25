@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"text/template"
 
-	"github.com/google/go-github/v50/github"
+	"github.com/google/go-github/v88/github"
 )
 
 type CommentData struct {

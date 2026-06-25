@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"unicode/utf8"
 
-	"github.com/google/go-github/v50/github"
+	"github.com/google/go-github/v88/github"
 	"github.com/grafana/grafana-github-actions-go/pkg/changelog"
 	"github.com/grafana/grafana-github-actions-go/pkg/community"
 	"github.com/grafana/grafana-github-actions-go/pkg/toolkit"

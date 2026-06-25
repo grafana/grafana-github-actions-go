@@ -12,7 +12,7 @@ import (
 	"github.com/grafana/grafana-github-actions-go/pkg/toolkit"
 
 	"github.com/coreos/go-semver/semver"
-	"github.com/google/go-github/v50/github"
+	"github.com/google/go-github/v88/github"
 	"github.com/rs/zerolog"
 	"github.com/spf13/pflag"
 )
