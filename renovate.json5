@@ -1,6 +1,9 @@
 {
-  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
-  extends: ['github>grafana/grafana-renovate-config//presets/base'],
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  extends: [
+    "github>grafana/grafana-renovate-config//presets/base",
+    "github>grafana/grafana-renovate-config//presets/automerge"
+  ],
   // Hold PRs until internal checks (e.g. minimumReleaseAge) pass, instead of
   // opening them immediately with a pending renovate/stability-days check.
   prCreation: 'not-pending',
