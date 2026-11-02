@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -138,22 +139,18 @@ func TestBackport(t *testing.T) {
 			}, nil, nil
 		}
 
-		// The publish step reads files from the working tree, so run this test from a temp dir
-		// with the expected file present. mockRunner is given canned outputs so the diff/log
-		// calls return enough info for publish to proceed.
-		tmpDir := t.TempDir()
-		oldwd, _ := os.Getwd()
-		require.NoError(t, os.Chdir(tmpDir))
-		t.Cleanup(func() { _ = os.Chdir(oldwd) })
+		// Store a real blob for the mocked raw diff to reference.
+		git := publisherTestRepo(t)
 		require.NoError(t, os.WriteFile("backported-file.txt", []byte("hello\n"), 0o644))
+		blob := git("hash-object", "-w", "backported-file.txt")
 
 		runner := newMockRunner()
 		runner.Outputs = map[string]string{
-			"git rev-parse origin/release-12.0.0":                  "fdsa4321",
-			"git diff --no-renames --name-status -z fdsa4321 HEAD": "A\x00backported-file.txt\x00",
-			"git log -1 --format=%B HEAD":                          "Example Bug Fix\n\nBody paragraph",
-			"git log -1 --format=%an asdf1234":                     "Original Author",
-			"git log -1 --format=%ae asdf1234":                     "orig@example.com",
+			"git rev-parse origin/release-12.0.0":                      "fdsa4321",
+			"git diff --no-renames --raw --no-abbrev -z fdsa4321 HEAD": ":000000 100644 0000000000000000000000000000000000000000 " + blob + " A\x00backported-file.txt\x00",
+			"git log -1 --format=%B HEAD":                              "Example Bug Fix\n\nBody paragraph",
+			"git log -1 --format=%an asdf1234":                         "Original Author",
+			"git log -1 --format=%ae asdf1234":                         "orig@example.com",
 		}
 
 		client := &TestBackportClient{
@@ -236,7 +233,7 @@ func TestBackport(t *testing.T) {
 			"git checkout -b backport-100-to-release-12.0.0 origin/release-12.0.0",
 			"git -c user.name=grafanabot -c user.email=bot@grafana.com cherry-pick -x asdf1234",
 			"git rev-parse origin/release-12.0.0",
-			"git diff --no-renames --name-status -z fdsa4321 HEAD",
+			"git diff --no-renames --raw --no-abbrev -z fdsa4321 HEAD",
 			"git log -1 --format=%B HEAD",
 			"git log -1 --format=%an asdf1234",
 			"git log -1 --format=%ae asdf1234",
@@ -268,19 +265,17 @@ func TestBackport(t *testing.T) {
 			}, nil, nil
 		}
 
-		tmpDir := t.TempDir()
-		oldwd, _ := os.Getwd()
-		require.NoError(t, os.Chdir(tmpDir))
-		t.Cleanup(func() { _ = os.Chdir(oldwd) })
+		git := publisherTestRepo(t)
 		require.NoError(t, os.WriteFile("backported-file.txt", []byte("hello\n"), 0o644))
+		blob := git("hash-object", "-w", "backported-file.txt")
 
 		runner := newMockRunner()
 		runner.Outputs = map[string]string{
-			"git rev-parse origin/release-12.0.0":                  "fdsa4321",
-			"git diff --no-renames --name-status -z fdsa4321 HEAD": "A\x00backported-file.txt\x00",
-			"git log -1 --format=%B HEAD":                          "Example Bug Fix\n\nBody paragraph",
-			"git log -1 --format=%an asdf1234":                     "Original Author",
-			"git log -1 --format=%ae asdf1234":                     "orig@example.com",
+			"git rev-parse origin/release-12.0.0":                      "fdsa4321",
+			"git diff --no-renames --raw --no-abbrev -z fdsa4321 HEAD": ":000000 100644 0000000000000000000000000000000000000000 " + blob + " A\x00backported-file.txt\x00",
+			"git log -1 --format=%B HEAD":                              "Example Bug Fix\n\nBody paragraph",
+			"git log -1 --format=%an asdf1234":                         "Original Author",
+			"git log -1 --format=%ae asdf1234":                         "orig@example.com",
 		}
 
 		client := &TestBackportClient{
@@ -394,4 +389,52 @@ func TestBackport(t *testing.T) {
 		require.NotNil(t, comment)
 		require.Equal(t, string(body), comment.GetBody())
 	})
+}
+
+func TestBackportUnsupportedModesLeaveManualInstructions(t *testing.T) {
+	git := publisherTestRepo(t)
+	require.NoError(t, os.WriteFile("file", []byte("supported"), 0o644))
+	blob := git("hash-object", "-w", "file")
+	zero := strings.Repeat("0", 40)
+	runner := newMockRunner()
+	// The signed file API cannot specify Git modes, so executable writes require
+	// a manual backport. Putting a supported change first verifies that the
+	// entire batch is rejected before any remote branch or commit is created.
+	runner.Outputs = map[string]string{
+		"git rev-parse origin/base": "base",
+		"git diff --no-renames --raw --no-abbrev -z base HEAD": ":000000 100644 " + zero + " " + blob + " A\x00a-regular\x00" +
+			":000000 100755 " + zero + " " + blob + " A\x00z-executable\x00",
+	}
+	var comment *github.IssueComment
+	client := &TestBackportClient{
+		CreateFunc: func(context.Context, string, string, *github.NewPullRequest) (*github.PullRequest, *github.Response, error) {
+			t.Fatal("unsupported changes must not open a backport PR")
+			return nil, nil, nil
+		},
+		CreateCommentFunc: func(_ context.Context, _, _ string, _ int, c *github.IssueComment) (*github.IssueComment, *github.Response, error) {
+			require.Nil(t, comment, "the failure must produce exactly one comment")
+			comment = c
+			return c, nil, nil
+		},
+	}
+	refClient := &noopRefClient{}
+	gqlClient := &noopSignedCommitClient{}
+	pr, err := Backport(t.Context(), slog.Default(), client, client, client, refClient, gqlClient, runner, BackportOpts{
+		PullRequestNumber: 100,
+		SourceSHA:         "source",
+		SourceTitle:       "Example fix",
+		Target:            ghutil.Branch{Name: "base"},
+		MergeBase:         &github.Commit{Committer: &github.CommitAuthor{Date: &github.Timestamp{Time: time.Unix(0, 0)}}},
+		Owner:             "example",
+		Repository:        "project",
+	})
+	require.Nil(t, pr)
+	require.ErrorContains(t, err, "manual signed backport required")
+	require.Empty(t, refClient.refs)
+	require.Empty(t, gqlClient.branches)
+	require.NotNil(t, comment)
+	require.Contains(t, comment.GetBody(), "manual signed backport required")
+	require.Contains(t, comment.GetBody(), "z-executable")
+	require.Contains(t, comment.GetBody(), "git cherry-pick -S -x source")
+	require.Contains(t, comment.GetBody(), "git -c commit.gpgsign=true cherry-pick --continue")
 }

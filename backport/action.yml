@@ -43,7 +43,7 @@ runs:
       run: |
         set -euo pipefail
         cd "${GITHUB_ACTION_PATH}/.."
-        files=$(find . -type f \( -name '*.go' -o -name 'go.mod' -o -name 'go.sum' \) -print0 \
+        files=$(find . -type f \( -name '*.go' -o -name 'go.mod' -o -name 'go.sum' -o -name '*.tmpl' -o -name 'action.yml' \) -print0 \
           | sort -z \
           | xargs -0 sha256sum)
         if [ -z "${files}" ]; then

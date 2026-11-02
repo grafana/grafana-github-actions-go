@@ -9,13 +9,13 @@ To backport manually, run these commands in your terminal:
 ```bash
 git fetch
 git switch --create {{ .BackportBranch }} origin/{{ .Target }}
-git cherry-pick -x {{ .SourceSHA }}
+git cherry-pick -S -x {{ .SourceSHA }}
 ```
 
-Resolve the conflicts, then add the changes and run `git cherry-pick --continue`:
+Resolve the conflicts, then add the changes and run `git -c commit.gpgsign=true cherry-pick --continue`:
 
 ```bash
-git add . && git cherry-pick --continue
+git add . && git -c commit.gpgsign=true cherry-pick --continue
 ```
 
 If you have the [GitHub CLI](https://cli.github.com/) installed:

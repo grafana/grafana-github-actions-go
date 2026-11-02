@@ -9,13 +9,13 @@ To backport manually, run these commands in your terminal:
 ```bash
 git fetch
 git switch --create backport-100-to-release-12.0.0 origin/release-12.0.0
-git cherry-pick -x asdf1234
+git cherry-pick -S -x asdf1234
 ```
 
-Resolve the conflicts, then add the changes and run `git cherry-pick --continue`:
+Resolve the conflicts, then add the changes and run `git -c commit.gpgsign=true cherry-pick --continue`:
 
 ```bash
-git add . && git cherry-pick --continue
+git add . && git -c commit.gpgsign=true cherry-pick --continue
 ```
 
 If you have the [GitHub CLI](https://cli.github.com/) installed:
