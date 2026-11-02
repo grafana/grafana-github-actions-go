@@ -3,8 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
+	"os/exec"
 	"strings"
 
 	"github.com/google/go-github/v50/github"
@@ -106,35 +105,47 @@ func gitOutput(ctx context.Context, runner CommandRunner, args ...string) (strin
 	return strings.TrimSpace(out), nil
 }
 
-// buildFileChanges parses `git diff --no-renames --name-status -z <from> <to>` and reads the
-// added/modified files' contents from disk, returning a FileChange slice suitable for
-// createCommitOnBranch. Renames are flattened into delete-plus-add via --no-renames.
+// buildFileChanges reads committed blobs and rejects writes the signed file API cannot represent.
 func buildFileChanges(ctx context.Context, runner CommandRunner, from, to string) ([]ghgql.FileChange, error) {
-	out, err := runner.Run(ctx, "git", "diff", "--no-renames", "--name-status", "-z", from, to)
+	out, err := runner.Run(ctx, "git", "diff", "--no-renames", "--raw", "--no-abbrev", "-z", from, to)
 	if err != nil {
 		return nil, fmt.Errorf("git diff: %w", err)
 	}
-
-	// `-z` emits NUL-separated tokens alternating status and path. Without renames, every entry
-	// is a (status, path) pair.
+	if out == "" {
+		return nil, nil
+	}
+	// --no-renames -z emits a metadata header and path for each change:
+	// :<old mode> <new mode> <old oid> <new oid> <status>\0<path>\0
+	// The final NUL leaves one empty token after the complete header/path pairs.
 	tokens := strings.Split(out, "\x00")
+	if tokens[len(tokens)-1] != "" || len(tokens)%2 != 1 {
+		return nil, fmt.Errorf("malformed raw diff")
+	}
 	var changes []ghgql.FileChange
-	for i := 0; i+1 < len(tokens); i += 2 {
-		status := tokens[i]
+	for i := 0; i < len(tokens)-1; i += 2 {
+		fields := strings.Fields(tokens[i])
+		if len(fields) != 5 || !strings.HasPrefix(fields[0], ":") || tokens[i+1] == "" {
+			return nil, fmt.Errorf("malformed raw diff entry")
+		}
+		oldMode, newMode, status := strings.TrimPrefix(fields[0], ":"), fields[1], fields[4]
 		path := tokens[i+1]
-		if status == "" || path == "" {
+		// Deleting an entry requires only its path, regardless of its original mode.
+		if status == "D" && newMode == "000000" {
+			changes = append(changes, ghgql.FileChange{Path: path, Delete: true})
 			continue
 		}
-		switch status[0] {
-		case 'D':
-			changes = append(changes, ghgql.FileChange{Path: path, Delete: true})
-		case 'A', 'M', 'T':
-			data, err := os.ReadFile(filepath.Clean(path))
-			if err != nil {
-				return nil, fmt.Errorf("reading %s: %w", path, err)
-			}
-			changes = append(changes, ghgql.FileChange{Path: path, Contents: data})
+		// The signed file API cannot set Git modes. Only regular, non-executable
+		// writes (100644) are supported; 000000 means the old file did not exist.
+		// Checking the old mode also prevents unsupported type changes.
+		if (status != "A" && status != "M") || newMode != "100644" || (oldMode != "000000" && oldMode != "100644") {
+			return nil, fmt.Errorf("manual signed backport required: unsupported modes %s -> %s at %q", oldMode, newMode, path)
 		}
+		// The command runner trims and logs stdout. Read raw Git blobs directly instead.
+		data, err := exec.CommandContext(ctx, "git", "cat-file", "blob", fields[3]).Output()
+		if err != nil {
+			return nil, fmt.Errorf("reading Git blob for %q: %w", path, err)
+		}
+		changes = append(changes, ghgql.FileChange{Path: path, Contents: data})
 	}
 	return changes, nil
 }

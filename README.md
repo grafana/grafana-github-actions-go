@@ -2,6 +2,13 @@
 
 This repository contains a handful of GitHub Actions that are mostly used in the context of releasing Grafana packages.
 
+## backport
+
+The backport action publishes GitHub-signed commits using the committed Git blobs.
+Automatic publication supports regular, non-executable file additions and modifications, and file deletions.
+Additions or modifications involving executables, symlinks, or submodules, and file mode or type changes, require a manual signed backport because the signed file API cannot specify Git file modes.
+This includes content-only edits to existing executable files; unsupported changes fail before publishing a branch and leave manual instructions on the source PR.
+
 ## update-changelog
 
 This action generates an update to the `CHANGELOG.md` file based on pull-requests included in a release-milestone.
