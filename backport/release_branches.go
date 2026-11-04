@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/google/go-github/v50/github"
+	"github.com/google/go-github/v93/github"
 	"github.com/grafana/grafana-github-actions-go/pkg/ghutil"
 )
 

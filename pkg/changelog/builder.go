@@ -13,7 +13,7 @@ import (
 	"github.com/grafana/grafana-github-actions-go/pkg/toolkit"
 	"github.com/rs/zerolog"
 
-	"github.com/google/go-github/v50/github"
+	"github.com/google/go-github/v93/github"
 )
 
 const LabelEnterprise = "enterprise"

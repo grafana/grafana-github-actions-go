@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/google/go-github/v50/github"
+	"github.com/google/go-github/v93/github"
 	"github.com/sethvargo/go-githubactions"
 )
 
