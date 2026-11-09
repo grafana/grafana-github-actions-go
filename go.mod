@@ -9,7 +9,7 @@ require (
 	github.com/google/go-github/v50 v50.2.0
 	github.com/rs/zerolog v1.35.1
 	github.com/sethvargo/go-githubactions v1.3.2
-	github.com/spf13/pflag v1.0.10
+	github.com/spf13/pflag v1.1.0
 	github.com/stretchr/testify v1.11.1
 )
 
